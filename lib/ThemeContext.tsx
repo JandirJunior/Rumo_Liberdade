@@ -8,6 +8,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ThemeType, THEMES, ARCHETYPE_THEME_MAP } from './themes';
 import { MOCK_GAME_STATE } from './data';
 import { UserGameState } from './types';
+import { auth, db } from '@/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 // Definição da interface do contexto
 interface ThemeContextType {
@@ -15,6 +18,10 @@ interface ThemeContextType {
   setTheme: (theme: ThemeType) => void;
   gameState: UserGameState;
   setGameState: (state: UserGameState) => void;
+  user: User | null;
+  loading: boolean;
+  gameMode: 'heroi' | 'reino';
+  setGameMode: (mode: 'heroi' | 'reino') => void;
 }
 
 // Criação do contexto
@@ -26,27 +33,95 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [gameState, setGameState] = useState<UserGameState>(MOCK_GAME_STATE);
   // Estado do tema visual atual
   const [theme, setTheme] = useState<ThemeType>('default');
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [gameMode, setGameMode] = useState<'heroi' | 'reino'>('heroi');
 
-  // Efeito inicial para carregar dados salvos do navegador (localStorage)
+  // Auth listener
   useEffect(() => {
-    const saved = localStorage.getItem('facero_game_state');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setGameState(parsed);
-      // Define o tema baseado no arquétipo recuperado
-      setTheme(ARCHETYPE_THEME_MAP[parsed.archetype] || 'default');
-    }
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        // Check if user exists in Firestore
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          const loadedState: UserGameState = {
+            level: Math.floor(data.xp / 1000) + 1,
+            xp: data.xp,
+            archetype: data.archetype,
+            stats: data.stats,
+            completedQuests: data.completedQuests || [],
+          };
+          setGameState(loadedState);
+          setTheme(data.theme || ARCHETYPE_THEME_MAP[data.archetype] || 'default');
+        } else {
+          // Create new user in Firestore
+          const newState = { ...MOCK_GAME_STATE };
+          const newTheme = ARCHETYPE_THEME_MAP[newState.archetype] || 'default';
+          await setDoc(userRef, {
+            uid: currentUser.uid,
+            email: currentUser.email,
+            archetype: newState.archetype,
+            xp: newState.xp,
+            stats: newState.stats,
+            theme: newTheme,
+            createdAt: new Date().toISOString()
+          });
+          setGameState(newState);
+          setTheme(newTheme);
+        }
+      } else {
+        // Reset to mock state if logged out
+        setGameState(MOCK_GAME_STATE);
+        setTheme('default');
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  // Efeito para atualizar o tema sempre que o arquétipo do herói mudar
+  // Listen to Firestore changes for the current user
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTheme(ARCHETYPE_THEME_MAP[gameState.archetype] || 'default');
-  }, [gameState.archetype]);
+    if (!user) return;
+    const userRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setGameState({
+          level: Math.floor(data.xp / 1000) + 1,
+          xp: data.xp,
+          archetype: data.archetype,
+          stats: data.stats,
+          completedQuests: data.completedQuests || [],
+        });
+        setTheme(data.theme || ARCHETYPE_THEME_MAP[data.archetype] || 'default');
+      }
+    }, (error) => {
+      console.error('Error fetching user data:', error);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  // Sync gameState changes back to Firestore
+  const updateGameState = async (newState: UserGameState) => {
+    setGameState(newState);
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      await setDoc(userRef, {
+        archetype: newState.archetype,
+        xp: newState.xp,
+        stats: newState.stats,
+        theme: ARCHETYPE_THEME_MAP[newState.archetype] || 'default'
+      }, { merge: true });
+    }
+  };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, gameState, setGameState }}>
+    <ThemeContext.Provider value={{ theme, setTheme, gameState, setGameState: updateGameState, user, loading, gameMode, setGameMode }}>
       {children}
     </ThemeContext.Provider>
   );

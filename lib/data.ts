@@ -1,6 +1,7 @@
 /**
  * Dados Mockados: Fornece dados de exemplo para popular a interface durante o desenvolvimento.
  * Inclui metas, perfil financeiro, ativos, estado do jogo, orçamento e transações.
+ * Também define as imagens dos monstros e dos arquétipos.
  */
 import { Transaction, Goal, Asset, FinancialProfile, UserGameState, MonthlyBudget } from './types';
 
@@ -89,11 +90,47 @@ export const MOCK_TRANSACTIONS: Transaction[] = [
 
 // Mapeamento de imagens personalizadas para cada arquétipo
 export const ARCHETYPE_IMAGES: Record<string, string> = {
-  'Paladino': '/Festin.png',
-  'Mago': '/Arcano.png',
-  'Dwarf Minerador': '/Cache.png',
-  'Elfo': '/Exodia.png',
-  'Ladrão': '/Reaver.png',
-  'Hobbit': '/Orbit.png',
-  'Iniciante': '/Festin.png'
+  'Paladino': '/assets/Festin.png',
+  'Mago': '/assets/Arcano.png',
+  'Dwarf Minerador': '/assets/Cache.png',
+  'Elfo': '/assets/Exodia.png',
+  'Ladrão': '/assets/Reaver.png',
+  'Hobbit': '/assets/Orbit.png',
+  'Iniciante': '/assets/Festin.png'
 };
+
+export interface Masmorra {
+  id: number;
+  title: string;
+  target: number;
+  monster: string;
+  imageUrl: string;
+}
+
+const MONSTERS = ['Goblin', 'Orc', 'Esqueleto', 'Lobo Gigante', 'Aranha', 'Troll', 'Golem', 'Vampiro', 'Dragão', 'Hidra', 'Lich', 'Titã'];
+const MONSTER_IMAGES = [
+  '/assets/Goblin.png',
+  '/assets/Orc.png',
+  '/assets/Esqueleto.png',
+  '/assets/Lobo Gigante.png',
+  '/assets/Aranha.png',
+  '/assets/Troll.png',
+  '/assets/Golem.png',
+  '/assets/Vampiro.png',
+  '/assets/Dragão.png',
+  '/assets/Hidra.png',
+  '/assets/Lich.png',
+  '/assets/Titã.png',
+];
+
+export const MOCK_MASMORRAS: Masmorra[] = Array.from({ length: 100 }, (_, i) => {
+  const target = (i + 1) * 10000;
+  const monsterIndex = i % MONSTERS.length;
+  return {
+    id: i + 1,
+    title: `Masmorra ${target / 1000}k`,
+    target,
+    monster: `${MONSTERS[monsterIndex]} da Inflação`,
+    imageUrl: MONSTER_IMAGES[monsterIndex]
+  };
+});

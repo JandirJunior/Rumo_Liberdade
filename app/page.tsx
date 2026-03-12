@@ -4,26 +4,41 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import { Lock, User, Castle, Sparkles } from 'lucide-react';
 import Image from 'next/image';
+import { auth } from '@/firebase';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { useTheme } from '@/lib/ThemeContext';
 
 export default function LoginPage() {
-  // Estados para armazenar as credenciais de login
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const router = useRouter();
+  const { user, loading } = useTheme();
+  const [error, setError] = useState('');
 
-  // Função para lidar com o envio do formulário de login
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simulação de login: redireciona para o dashboard se os campos estiverem preenchidos
-    if (email && password) {
+  useEffect(() => {
+    if (user && !loading) {
       router.push('/dashboard');
     }
+  }, [user, loading, router]);
+
+  // Função para lidar com o envio do formulário de login
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (err: any) {
+      console.error(err);
+      setError('Falha ao autenticar. Tente novamente.');
+    }
   };
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-[#fdf5e6]">Carregando...</div>;
+  }
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen p-8 overflow-hidden bg-[#fdf5e6]">
@@ -55,45 +70,15 @@ export default function LoginPage() {
         </div>
 
         {/* Formulário de Login com efeito de Glassmorphism */}
-        <form onSubmit={handleLogin} className="space-y-6 bg-white/40 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/60 shadow-xl">
-          {/* Campo de Email */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-[#5d4037] uppercase tracking-widest ml-1">Email</label>
-            <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8b7355]" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-white/80 border border-[#f5deb3] rounded-2xl focus:ring-2 focus:ring-[#d2b48c] focus:border-transparent transition-all outline-none shadow-sm text-[#5d4037]"
-                placeholder="seu@email.com"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Campo de Senha */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-[#5d4037] uppercase tracking-widest ml-1">Senha</label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8b7355]" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-white/80 border border-[#f5deb3] rounded-2xl focus:ring-2 focus:ring-[#d2b48c] focus:border-transparent transition-all outline-none shadow-sm text-[#5d4037]"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Botão de Ação Principal: Entrar */}
+        <form onSubmit={handleLogin} className="space-y-6 bg-white/40 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/60 shadow-xl flex flex-col items-center">
+          {error && <p className="text-red-500 text-sm font-bold">{error}</p>}
+          
           <button
             type="submit"
-            className="w-full py-4 bg-[#d2b48c] hover:bg-[#c19a6b] text-white font-black rounded-2xl shadow-lg shadow-[#d2b48c]/30 transition-all active:scale-95 uppercase tracking-widest"
+            className="w-full py-4 bg-[#d2b48c] hover:bg-[#c19a6b] text-white font-black rounded-2xl shadow-lg shadow-[#d2b48c]/30 transition-all active:scale-95 uppercase tracking-widest flex items-center justify-center gap-2"
           >
-            Entrar no Reino
+            <User className="w-5 h-5" />
+            Entrar com Google
           </button>
 
           {/* Botão Secundário: Iniciar Gênese (Quiz de Arquétipo) */}

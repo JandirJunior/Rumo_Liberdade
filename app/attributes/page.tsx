@@ -9,16 +9,18 @@ import { formatCurrency, cn } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { TrendingUp, TrendingDown, Wallet, Target, ArrowRight } from 'lucide-react';
+import { useReino } from '@/hooks/useReino';
 
 export default function Attributes() {
   const { theme } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
+  const { transactions } = useReino();
 
   const totalPlannedIncome = MOCK_BUDGET.income.reduce((acc: number, curr: BudgetItem) => acc + curr.planned, 0);
-  const totalActualIncome = MOCK_BUDGET.income.reduce((acc: number, curr: BudgetItem) => acc + curr.actual, 0);
+  const totalActualIncome = transactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
   
   const totalPlannedExpenses = MOCK_BUDGET.expenses.reduce((acc: number, curr: BudgetItem) => acc + curr.planned, 0);
-  const totalActualExpenses = MOCK_BUDGET.expenses.reduce((acc: number, curr: BudgetItem) => acc + curr.actual, 0);
+  const totalActualExpenses = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
 
   const incomeDiff = totalActualIncome - totalPlannedIncome;
   const expenseDiff = totalActualExpenses - totalPlannedExpenses;
@@ -29,7 +31,7 @@ export default function Attributes() {
     <div className={cn("min-h-screen transition-colors duration-500", colors.bg)}>
       <Header />
       
-      <main className="p-6 space-y-8 pb-32 max-w-7xl mx-auto">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 pb-32">
         <header>
           <h2 className="text-2xl font-display font-bold text-gray-900">Atributos</h2>
           <p className="text-sm text-gray-500">Orçado vs Realizado</p>
@@ -104,7 +106,7 @@ export default function Attributes() {
         </section>
 
         {/* Detailed List */}
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <section className="space-y-4">
             <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Detalhamento de Receitas</h4>
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">

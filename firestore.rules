@@ -1,0 +1,179 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required, immutable) - The unique identifier for the user.
+    //   - email: string (required) - The user's email address.
+    //   - archetype: string (required) - The chosen archetype/class of the user.
+    //   - theme: string (required) - The user's chosen theme.
+    //   - createdAt: string (required, immutable) - The date and time the user was created.
+    //
+    // Collection: reino_transactions
+    // Document ID: {transactionId}
+    // Fields:
+    //   - id: string (required, immutable) - The unique identifier for the transaction.
+    //   - userId: string (required) - The ID of the user who created the transaction.
+    //   - description: string (required) - The title or description of the transaction.
+    //   - amount: number (required) - The amount of the transaction.
+    //   - date: string (required) - The date of the transaction.
+    //   - category: string (required) - The category of the transaction.
+    //   - type: string (required) - The type of the transaction ('income' or 'expense').
+    //   - createdAt: string (required, immutable) - The date and time the transaction was created.
+    //
+    // Collection: reino_assets
+    // Document ID: {assetId}
+    // Fields:
+    //   - id: string (required, immutable) - The unique identifier for the asset.
+    //   - type: string (required) - The type of the asset.
+    //   - value: number (required) - The value of the asset.
+    //   - targetPercent: number (required) - The target percentage for the asset.
+    //   - faceroType: string (required) - The F.A.C.E.R.O. type.
+    //   - color: string (required) - The color of the asset.
+    //
+    // Collection: reino_state
+    // Document ID: {stateId} (e.g., 'main')
+    // Fields:
+    //   - level: number (required) - The kingdom's level.
+    //   - xp: number (required) - The kingdom's total experience points.
+    //   - stats: map (required) - The kingdom's F.A.C.E.R.O. stats.
+    //   - completedQuests: list (required) - The completed quests.
+    //
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
+    }
+    
+    function uidNotModified() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
+    }
+    
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+    
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+    
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+    
+    function isValidSimpleDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser() {
+      let data = request.resource.data;
+      return hasOnlyAllowedFields(['uid', 'email', 'archetype', 'theme', 'createdAt', 'xp', 'stats', 'completedQuests']) &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 100 &&
+             data.email is string && isValidEmail(data.email) && data.email.size() < 100 &&
+             data.archetype is string && data.archetype.size() < 50 &&
+             data.theme is string && data.theme.size() < 50 &&
+             isValidDateString(data.createdAt) &&
+             (!('xp' in data) || (data.xp is number && data.xp >= 0)) &&
+             (!('stats' in data) || (data.stats is map && data.stats.keys().hasOnly(['F', 'A', 'C', 'E', 'R', 'O']))) &&
+             (!('completedQuests' in data) || (data.completedQuests is list));
+    }
+
+    function isValidTransaction() {
+      let data = request.resource.data;
+      return hasOnlyAllowedFields(['id', 'userId', 'userName', 'description', 'amount', 'date', 'category', 'type', 'createdAt']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
+             data.userId is string && data.userId.size() > 0 && data.userId.size() < 100 &&
+             (!('userName' in data) || (data.userName is string && data.userName.size() < 100)) &&
+             data.description is string && data.description.size() > 0 && data.description.size() < 200 &&
+             data.amount is number && data.amount > 0 &&
+             isValidSimpleDateString(data.date) &&
+             data.category is string && data.category.size() > 0 && data.category.size() < 100 &&
+             data.type in ['income', 'expense', 'investment'] &&
+             isValidDateString(data.createdAt);
+    }
+
+    function isValidAsset() {
+      let data = request.resource.data;
+      return hasOnlyAllowedFields(['id', 'userId', 'userName', 'type', 'value', 'targetPercent', 'faceroType', 'color']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
+             (!('userId' in data) || (data.userId is string && data.userId.size() > 0 && data.userId.size() < 100)) &&
+             (!('userName' in data) || (data.userName is string && data.userName.size() < 100)) &&
+             data.type is string && data.type.size() > 0 && data.type.size() < 100 &&
+             data.value is number && data.value >= 0 &&
+             data.targetPercent is number && data.targetPercent >= 0 && data.targetPercent <= 1 &&
+             data.faceroType is string && data.faceroType.size() > 0 && data.faceroType.size() < 10 &&
+             data.color is string && data.color.size() > 0 && data.color.size() < 50;
+    }
+
+    function isValidState() {
+      let data = request.resource.data;
+      return hasOnlyAllowedFields(['level', 'xp', 'stats', 'completedQuests']) &&
+             data.level is number && data.level >= 1 &&
+             data.xp is number && data.xp >= 0 &&
+             data.stats is map && data.stats.keys().hasOnly(['F', 'A', 'C', 'E', 'R', 'O']) &&
+             data.stats.F is number && data.stats.A is number && data.stats.C is number &&
+             data.stats.E is number && data.stats.R is number && data.stats.O is number &&
+             data.completedQuests is list;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser() && uidUnchanged();
+      allow update: if isOwner(userId) && isValidUser() && uidNotModified() &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isOwner(userId);
+    }
+
+    match /reino_transactions/{transactionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidTransaction();
+      allow update: if isAuthenticated() && isValidTransaction() && 
+                    request.resource.data.id == resource.data.id &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAuthenticated();
+    }
+
+    match /reino_assets/{assetId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidAsset();
+      allow update: if isAuthenticated() && isValidAsset() && 
+                    request.resource.data.id == resource.data.id;
+      allow delete: if isAuthenticated();
+    }
+
+    match /reino_state/{stateId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidState();
+      allow update: if isAuthenticated() && isValidState();
+      allow delete: if isAuthenticated();
+    }
+  }
+}

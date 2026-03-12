@@ -1,0 +1,128 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a user in the system.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The unique identifier for the user."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "archetype": {
+          "type": "string",
+          "description": "The chosen archetype/class of the user."
+        },
+        "xp": {
+          "type": "number",
+          "description": "The user's total experience points."
+        },
+        "stats": {
+          "type": "object",
+          "description": "The user's F.A.C.E.R.O. stats.",
+          "properties": {
+            "F": { "type": "number" },
+            "A": { "type": "number" },
+            "C": { "type": "number" },
+            "E": { "type": "number" },
+            "R": { "type": "number" },
+            "O": { "type": "number" }
+          }
+        },
+        "theme": {
+          "type": "string",
+          "description": "The user's chosen theme."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time the user was created."
+        }
+      },
+      "required": ["uid", "email", "archetype", "xp", "stats", "theme", "createdAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Represents a financial transaction.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier for the transaction."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns the transaction."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title or description of the transaction."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of the transaction."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The date of the transaction."
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the transaction."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["income", "expense"],
+          "description": "The type of the transaction."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time the transaction was created."
+        }
+      },
+      "required": ["id", "userId", "title", "amount", "date", "category", "type", "createdAt"]
+    },
+    "Achievement": {
+      "title": "Achievement",
+      "description": "Represents an achievement unlocked by the user.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier for the achievement."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who unlocked the achievement."
+        },
+        "unlockedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time the achievement was unlocked."
+        }
+      },
+      "required": ["id", "userId", "unlockedAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles."
+    },
+    "users/{userId}/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Stores transactions for a specific user."
+    },
+    "users/{userId}/achievements/{achievementId}": {
+      "schema": { "$ref": "#/entities/Achievement" },
+      "description": "Stores unlocked achievements for a specific user."
+    }
+  }
+}

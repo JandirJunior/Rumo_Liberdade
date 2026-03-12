@@ -6,17 +6,19 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { User, Bell, Search, X } from 'lucide-react';
+import { User, Bell, Search, X, Home, Pickaxe, ScrollText, MessageSquare, BarChart3 } from 'lucide-react';
 import Image from 'next/image';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { ARCHETYPE_IMAGES } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { usePathname } from 'next/navigation';
 
 export function Header() {
   // Acessa o tema e o estado do jogo para personalizar as cores e o avatar
   const { theme, gameState } = useTheme();
+  const pathname = usePathname();
   const colors = THEMES[theme] || THEMES.default;
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -27,9 +29,17 @@ export function Header() {
     setTimeout(() => setShowToast(false), 3000);
   };
 
+  const navItems = [
+    { icon: Home, label: 'Reino', href: '/dashboard' },
+    { icon: BarChart3, label: 'Atributos', href: '/attributes' },
+    { icon: Pickaxe, label: 'Caverna', href: '/investments' },
+    { icon: ScrollText, label: 'Quests', href: '/transactions' },
+    { icon: MessageSquare, label: 'Mentor', href: '/chat' },
+  ];
+
   return (
-    <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 px-4 py-3">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 px-4 sm:px-6 lg:px-8 py-3">
+      <div className="w-full flex items-center justify-between">
         {/* Lado Esquerdo: Logotipo e Nome do App */}
         <div className="flex items-center gap-2">
           <Link href="/dashboard" className="flex items-center gap-2">
@@ -39,6 +49,26 @@ export function Header() {
             <span className="font-bold text-gray-900 hidden sm:block">Rumo à Liberdade</span>
           </Link>
         </div>
+
+        {/* Centro: Navegação Desktop */}
+        <nav className="hidden md:flex items-center gap-6">
+          {navItems.map((item, index) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={index}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-2 transition-colors font-bold text-sm",
+                  isActive ? colors.accent : "text-gray-500 hover:text-gray-900"
+                )}
+              >
+                <item.icon className={cn("w-4 h-4", isActive && "fill-current opacity-20")} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
 
         {/* Lado Direito: Ações e Perfil */}
         <div className="flex items-center gap-3">
@@ -68,11 +98,12 @@ export function Header() {
               {/* Avatar Dinâmico baseado no Arquétipo */}
               <div className={cn("w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2 transition-colors relative", colors.border)}>
                 <Image 
-                  src={ARCHETYPE_IMAGES[gameState.archetype] || '/Festin.png'} 
+                  src={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} 
                   alt="Avatar"
                   fill
                   className="object-cover"
                   referrerPolicy="no-referrer"
+                  unoptimized
                 />
               </div>
               {/* Informações resumidas do Herói */}

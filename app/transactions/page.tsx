@@ -1,3 +1,8 @@
+/**
+ * Página de Transações (Quests): Exibe o histórico de receitas, despesas e investimentos.
+ * Permite filtrar por tipo e adicionar novas transações.
+ * No modo Reino (multiplayer), exibe o nome do usuário que realizou a transação.
+ */
 'use client';
 
 import { useState } from 'react';
@@ -6,44 +11,49 @@ import { Search, Filter, ArrowUpRight, ArrowDownLeft, Wallet, Plus } from 'lucid
 import { BottomNav } from '@/components/BottomNav';
 import { Header } from '@/components/Header';
 import { Modal } from '@/components/Modal';
-import { MOCK_TRANSACTIONS } from '@/lib/data';
 import { formatCurrency, cn } from '@/lib/utils';
 import { Transaction } from '@/lib/types';
 
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
+import { useReino } from '@/hooks/useReino';
 
 export default function Transactions() {
-  const { theme } = useTheme();
+  const { theme, user, gameMode } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
+  const { transactions, addTransaction } = useReino();
   const [filter, setFilter] = useState<'all' | 'income' | 'expense' | 'investment'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
 
   // Estado para o formulário de nova transação
   const [newTransaction, setNewTransaction] = useState({
     description: '',
     amount: '',
     type: 'expense' as 'income' | 'expense' | 'investment',
-    category: 'Geral'
+    category: 'Fixed' as 'Fixed' | 'Lifestyle' | 'Investment' | 'Emergency'
   });
 
-  const handleAddTransaction = () => {
-    if (!newTransaction.description || !newTransaction.amount) return;
+  const handleAddTransaction = async () => {
+    if (!newTransaction.description || !newTransaction.amount || !user) return;
 
-    const transaction: Transaction = {
-      id: Math.random().toString(36).substr(2, 9),
+    const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+    const transactionData = {
       description: newTransaction.description,
       amount: parseFloat(newTransaction.amount),
       type: newTransaction.type,
       category: newTransaction.category,
-      date: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
+      date: dateStr,
     };
 
-    setTransactions([transaction, ...transactions]);
-    setIsModalOpen(false);
-    setNewTransaction({ description: '', amount: '', type: 'expense', category: 'Geral' });
+    try {
+      await addTransaction(transactionData);
+      setIsModalOpen(false);
+      setNewTransaction({ description: '', amount: '', type: 'expense', category: 'Fixed' });
+    } catch (error) {
+      console.error("Error adding transaction: ", error);
+    }
   };
 
   const filteredTransactions = transactions.filter(t => {
@@ -56,7 +66,7 @@ export default function Transactions() {
     <div className={cn("min-h-screen transition-colors duration-500", colors.bg)}>
       <Header />
       
-      <main className="p-6 space-y-8 pb-32 max-w-7xl mx-auto">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 pb-32">
         <header className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
@@ -106,45 +116,52 @@ export default function Transactions() {
       {/* Transaction List */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Março 2024</h4>
+          <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Transações</h4>
           <Filter className="w-4 h-4 text-gray-400" />
         </div>
         
         <div className="space-y-4">
           {filteredTransactions.length > 0 ? (
-            filteredTransactions.map((t, i) => (
-              <motion.div
-                key={t.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="flex items-center gap-4 p-4 bg-white border border-gray-50 rounded-2xl shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className={cn(
-                  "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0",
-                  t.type === 'income' ? "bg-emerald-50 text-emerald-600" : 
-                  t.type === 'expense' ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
-                )}>
-                  {t.type === 'income' ? <ArrowUpRight className="w-6 h-6" /> : 
-                   t.type === 'expense' ? <ArrowDownLeft className="w-6 h-6" /> : <Wallet className="w-6 h-6" />}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-900 truncate">{t.description}</p>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t.category} • {t.date}</p>
-                </div>
-                
-                <div className="text-right">
-                  <p className={cn(
-                    "text-sm font-bold",
-                    t.type === 'income' ? "text-emerald-600" : "text-gray-900"
+            filteredTransactions.map((t, i) => {
+              const userName = (t as any).userName || 'Herói Desconhecido';
+              
+              return (
+                <motion.div
+                  key={t.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="flex items-center gap-4 p-4 bg-white border border-gray-50 rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className={cn(
+                    "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0",
+                    t.type === 'income' ? "bg-emerald-50 text-emerald-600" : 
+                    t.type === 'expense' ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
                   )}>
-                    {t.type === 'income' ? '+' : '-'} {formatCurrency(t.amount)}
-                  </p>
-                  <p className="text-[10px] text-gray-400 font-medium">Confirmado</p>
-                </div>
-              </motion.div>
-            ))
+                    {t.type === 'income' ? <ArrowUpRight className="w-6 h-6" /> : 
+                     t.type === 'expense' ? <ArrowDownLeft className="w-6 h-6" /> : <Wallet className="w-6 h-6" />}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-900 truncate">{t.description}</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                      {t.category} • {t.date}
+                      {gameMode === 'reino' && ` • Por: ${userName}`}
+                    </p>
+                  </div>
+                  
+                  <div className="text-right">
+                    <p className={cn(
+                      "text-sm font-bold",
+                      t.type === 'income' ? "text-emerald-600" : "text-gray-900"
+                    )}>
+                      {t.type === 'income' ? '+' : '-'} {formatCurrency(t.amount)}
+                    </p>
+                    <p className="text-[10px] text-gray-400 font-medium">Confirmado</p>
+                  </div>
+                </motion.div>
+              );
+            })
           ) : (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">

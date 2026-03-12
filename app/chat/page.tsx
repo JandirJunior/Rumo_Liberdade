@@ -66,19 +66,31 @@ export default function AIChat() {
       const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY! });
       
       // Definição do contexto (System Instruction) para a IA
+      const getPersonality = (archetype: string) => {
+        switch (archetype) {
+          case 'Mago': return 'Você é extremamente analítico, focado em dados, gráficos e projeções de longo prazo. Fala sobre "magia dos juros compostos" e "feitiços de dividendos".';
+          case 'Ladrão': return 'Você é focado em proteção de patrimônio, oportunidades ocultas e acumulação de tesouros. Fala sobre "esconderijos seguros" (CDBs/Tesouro) e "evitar armadilhas do mercado".';
+          case 'Paladino': return 'Você é focado em fundações sólidas, tijolos e aluguéis. Fala sobre "construir fortalezas" (FIIs) e "escudos contra a inflação".';
+          case 'Dwarf Minerador': return 'Você é focado em garimpar valor, criptomoedas e tecnologia. Fala sobre "minerar ouro digital", "blocos inquebráveis" e "volatilidade das cavernas".';
+          case 'Elfo': return 'Você é focado em visão global, exterior e diversificação além-mar. Fala sobre "terras distantes", "moedas élficas fortes" (Dólar) e "agilidade no mercado internacional".';
+          case 'Hobbit': return 'Você é focado em conforto, segurança e investimentos alternativos. Fala sobre "despensa cheia", "tranquilidade no Condado" e "colheitas fartas".';
+          default: return 'Você é um guia sábio e equilibrado.';
+        }
+      };
+
       const context = `
         Você é o mentor financeiro ${mentorName} no universo F.A.C.E.R.O.
         Sua personalidade é baseada no arquétipo: ${gameState.archetype}.
+        ${getPersonality(gameState.archetype)}
         
         Dados do usuário:
         - Arquétipo: ${gameState.archetype}
         - Nível: ${gameState.level}
         - Atributos F.A.C.E.R.O.: F:${gameState.stats.F}, A:${gameState.stats.A}, C:${gameState.stats.C}, E:${gameState.stats.E}, R:${gameState.stats.R}, O:${gameState.stats.O}
-        - Renda Mensal Total: R$ 14.300,00
-        - Próxima Quest: R$ 250.000,00 investidos (Próxima Masmorra).
+        - XP Total: ${gameState.xp}
         
         Responda como o mentor ${mentorName}, usando termos de RPG quando apropriado (mana, quests, buffs, masmorras), de forma motivadora, técnica e direta em português do Brasil. 
-        Mantenha-se fiel à sua classe (${gameState.archetype}).
+        Mantenha-se fiel à sua classe (${gameState.archetype}) e à sua personalidade específica.
         Use emojis e formatação clara.
       `;
 
@@ -109,17 +121,18 @@ export default function AIChat() {
       {/* Área de Chat com rolagem */}
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-6 space-y-6 pb-48"
+        className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-48 w-full"
       >
         {/* Identificação do Mentor no topo do chat */}
         <div className="flex flex-col items-center justify-center py-4 space-y-2">
           <div className={cn("w-16 h-16 rounded-full border-2 overflow-hidden relative", colors.border)}>
             <Image 
-              src={ARCHETYPE_IMAGES[gameState.archetype] || '/Festin.png'} 
+              src={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} 
               alt="Mentor Avatar"
               fill
               className="object-cover"
               referrerPolicy="no-referrer"
+              unoptimized
             />
           </div>
           <h2 className="text-xl font-display font-bold text-gray-900">{mentorName}</h2>
@@ -145,11 +158,12 @@ export default function AIChat() {
                     <User className="w-5 h-5 text-gray-600" />
                   ) : (
                     <Image 
-                      src={ARCHETYPE_IMAGES[gameState.archetype] || '/Festin.png'} 
+                      src={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} 
                       alt="Mentor"
                       fill
                       className="object-cover"
                       referrerPolicy="no-referrer"
+                      unoptimized
                     />
                   )}
                 </div>
@@ -183,7 +197,7 @@ export default function AIChat() {
       </div>
 
       {/* Área de Entrada de Texto fixa na parte inferior */}
-      <div className="fixed bottom-24 left-0 right-0 w-full md:max-w-2xl lg:max-w-4xl mx-auto p-4 bg-transparent">
+      <div className="fixed bottom-24 md:bottom-4 left-0 right-0 w-full px-4 sm:px-6 lg:px-8 bg-transparent z-40">
         <div className="bg-white border border-gray-200 rounded-2xl p-2 shadow-xl flex items-center gap-2">
           <input
             type="text"

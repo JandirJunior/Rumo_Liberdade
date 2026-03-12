@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Sparkles, Shield, Swords, Compass, Wand2, ChevronRight, Trophy } from 'lucide-react';
 import { FaceroStats, Archetype } from '@/lib/types';
+import { ARCHETYPE_IMAGES } from '@/lib/data';
 
 // Banco de questões do quiz com pontuação para cada atributo F.A.C.E.R.O.
 const QUESTIONS = [
@@ -168,11 +169,12 @@ export default function GenesisQuiz() {
             <div className="relative inline-block">
               <div className="w-32 h-32 bg-emerald-500 rounded-3xl rotate-12 flex items-center justify-center shadow-2xl shadow-emerald-500/20 overflow-hidden relative">
                 <Image 
-                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${archetype}&backgroundColor=b6e3f4`} 
+                  src={ARCHETYPE_IMAGES[archetype] || ARCHETYPE_IMAGES['Iniciante']} 
                   alt="Avatar"
                   fill
                   className="object-cover -rotate-12"
                   referrerPolicy="no-referrer"
+                  unoptimized
                 />
               </div>
               <motion.div 
