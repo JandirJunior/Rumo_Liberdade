@@ -11,12 +11,13 @@ import Image from 'next/image';
 import { TrendingUp, TrendingDown, Target, ChevronRight, Bell, Trophy, Zap, Shield, Wand2, Pickaxe, Compass, VenetianMask, Home, Sparkles, MessageSquare, User } from 'lucide-react';
 import { BottomNav } from '@/components/BottomNav';
 import { Header } from '@/components/Header';
-import { MOCK_GOALS, MOCK_PROFILE, MOCK_TRANSACTIONS, MOCK_GAME_STATE, MOCK_ASSETS, MOCK_MASMORRAS } from '@/lib/data';
+import { MOCK_GOALS, MOCK_PROFILE, MOCK_TRANSACTIONS, MOCK_GAME_STATE, MOCK_ASSETS } from '@/lib/data';
 import { formatCurrency, cn } from '@/lib/utils';
 import { ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis } from 'recharts';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { useReino } from '@/hooks/useReino';
+import { getNextCharacter, STATIC_CHARACTERS } from '@/lib/characters';
 
 import { auth } from '@/firebase';
 
@@ -51,8 +52,8 @@ export default function Dashboard() {
     .reduce((acc, curr) => acc + curr.amount, 0);
 
   // Lógica da Próxima Masmorra (a cada R$ 10.000)
-  const nextMasmorra = MOCK_MASMORRAS.find(m => m.target > totalPower) || MOCK_MASMORRAS[MOCK_MASMORRAS.length - 1];
-  const currentMasmorraGoal = nextMasmorra.target;
+  const nextCharacter = getNextCharacter(totalPower) || STATIC_CHARACTERS[STATIC_CHARACTERS.length - 1];
+  const currentMasmorraGoal = nextCharacter.requiredInvestment;
   const currentMasmorraStart = currentMasmorraGoal - 10000;
   // Garante que o progresso não seja negativo
   const masmorraProgress = Math.max(0, ((totalPower - currentMasmorraStart) / 10000) * 100);
@@ -217,7 +218,7 @@ export default function Dashboard() {
                 {/* Imagem de Fundo do Vilão com opacidade reduzida e blend-mode para ficar clara/pastel */}
                 <div className="absolute inset-0 opacity-60">
                   <Image 
-                    src={nextMasmorra.imageUrl} 
+                    src={nextCharacter.image} 
                     alt="Vilão da Masmorra" 
                     fill
                     className="object-cover"
@@ -232,7 +233,7 @@ export default function Dashboard() {
                     <Target className="w-6 h-6 text-[#8b7355]" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#5d4037]">Derrotar o {nextMasmorra.monster}</p>
+                    <p className="text-sm font-bold text-[#5d4037]">Derrotar o {nextCharacter.name}</p>
                     <p className="text-[10px] text-[#8b7355] font-bold uppercase tracking-widest">Objetivo: R$ {currentMasmorraGoal.toLocaleString('pt-BR')}</p>
                   </div>
                 </div>

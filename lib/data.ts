@@ -4,7 +4,7 @@
  * Também define as imagens dos monstros e dos arquétipos.
  */
 import { Transaction, Goal, Asset, FinancialProfile, UserGameState, MonthlyBudget } from './types';
-import { IMAGES, ImageKey } from '@/assets/images';
+import { IMAGES, ImageKey } from '@/src/assets/images';
 
 // Lista de metas financeiras progressivas (Quests de Investimento)
 export const MOCK_GOALS: Goal[] = [
@@ -99,39 +99,3 @@ export const ARCHETYPE_IMAGES: Record<string, ImageKey> = {
   'Hobbit': 'ORBIT',
   'Iniciante': 'FESTIN'
 };
-
-export interface Masmorra {
-  id: number;
-  title: string;
-  target: number;
-  monster: string;
-  imageUrl: string;
-}
-
-const MONSTERS = ['Goblin', 'Orc', 'Esqueleto', 'Lobo Gigante', 'Aranha', 'Troll', 'Golem', 'Vampiro', 'Dragão', 'Hidra', 'Lich', 'Titã'];
-const MONSTER_IMAGES = [
-  '/assets/Goblin.png',
-  '/assets/Orc.png',
-  '/assets/Esqueleto.png',
-  '/assets/Lobo Gigante.png',
-  '/assets/Aranha.png',
-  '/assets/Troll.png',
-  '/assets/Golem.png',
-  '/assets/Vampiro.png',
-  '/assets/Dragão.png',
-  '/assets/Hidra.png',
-  '/assets/Lich.png',
-  '/assets/Titã.png',
-];
-
-export const MOCK_MASMORRAS: Masmorra[] = Array.from({ length: 100 }, (_, i) => {
-  const target = (i + 1) * 10000;
-  const monsterIndex = i % MONSTERS.length;
-  return {
-    id: i + 1,
-    title: `Masmorra ${target / 1000}k`,
-    target,
-    monster: `${MONSTERS[monsterIndex]} da Inflação`,
-    imageUrl: MONSTER_IMAGES[monsterIndex]
-  };
-});

@@ -63,6 +63,7 @@ export interface AppUser {
   role: Role;
   email: string;
   name?: string;
+  avatarUrl?: string;
   createdAt: string;
   status: 'active' | 'inactive';
 }
@@ -83,6 +84,16 @@ export interface Log {
   action: string;
   metadata?: any;
   timestamp: string;
+}
+
+export interface Character {
+  id: number;
+  name: string;
+  type: 'villain' | 'boss';
+  requiredInvestment: number;
+  image: string;
+  difficulty: 'easy' | 'medium' | 'hard' | 'epic' | 'legendary';
+  reward: string;
 }
 
 // --- FIM SAAS INTERFACES ---

@@ -12,13 +12,14 @@ import Image from 'next/image';
 import { Avatar } from '@/components/Avatar';
 import { BottomNav } from '@/components/BottomNav';
 import { Archetype } from '@/lib/types';
-import { ARCHETYPE_IMAGES, MOCK_MASMORRAS } from '@/lib/data';
+import { ARCHETYPE_IMAGES } from '@/lib/data';
+import { STATIC_CHARACTERS } from '@/lib/characters';
 import { Shield, Wand2, Pickaxe, Compass, VenetianMask, Home, Zap, Trophy, User, Sparkles, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/Header';
 import { useReino } from '@/hooks/useReino';
 
-import { ImageKey } from '@/assets/images';
+import { ImageKey } from '@/src/assets/images';
 
 // Definição das classes disponíveis com seus nomes, descrições, ícones e imagens ilustrativas.
 const ARCHETYPES: { type: Archetype; name: string; desc: string; icon: any; color: string; illustration: ImageKey }[] = [
@@ -231,11 +232,11 @@ export default function Tavern() {
             <Trophy className={cn("w-5 h-5", colors.text)} />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-            {MOCK_MASMORRAS.slice(0, 6).map((masmorra) => {
-              const unlocked = totalPower >= masmorra.target;
+            {STATIC_CHARACTERS.slice(0, 6).map((character) => {
+              const unlocked = totalPower >= character.requiredInvestment;
               return (
                 <div 
-                  key={masmorra.id}
+                  key={character.id}
                   className={cn(
                     "flex flex-col items-center justify-center p-4 rounded-3xl border text-center transition-all relative overflow-hidden",
                     unlocked 
@@ -244,12 +245,12 @@ export default function Tavern() {
                   )}
                 >
                   <div className="absolute inset-0 opacity-10">
-                    <Image src={masmorra.imageUrl} alt={masmorra.monster} fill className="object-cover" unoptimized />
+                    <Image src={character.image} alt={character.name} fill className="object-cover" unoptimized />
                   </div>
                   <div className="relative z-10 flex flex-col items-center">
                     <div className="text-3xl mb-2">🏆</div>
-                    <p className="text-[10px] font-bold text-gray-900 uppercase tracking-widest">{masmorra.target / 1000}k</p>
-                    <p className="text-[8px] text-gray-500 truncate w-full">{masmorra.monster}</p>
+                    <p className="text-[10px] font-bold text-gray-900 uppercase tracking-widest">{character.requiredInvestment / 1000}k</p>
+                    <p className="text-[8px] text-gray-500 truncate w-full">{character.name}</p>
                     {!unlocked && <Lock className="w-3 h-3 text-gray-400 mt-1" />}
                   </div>
                 </div>

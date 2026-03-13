@@ -7,13 +7,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { User, Bell, Search, X, Home, Pickaxe, ScrollText, MessageSquare, BarChart3 } from 'lucide-react';
-import { Avatar } from '@/components/Avatar';
+import { UserAvatar } from '@/src/components/UserAvatar';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
-import { ARCHETYPE_IMAGES } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePathname } from 'next/navigation';
+import { useUser } from '@/hooks/useUser';
 
 export function Header() {
   // Acessa o tema e o estado do jogo para personalizar as cores e o avatar
@@ -22,6 +22,7 @@ export function Header() {
   const colors = THEMES[theme] || THEMES.default;
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const { userData } = useUser();
 
   const triggerToast = (message: string) => {
     setToastMessage(message);
@@ -95,9 +96,9 @@ export function Header() {
               whileTap={{ scale: 0.95 }}
               className="flex items-center gap-2 pl-2 border-l border-gray-100 ml-2"
             >
-              {/* Avatar Dinâmico baseado no Arquétipo */}
+              {/* Avatar do Usuário */}
               <div className={cn("w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2 transition-colors relative", colors.border)}>
-                <Avatar character={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} size={40} />
+                <UserAvatar src={userData?.avatarUrl} size={40} />
               </div>
               {/* Informações resumidas do Herói */}
               <div className="hidden md:block text-left">

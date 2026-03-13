@@ -1,4 +1,4 @@
-import { IMAGES } from "@/assets/images";
+import { IMAGES } from "@/src/assets/images";
 
 type AvatarProps = {
   character: keyof typeof IMAGES;
