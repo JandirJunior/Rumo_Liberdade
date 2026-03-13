@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { Avatar } from '@/components/Avatar';
 import { Sparkles, Shield, Swords, Compass, Wand2, ChevronRight, Trophy } from 'lucide-react';
 import { FaceroStats, Archetype } from '@/lib/types';
 import { ARCHETYPE_IMAGES } from '@/lib/data';
@@ -168,14 +168,9 @@ export default function GenesisQuiz() {
             {/* Avatar do Arquétipo Conquistado */}
             <div className="relative inline-block">
               <div className="w-32 h-32 bg-emerald-500 rounded-3xl rotate-12 flex items-center justify-center shadow-2xl shadow-emerald-500/20 overflow-hidden relative">
-                <Image 
-                  src={ARCHETYPE_IMAGES[archetype] || ARCHETYPE_IMAGES['Iniciante']} 
-                  alt="Avatar"
-                  fill
-                  className="object-cover -rotate-12"
-                  referrerPolicy="no-referrer"
-                  unoptimized
-                />
+                <div className="-rotate-12 w-full h-full flex items-center justify-center">
+                  <Avatar character={ARCHETYPE_IMAGES[archetype] || ARCHETYPE_IMAGES['Iniciante']} size={128} />
+                </div>
               </div>
               <motion.div 
                 animate={{ scale: [1, 1.2, 1] }}

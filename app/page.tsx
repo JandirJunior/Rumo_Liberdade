@@ -10,8 +10,10 @@ import { motion } from 'motion/react';
 import { Lock, User, Castle, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { auth } from '@/firebase';
-import { signInWithRedirect, GoogleAuthProvider } from 'firebase/auth'; // Corrigido
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { useTheme } from '@/lib/ThemeContext';
+import { userService } from '@/src/services/userService';
+import { organizationService } from '@/src/services/organizationService';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,7 +31,31 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithRedirect(auth, provider); // Corrigido para signInWithRedirect
+      const result = await signInWithPopup(auth, provider);
+      const loggedUser = result.user;
+
+      // SaaS Onboarding Flow
+      const existingUser = await userService.getUser(loggedUser.uid);
+      if (!existingUser) {
+        // Create a new organization for the user
+        const orgId = `org_${loggedUser.uid}`;
+        await organizationService.createOrganization(
+          orgId,
+          `Organização de ${loggedUser.displayName || 'Usuário'}`,
+          loggedUser.uid
+        );
+
+        // Create the user linked to the new organization as admin
+        await userService.createUser(
+          loggedUser.uid,
+          orgId,
+          loggedUser.email || '',
+          'admin',
+          loggedUser.displayName || ''
+        );
+      }
+
+      router.push('/dashboard');
     } catch (err: any) {
       console.error(err);
       setError('Falha ao autenticar. Tente novamente.');
@@ -48,7 +74,6 @@ export default function LoginPage() {
           src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=1920"
           alt="RPG Adventure Background"
           fill
-          priority
           className="object-cover opacity-30"
           referrerPolicy="no-referrer"
         />

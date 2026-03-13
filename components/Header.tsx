@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { User, Bell, Search, X, Home, Pickaxe, ScrollText, MessageSquare, BarChart3 } from 'lucide-react';
-import Image from 'next/image';
+import { Avatar } from '@/components/Avatar';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { ARCHETYPE_IMAGES } from '@/lib/data';
@@ -97,14 +97,7 @@ export function Header() {
             >
               {/* Avatar Dinâmico baseado no Arquétipo */}
               <div className={cn("w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2 transition-colors relative", colors.border)}>
-                <Image 
-                  src={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} 
-                  alt="Avatar"
-                  fill
-                  className="object-cover"
-                  referrerPolicy="no-referrer"
-                  unoptimized
-                />
+                <Avatar character={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} size={40} />
               </div>
               {/* Informações resumidas do Herói */}
               <div className="hidden md:block text-left">

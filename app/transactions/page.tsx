@@ -40,7 +40,6 @@ export default function Transactions() {
     const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
     const transactionData = {
-      userId: user.uid, // <-- CORREÇÃO APLICADA AQUI
       description: newTransaction.description,
       amount: parseFloat(newTransaction.amount),
       type: newTransaction.type,

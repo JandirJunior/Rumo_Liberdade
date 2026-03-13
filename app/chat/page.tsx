@@ -8,7 +8,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, Bot, User, Sparkles, ChevronLeft } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
-import Image from 'next/image';
+import { Avatar } from '@/components/Avatar';
 import { BottomNav } from '@/components/BottomNav';
 import { Header } from '@/components/Header';
 import { MOCK_PROFILE, MOCK_ASSETS, MOCK_TRANSACTIONS, MOCK_GAME_STATE, ARCHETYPE_IMAGES } from '@/lib/data';
@@ -28,7 +28,7 @@ export default function AIChat() {
   const MENTOR_NAMES: Record<string, string> = {
     'Paladino': 'Festim',
     'Mago': 'Arcano',
-    'Dwarf': 'Cache',
+    'Dwarf Minerador': 'Cache',
     'Elfo': 'Êxodo',
     'Ladrão': 'Reaver',
     'Hobbit': 'Órbit',
@@ -71,7 +71,7 @@ export default function AIChat() {
           case 'Mago': return 'Você é extremamente analítico, focado em dados, gráficos e projeções de longo prazo. Fala sobre "magia dos juros compostos" e "feitiços de dividendos".';
           case 'Ladrão': return 'Você é focado em proteção de patrimônio, oportunidades ocultas e acumulação de tesouros. Fala sobre "esconderijos seguros" (CDBs/Tesouro) e "evitar armadilhas do mercado".';
           case 'Paladino': return 'Você é focado em fundações sólidas, tijolos e aluguéis. Fala sobre "construir fortalezas" (FIIs) e "escudos contra a inflação".';
-          case 'Dwarf': return 'Você é focado em garimpar valor, criptomoedas e tecnologia. Fala sobre "minerar ouro digital", "blocos inquebráveis" e "volatilidade das cavernas".';
+          case 'Dwarf Minerador': return 'Você é focado em garimpar valor, criptomoedas e tecnologia. Fala sobre "minerar ouro digital", "blocos inquebráveis" e "volatilidade das cavernas".';
           case 'Elfo': return 'Você é focado em visão global, exterior e diversificação além-mar. Fala sobre "terras distantes", "moedas élficas fortes" (Dólar) e "agilidade no mercado internacional".';
           case 'Hobbit': return 'Você é focado em conforto, segurança e investimentos alternativos. Fala sobre "despensa cheia", "tranquilidade no Condado" e "colheitas fartas".';
           default: return 'Você é um guia sábio e equilibrado.';
@@ -125,15 +125,8 @@ export default function AIChat() {
       >
         {/* Identificação do Mentor no topo do chat */}
         <div className="flex flex-col items-center justify-center py-4 space-y-2">
-          <div className={cn("w-16 h-16 rounded-full border-2 overflow-hidden relative", colors.border)}>
-            <Image 
-              src={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} 
-              alt="Mentor Avatar"
-              fill
-              className="object-cover"
-              referrerPolicy="no-referrer"
-              unoptimized
-            />
+          <div className={cn("w-16 h-16 rounded-full border-2 overflow-hidden relative flex items-center justify-center", colors.border)}>
+            <Avatar character={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} size={64} />
           </div>
           <h2 className="text-xl font-display font-bold text-gray-900">{mentorName}</h2>
           <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">{gameState.archetype}</p>
@@ -157,14 +150,7 @@ export default function AIChat() {
                   {msg.role === 'user' ? (
                     <User className="w-5 h-5 text-gray-600" />
                   ) : (
-                    <Image 
-                      src={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} 
-                      alt="Mentor"
-                      fill
-                      className="object-cover"
-                      referrerPolicy="no-referrer"
-                      unoptimized
-                    />
+                    <Avatar character={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} size={32} />
                   )}
                 </div>
                 {/* Balão de Mensagem */}

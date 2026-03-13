@@ -12,12 +12,14 @@ export type Category = 'Fixed' | 'Lifestyle' | 'Investment' | 'Emergency';
 // Interface para uma transação financeira individual
 export interface Transaction {
   id: string;
-  userId: string; // Adicionado para rastrear o dono da transação
   description: string;
   amount: number;
   type: TransactionType;
   category: Category;
   date: string;
+  userId?: string;
+  userName?: string;
+  organizationId: string; // SaaS: Identificador do tenant
 }
 
 // Interface para metas financeiras (Objetivos)
@@ -26,18 +28,64 @@ export interface Goal {
   title: string;
   target: number;
   completed: boolean;
+  organizationId?: string;
 }
 
 // Interface para ativos de investimento
 export interface Asset {
   id: string;
-  userId: string; // Adicionado para rastrear o dono do ativo
   type: string;
   segment: string;
   value: number;
   targetPercent: number;
   faceroType: 'F' | 'A' | 'C' | 'E' | 'R' | 'O'; // Mapeamento para o atributo F.A.C.E.R.O.
+  userId?: string;
+  userName?: string;
+  organizationId: string; // SaaS: Identificador do tenant
 }
+
+// --- SAAS INTERFACES ---
+
+export type Role = 'superadmin' | 'admin' | 'manager' | 'user' | 'viewer';
+
+export interface Organization {
+  orgId: string;
+  name: string;
+  plan: 'basic' | 'pro' | 'business' | 'enterprise';
+  maxUsers: number;
+  createdAt: string;
+  status: 'active' | 'inactive' | 'suspended';
+}
+
+export interface AppUser {
+  userId: string;
+  organizationId: string;
+  role: Role;
+  email: string;
+  name?: string;
+  createdAt: string;
+  status: 'active' | 'inactive';
+}
+
+export interface Subscription {
+  subscriptionId: string;
+  organizationId: string;
+  plan: 'basic' | 'pro' | 'business' | 'enterprise';
+  billingCycle: 'monthly' | 'yearly';
+  status: 'active' | 'trial' | 'past_due' | 'cancelled';
+  nextBillingDate: string;
+}
+
+export interface Log {
+  logId: string;
+  organizationId: string;
+  userId: string;
+  action: string;
+  metadata?: any;
+  timestamp: string;
+}
+
+// --- FIM SAAS INTERFACES ---
 
 // Interface para os atributos do sistema F.A.C.E.R.O.
 export interface FaceroStats {
@@ -50,7 +98,7 @@ export interface FaceroStats {
 }
 
 // Arquétipos (Classes de Herói) disponíveis
-export type Archetype = 'Paladino' | 'Mago' | 'Dwarf' | 'Elfo' | 'Ladrão' | 'Hobbit' | 'Iniciante';
+export type Archetype = 'Paladino' | 'Mago' | 'Dwarf Minerador' | 'Elfo' | 'Ladrão' | 'Hobbit' | 'Iniciante';
 
 // Interface para o estado global do jogo do usuário
 export interface UserGameState {

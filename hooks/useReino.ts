@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { db, auth } from '@/firebase';
-import { collection, onSnapshot, query, orderBy, setDoc, doc, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, setDoc, doc, where, getDoc } from 'firebase/firestore';
 import { Asset, Transaction } from '@/lib/types';
 import { MOCK_ASSETS, MOCK_TRANSACTIONS } from '@/lib/data';
 import { useTheme } from '@/lib/ThemeContext';
@@ -14,14 +14,31 @@ export function useReino() {
   const [assets, setAssets] = useState<Asset[]>(MOCK_ASSETS);
   const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
   const [loading, setLoading] = useState(true);
+  const [orgId, setOrgId] = useState<string | null>(null);
+
+  // Fetch organizationId for the current user
+  useEffect(() => {
+    const fetchOrgId = async () => {
+      if (!auth.currentUser) return;
+      try {
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        if (userDoc.exists()) {
+          setOrgId(userDoc.data().organizationId);
+        }
+      } catch (error) {
+        console.error('Error fetching user organization:', error);
+      }
+    };
+    fetchOrgId();
+  }, [auth.currentUser]);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !orgId) return;
 
     const assetsRef = collection(db, 'reino_assets');
     const assetsQuery = gameMode === 'heroi' 
-      ? query(assetsRef, where('userId', '==', auth.currentUser.uid))
-      : assetsRef;
+      ? query(assetsRef, where('organizationId', '==', orgId), where('userId', '==', auth.currentUser.uid))
+      : query(assetsRef, where('organizationId', '==', orgId));
 
     const unsubscribeAssets = onSnapshot(assetsQuery, (snapshot) => {
       if (!snapshot.empty) {
@@ -36,8 +53,8 @@ export function useReino() {
 
     const transactionsRef = collection(db, 'reino_transactions');
     const transactionsQuery = gameMode === 'heroi'
-      ? query(transactionsRef, where('userId', '==', auth.currentUser.uid), orderBy('createdAt', 'desc'))
-      : query(transactionsRef, orderBy('createdAt', 'desc'));
+      ? query(transactionsRef, where('organizationId', '==', orgId), where('userId', '==', auth.currentUser.uid), orderBy('createdAt', 'desc'))
+      : query(transactionsRef, where('organizationId', '==', orgId), orderBy('createdAt', 'desc'));
 
     const unsubscribeTransactions = onSnapshot(transactionsQuery, (snapshot) => {
       if (!snapshot.empty) {
@@ -56,28 +73,30 @@ export function useReino() {
       unsubscribeAssets();
       unsubscribeTransactions();
     };
-  }, [gameMode]);
+  }, [gameMode, orgId]);
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
-    if (!auth.currentUser) return;
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'organizationId'>) => {
+    if (!auth.currentUser || !orgId) return;
     const newId = doc(collection(db, 'reino_transactions')).id;
     const newTransaction = {
       ...transaction,
       id: newId,
       userId: auth.currentUser.uid,
       userName: auth.currentUser.displayName || auth.currentUser.email || 'Herói Desconhecido',
+      organizationId: orgId,
       createdAt: new Date().toISOString()
     };
     await setDoc(doc(db, 'reino_transactions', newId), newTransaction);
   };
 
-  const updateAsset = async (asset: Asset) => {
-    if (!auth.currentUser) return;
+  const updateAsset = async (asset: Omit<Asset, 'organizationId'>) => {
+    if (!auth.currentUser || !orgId) return;
     // Ensure we save userId when updating/creating an asset
     const assetWithUser = {
       ...asset,
       userId: auth.currentUser.uid,
       userName: auth.currentUser.displayName || auth.currentUser.email || 'Herói Desconhecido',
+      organizationId: orgId,
     };
     await setDoc(doc(db, 'reino_assets', asset.id), assetWithUser);
   };

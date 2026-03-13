@@ -9,6 +9,7 @@ import { motion } from 'motion/react';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES, ARCHETYPE_THEME_MAP } from '@/lib/themes';
 import Image from 'next/image';
+import { Avatar } from '@/components/Avatar';
 import { BottomNav } from '@/components/BottomNav';
 import { Archetype } from '@/lib/types';
 import { ARCHETYPE_IMAGES, MOCK_MASMORRAS } from '@/lib/data';
@@ -17,8 +18,10 @@ import { cn } from '@/lib/utils';
 import { Header } from '@/components/Header';
 import { useReino } from '@/hooks/useReino';
 
+import { ImageKey } from '@/assets/images';
+
 // Definição das classes disponíveis com seus nomes, descrições, ícones e imagens ilustrativas.
-const ARCHETYPES: { type: Archetype; name: string; desc: string; icon: any; color: string; illustration: string }[] = [
+const ARCHETYPES: { type: Archetype; name: string; desc: string; icon: any; color: string; illustration: ImageKey }[] = [
   { 
     type: 'Paladino', 
     name: 'FESTIM', 
@@ -36,12 +39,12 @@ const ARCHETYPES: { type: Archetype; name: string; desc: string; icon: any; colo
     illustration: ARCHETYPE_IMAGES['Mago']
   },
   { 
-    type: 'Dwarf', 
+    type: 'Dwarf Minerador', 
     name: 'CACHE', 
     desc: 'Foco em Cripto Ativos e Moedas Digitais.', 
     icon: Pickaxe,
     color: 'bg-emerald-600',
-    illustration: ARCHETYPE_IMAGES['Dwarf']
+    illustration: ARCHETYPE_IMAGES['Dwarf Minerador']
   },
   { 
     type: 'Elfo', 
@@ -152,16 +155,7 @@ export default function Tavern() {
           <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 blur-3xl"></div>
           <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-6 md:gap-8">
             <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md border-4 border-white/40 overflow-hidden relative shadow-2xl shrink-0">
-              <Image 
-                src={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} 
-                alt="Avatar"
-                fill
-                sizes="(max-width: 768px) 128px, 128px"
-                className="object-cover"
-                priority
-                referrerPolicy="no-referrer"
-                unoptimized
-              />
+              <Avatar character={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} size={128} />
             </div>
             <div className="flex-1">
               <h3 className="text-3xl md:text-4xl font-display font-bold">{gameState.archetype}</h3>
@@ -286,16 +280,8 @@ export default function Tavern() {
                 )}
               >
                 {/* Ilustração da Classe */}
-                <div className="h-32 w-full relative bg-gray-900">
-                  <Image 
-                    src={arch.illustration}
-                    alt={arch.name}
-                    fill
-                    sizes="(max-width: 768px) 33vw, 33vw"
-                    className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300"
-                    referrerPolicy="no-referrer"
-                    unoptimized
-                  />
+                <div className="h-32 w-full relative bg-gray-900 overflow-hidden flex items-center justify-center">
+                  <Avatar character={arch.illustration} size={256} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                   <div className="absolute bottom-3 left-3 flex flex-col gap-1">
                     <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-lg backdrop-blur-sm", arch.color)}>
@@ -327,7 +313,7 @@ export default function Tavern() {
         [RESPONSIVIDADE] Opções de Customização Interativas
         No desktop (md), os itens podem se alinhar em um grid ou manter a lista.
         Mantivemos como lista pois são poucos itens, mas com padding responsivo.
-      */}\
+      */}
       <section className="space-y-4">
         <h4 className="text-lg font-display font-bold text-gray-900">Customização</h4>
         <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
