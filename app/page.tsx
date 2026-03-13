@@ -10,7 +10,7 @@ import { motion } from 'motion/react';
 import { Lock, User, Castle, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { auth } from '@/firebase';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithRedirect, GoogleAuthProvider } from 'firebase/auth'; // Corrigido
 import { useTheme } from '@/lib/ThemeContext';
 
 export default function LoginPage() {
@@ -29,7 +29,7 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      await signInWithRedirect(auth, provider); // Corrigido para signInWithRedirect
     } catch (err: any) {
       console.error(err);
       setError('Falha ao autenticar. Tente novamente.');
@@ -48,6 +48,7 @@ export default function LoginPage() {
           src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=1920"
           alt="RPG Adventure Background"
           fill
+          priority
           className="object-cover opacity-30"
           referrerPolicy="no-referrer"
         />

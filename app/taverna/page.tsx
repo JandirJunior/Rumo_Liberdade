@@ -36,12 +36,12 @@ const ARCHETYPES: { type: Archetype; name: string; desc: string; icon: any; colo
     illustration: ARCHETYPE_IMAGES['Mago']
   },
   { 
-    type: 'Dwarf Minerador', 
+    type: 'Dwarf', 
     name: 'CACHE', 
     desc: 'Foco em Cripto Ativos e Moedas Digitais.', 
     icon: Pickaxe,
     color: 'bg-emerald-600',
-    illustration: ARCHETYPE_IMAGES['Dwarf Minerador']
+    illustration: ARCHETYPE_IMAGES['Dwarf']
   },
   { 
     type: 'Elfo', 
@@ -327,7 +327,7 @@ export default function Tavern() {
         [RESPONSIVIDADE] Opções de Customização Interativas
         No desktop (md), os itens podem se alinhar em um grid ou manter a lista.
         Mantivemos como lista pois são poucos itens, mas com padding responsivo.
-      */}
+      */}\
       <section className="space-y-4">
         <h4 className="text-lg font-display font-bold text-gray-900">Customização</h4>
         <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">

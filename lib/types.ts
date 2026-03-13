@@ -12,6 +12,7 @@ export type Category = 'Fixed' | 'Lifestyle' | 'Investment' | 'Emergency';
 // Interface para uma transação financeira individual
 export interface Transaction {
   id: string;
+  userId: string; // Adicionado para rastrear o dono da transação
   description: string;
   amount: number;
   type: TransactionType;
@@ -30,6 +31,7 @@ export interface Goal {
 // Interface para ativos de investimento
 export interface Asset {
   id: string;
+  userId: string; // Adicionado para rastrear o dono do ativo
   type: string;
   segment: string;
   value: number;
@@ -48,7 +50,7 @@ export interface FaceroStats {
 }
 
 // Arquétipos (Classes de Herói) disponíveis
-export type Archetype = 'Paladino' | 'Mago' | 'Dwarf Minerador' | 'Elfo' | 'Ladrão' | 'Hobbit' | 'Iniciante';
+export type Archetype = 'Paladino' | 'Mago' | 'Dwarf' | 'Elfo' | 'Ladrão' | 'Hobbit' | 'Iniciante';
 
 // Interface para o estado global do jogo do usuário
 export interface UserGameState {

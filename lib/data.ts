@@ -37,12 +37,12 @@ export const MOCK_PROFILE: FinancialProfile = {
 
 // Carteira de ativos (Investimentos Atuais) mapeados para o sistema F.A.C.E.R.O.
 export const MOCK_ASSETS: Asset[] = [
-  { id: '1', type: 'FIIs', segment: 'Tijolo', value: 45000, targetPercent: 0.45, faceroType: 'F' },
-  { id: '2', type: 'Ações', segment: 'Dividendos', value: 30000, targetPercent: 0.30, faceroType: 'A' },
-  { id: '3', type: 'Cripto', segment: 'BTC/ETH', value: 3000, targetPercent: 0.03, faceroType: 'C' },
-  { id: '4', type: 'ETFs', segment: 'Global', value: 5000, targetPercent: 0.05, faceroType: 'E' },
-  { id: '5', type: 'Renda Fixa', segment: 'CDI', value: 15000, targetPercent: 0.15, faceroType: 'R' },
-  { id: '6', type: 'Outros', segment: 'Geral', value: 2000, targetPercent: 0.02, faceroType: 'O' },
+  { id: '1', userId: 'mock_user_id', type: 'FIIs', segment: 'Tijolo', value: 45000, targetPercent: 0.45, faceroType: 'F' },
+  { id: '2', userId: 'mock_user_id', type: 'Ações', segment: 'Dividendos', value: 30000, targetPercent: 0.30, faceroType: 'A' },
+  { id: '3', userId: 'mock_user_id', type: 'Cripto', segment: 'BTC/ETH', value: 3000, targetPercent: 0.03, faceroType: 'C' },
+  { id: '4', userId: 'mock_user_id', type: 'ETFs', segment: 'Global', value: 5000, targetPercent: 0.05, faceroType: 'E' },
+  { id: '5', userId: 'mock_user_id', type: 'Renda Fixa', segment: 'CDI', value: 15000, targetPercent: 0.15, faceroType: 'R' },
+  { id: '6', userId: 'mock_user_id', type: 'Outros', segment: 'Geral', value: 2000, targetPercent: 0.02, faceroType: 'O' },
 ];
 
 // Estado inicial do jogo (Progresso do Herói)
@@ -80,19 +80,19 @@ export const MOCK_BUDGET: MonthlyBudget = {
 
 // Histórico de transações recentes
 export const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: '1', description: 'Salário Mensal', amount: 6000, type: 'income', category: 'Fixed', date: '2024-03-01' },
-  { id: '2', description: 'MEI Serviços', amount: 6300, type: 'income', category: 'Fixed', date: '2024-03-05' },
-  { id: '3', description: 'Aluguel', amount: 2000, type: 'expense', category: 'Lifestyle', date: '2024-03-02' },
-  { id: '4', description: 'Alimentação', amount: 3000, type: 'expense', category: 'Lifestyle', date: '2024-03-10' },
-  { id: '5', description: 'Financiamento Imob.', amount: 1960, type: 'expense', category: 'Fixed', date: '2024-03-15' },
-  { id: '6', description: 'Aporte FIIs', amount: 2000, type: 'investment', category: 'Investment', date: '2024-03-20' },
+  { id: '1', userId: 'mock_user_id', description: 'Salário Mensal', amount: 6000, type: 'income', category: 'Fixed', date: '2024-03-01' },
+  { id: '2', userId: 'mock_user_id', description: 'MEI Serviços', amount: 6300, type: 'income', category: 'Fixed', date: '2024-03-05' },
+  { id: '3', userId: 'mock_user_id', description: 'Aluguel', amount: 2000, type: 'expense', category: 'Lifestyle', date: '2024-03-02' },
+  { id: '4', userId: 'mock_user_id', description: 'Alimentação', amount: 3000, type: 'expense', category: 'Lifestyle', date: '2024-03-10' },
+  { id: '5', userId: 'mock_user_id', description: 'Financiamento Imob.', amount: 1960, type: 'expense', category: 'Fixed', date: '2024-03-15' },
+  { id: '6', userId: 'mock_user_id', description: 'Aporte FIIs', amount: 2000, type: 'investment', category: 'Investment', date: '2024-03-20' },
 ];
 
 // Mapeamento de imagens personalizadas para cada arquétipo
 export const ARCHETYPE_IMAGES: Record<string, string> = {
   'Paladino': '/assets/Festin.png',
   'Mago': '/assets/Arcano.png',
-  'Dwarf Minerador': '/assets/Cache.png',
+  'Dwarf': '/assets/Cache.png',
   'Elfo': '/assets/Exodia.png',
   'Ladrão': '/assets/Reaver.png',
   'Hobbit': '/assets/Orbit.png',
