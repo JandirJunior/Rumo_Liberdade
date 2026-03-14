@@ -1,31 +1,37 @@
 import { useState, useEffect } from 'react';
 import { auth, db } from '@/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { AppUser } from '@/lib/types';
+import { onAuthStateChanged } from 'firebase/auth';
+import { UserEntity } from '@/lib/financialEngine';
 
 export function useUser() {
-  const [userData, setUserData] = useState<AppUser | null>(null);
+  const [userData, setUserData] = useState<UserEntity | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth.currentUser) {
-      setLoading(false);
-      return;
-    }
-
-    const userRef = doc(db, 'users', auth.currentUser.uid);
-    const unsubscribe = onSnapshot(userRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setUserData(docSnap.data() as AppUser);
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        setUserData(null);
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching user data:", error);
-      setLoading(false);
+
+      const userRef = doc(db, 'users', user.uid);
+      const unsubscribeDoc = onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setUserData(docSnap.data() as UserEntity);
+        }
+        setLoading(false);
+      }, (error) => {
+        console.error("Error fetching user data:", error);
+        setLoading(false);
+      });
+
+      return () => unsubscribeDoc();
     });
 
-    return () => unsubscribe();
-  }, [auth.currentUser]);
+    return () => unsubscribeAuth();
+  }, []);
 
   return { userData, loading };
 }

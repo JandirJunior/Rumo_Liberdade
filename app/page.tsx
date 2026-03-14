@@ -13,7 +13,6 @@ import { auth } from '@/firebase';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { useTheme } from '@/lib/ThemeContext';
 import { userService } from '@/src/services/userService';
-import { organizationService } from '@/src/services/organizationService';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -37,20 +36,10 @@ export default function LoginPage() {
       // SaaS Onboarding Flow
       const existingUser = await userService.getUser(loggedUser.uid);
       if (!existingUser) {
-        // Create a new organization for the user
-        const orgId = `org_${loggedUser.uid}`;
-        await organizationService.createOrganization(
-          orgId,
-          `Organização de ${loggedUser.displayName || 'Usuário'}`,
-          loggedUser.uid
-        );
-
-        // Create the user linked to the new organization as admin
+        // Create the user
         await userService.createUser(
           loggedUser.uid,
-          orgId,
           loggedUser.email || '',
-          'admin',
           loggedUser.displayName || ''
         );
       }

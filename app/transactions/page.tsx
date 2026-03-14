@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Search, Filter, ArrowUpRight, ArrowDownLeft, Wallet, Plus } from 'lucide-react';
+import { Search, Filter, ArrowUpRight, ArrowDownLeft, Wallet, Plus, Sparkles } from 'lucide-react';
 import { BottomNav } from '@/components/BottomNav';
 import { Header } from '@/components/Header';
 import { Modal } from '@/components/Modal';
@@ -17,25 +17,81 @@ import { Transaction } from '@/lib/types';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { useReino } from '@/hooks/useReino';
+import { useCategories } from '@/hooks/useCategories';
+import { GoogleGenAI, Type } from '@google/genai';
 
 export default function Transactions() {
   const { theme, user, gameMode } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
   const { transactions, addTransaction } = useReino();
+  const { categories } = useCategories();
+  
   const [filter, setFilter] = useState<'all' | 'income' | 'expense' | 'investment'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSuggesting, setIsSuggesting] = useState(false);
 
   // Estado para o formulário de nova transação
   const [newTransaction, setNewTransaction] = useState({
     description: '',
     amount: '',
     type: 'expense' as 'income' | 'expense' | 'investment',
-    category: 'Fixed' as 'Fixed' | 'Lifestyle' | 'Investment' | 'Emergency'
+    category_id: ''
   });
 
+  const handleSuggestCategory = async () => {
+    if (!newTransaction.description) return;
+    setIsSuggesting(true);
+    
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
+      
+      const categoryList = categories.map(c => `${c.id}: ${c.name} (${c.flow_type === 'income' ? 'Receita' : 'Despesa'})`).join('\n');
+      
+      const prompt = `
+        Eu tenho uma transação com a seguinte descrição: "${newTransaction.description}".
+        O valor é: ${newTransaction.amount || 'desconhecido'}.
+        
+        Aqui está a lista de categorias disponíveis no meu sistema:
+        ${categoryList}
+        
+        Com base na descrição, sugira o ID da categoria mais apropriada e o tipo da transação (income, expense, ou investment).
+        Retorne APENAS um JSON com o formato: {"category_id": "ID_AQUI", "type": "TIPO_AQUI"}
+      `;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              category_id: { type: Type.STRING },
+              type: { type: Type.STRING }
+            },
+            required: ["category_id", "type"]
+          }
+        }
+      });
+
+      const result = JSON.parse(response.text || '{}');
+      if (result.category_id && result.type) {
+        setNewTransaction(prev => ({
+          ...prev,
+          category_id: result.category_id,
+          type: result.type as any
+        }));
+      }
+    } catch (error) {
+      console.error("Error suggesting category:", error);
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
   const handleAddTransaction = async () => {
-    if (!newTransaction.description || !newTransaction.amount || !user) return;
+    if (!newTransaction.description || !newTransaction.amount || !user || !newTransaction.category_id) return;
 
     const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
@@ -43,14 +99,14 @@ export default function Transactions() {
       description: newTransaction.description,
       amount: parseFloat(newTransaction.amount),
       type: newTransaction.type,
-      category: newTransaction.category,
+      category_id: newTransaction.category_id,
       date: dateStr,
     };
 
     try {
       await addTransaction(transactionData);
       setIsModalOpen(false);
-      setNewTransaction({ description: '', amount: '', type: 'expense', category: 'Fixed' });
+      setNewTransaction({ description: '', amount: '', type: 'expense', category_id: '' });
     } catch (error) {
       console.error("Error adding transaction: ", error);
     }
@@ -58,9 +114,23 @@ export default function Transactions() {
 
   const filteredTransactions = transactions.filter(t => {
     const matchesFilter = filter === 'all' || t.type === filter;
-    const matchesSearch = t.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (t.description || '').toLowerCase().includes(searchTerm.toLowerCase());
     return matchesFilter && matchesSearch;
   });
+
+  // Group categories by rpg_group for the select dropdown
+  const profileType = gameMode === 'reino' ? 'MultiUsuario' : 'MonoUsuario';
+  const categoriesByType = categories.filter(c => 
+    (c.flow_type === newTransaction.type || newTransaction.type === 'investment') &&
+    (!c.allowed_profiles || c.allowed_profiles.includes(profileType))
+  );
+  const groupedCategories = categoriesByType.reduce((acc, cat) => {
+    if (!acc[cat.rpg_group]) {
+      acc[cat.rpg_group] = [];
+    }
+    acc[cat.rpg_group].push(cat);
+    return acc;
+  }, {} as Record<string, typeof categories>);
 
   return (
     <div className={cn("min-h-screen transition-colors duration-500", colors.bg)}>
@@ -124,6 +194,8 @@ export default function Transactions() {
           {filteredTransactions.length > 0 ? (
             filteredTransactions.map((t, i) => {
               const userName = (t as any).userName || 'Herói Desconhecido';
+              const categoryObj = categories.find(c => c.id === t.category_id);
+              const categoryName = categoryObj ? categoryObj.name : t.category || 'Sem Categoria';
               
               return (
                 <motion.div
@@ -145,7 +217,7 @@ export default function Transactions() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 truncate">{t.description}</p>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      {t.category} • {t.date}
+                      {categoryName} • {t.date}
                       {gameMode === 'reino' && ` • Por: ${userName}`}
                     </p>
                   </div>
@@ -181,7 +253,20 @@ export default function Transactions() {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Descrição</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block">Descrição</label>
+              <button
+                onClick={handleSuggestCategory}
+                disabled={!newTransaction.description || isSuggesting}
+                className={cn(
+                  "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 px-2 py-1 rounded-lg transition-all",
+                  (!newTransaction.description || isSuggesting) ? "text-gray-400 bg-gray-50 cursor-not-allowed" : "text-purple-600 bg-purple-50 hover:bg-purple-100"
+                )}
+              >
+                <Sparkles className="w-3 h-3" />
+                {isSuggesting ? 'Analisando...' : 'Sugerir Categoria'}
+              </button>
+            </div>
             <input 
               type="text"
               placeholder="Ex: Almoço, Salário, Aporte FII"
@@ -206,7 +291,7 @@ export default function Transactions() {
               {(['income', 'expense', 'investment'] as const).map((type) => (
                 <button
                   key={type}
-                  onClick={() => setNewTransaction({...newTransaction, type})}
+                  onClick={() => setNewTransaction({...newTransaction, type, category_id: ''})}
                   className={cn(
                     "py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all",
                     newTransaction.type === type 
@@ -219,9 +304,30 @@ export default function Transactions() {
               ))}
             </div>
           </div>
+          <div>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Categoria RPG</label>
+            <select
+              value={newTransaction.category_id}
+              onChange={(e) => setNewTransaction({...newTransaction, category_id: e.target.value})}
+              className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm"
+            >
+              <option value="" disabled>Selecione uma categoria...</option>
+              {Object.entries(groupedCategories).map(([groupName, cats]) => (
+                <optgroup key={groupName} label={groupName}>
+                  {cats.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
           <button 
             onClick={handleAddTransaction}
-            className={cn("w-full py-4 rounded-2xl text-white font-bold shadow-lg transition-all active:scale-95 mt-4", colors.primary)}
+            disabled={!newTransaction.description || !newTransaction.amount || !newTransaction.category_id}
+            className={cn(
+              "w-full py-4 rounded-2xl text-white font-bold shadow-lg transition-all active:scale-95 mt-4", 
+              (!newTransaction.description || !newTransaction.amount || !newTransaction.category_id) ? "opacity-50 cursor-not-allowed" : colors.primary
+            )}
           >
             Confirmar Transação
           </button>

@@ -76,6 +76,10 @@
           "type": "string",
           "description": "The category of the transaction."
         },
+        "category_id": {
+          "type": "string",
+          "description": "The ID of the category."
+        },
         "type": {
           "type": "string",
           "enum": ["income", "expense"],
@@ -87,7 +91,7 @@
           "description": "The date and time the transaction was created."
         }
       },
-      "required": ["id", "userId", "title", "amount", "date", "category", "type", "createdAt"]
+      "required": ["id", "userId", "title", "amount", "date", "type", "createdAt"]
     },
     "Achievement": {
       "title": "Achievement",
@@ -109,6 +113,74 @@
         }
       },
       "required": ["id", "userId", "unlockedAt"]
+    },
+    "Account": {
+      "title": "Account",
+      "description": "Represents a financial account.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["checking", "credit_card", "wallet", "digital_account"] },
+        "current_balance": { "type": "number" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "user_id", "name", "type", "current_balance", "created_at"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Represents a financial category.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "name": { "type": "string" },
+        "group_type": { "type": "string", "enum": ["fixed", "variable"] },
+        "flow_type": { "type": "string", "enum": ["income", "expense"] },
+        "rpg_group": { "type": "string" },
+        "allowed_profiles": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["MonoUsuario", "MultiUsuario"] }
+        },
+        "icon": { "type": "string" },
+        "color": { "type": "string" },
+        "rpg_theme_name": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "user_id", "name", "group_type", "flow_type", "rpg_group", "allowed_profiles", "icon", "color", "rpg_theme_name", "created_at"]
+    },
+    "Budget": {
+      "title": "Budget",
+      "description": "Represents a budget for a category.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "category_id": { "type": "string" },
+        "category": { "type": "string" },
+        "budget_amount": { "type": "number" },
+        "month": { "type": "number" },
+        "year": { "type": "number" }
+      },
+      "required": ["id", "user_id", "category_id", "budget_amount", "month", "year"]
+    },
+    "Investment": {
+      "title": "Investment",
+      "description": "Represents an investment.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "type": { "type": "string", "enum": ["stock", "fii", "crypto", "etf", "fixed_income"] },
+        "ticker": { "type": "string" },
+        "quantity": { "type": "number" },
+        "average_price": { "type": "number" },
+        "invested_value": { "type": "number" },
+        "current_value": { "type": "number" },
+        "earnings": { "type": "number" }
+      },
+      "required": ["id", "user_id", "type", "ticker", "quantity", "average_price", "invested_value", "current_value", "earnings"]
     }
   },
   "firestore": {
@@ -116,13 +188,25 @@
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profiles."
     },
-    "users/{userId}/transactions/{transactionId}": {
-      "schema": { "$ref": "#/entities/Transaction" },
-      "description": "Stores transactions for a specific user."
+    "accounts/{accountId}": {
+      "schema": { "$ref": "#/entities/Account" },
+      "description": "Stores user accounts."
     },
-    "users/{userId}/achievements/{achievementId}": {
-      "schema": { "$ref": "#/entities/Achievement" },
-      "description": "Stores unlocked achievements for a specific user."
-    }
+    "transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Stores transactions."
+    },
+    "categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/Category" },
+      "description": "Stores categories."
+    },
+    "budgets/{budgetId}": {
+      "schema": { "$ref": "#/entities/Budget" },
+      "description": "Stores budgets."
+    },
+    "investments/{investmentId}": {
+      "schema": { "$ref": "#/entities/Investment" },
+      "description": "Stores investments."
+    },
   }
 }

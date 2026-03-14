@@ -17,7 +17,9 @@ import { ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis } fro
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { useReino } from '@/hooks/useReino';
+import { useCategories } from '@/hooks/useCategories';
 import { getNextCharacter, STATIC_CHARACTERS } from '@/lib/characters';
+import { BudgetProgressPanel } from '@/src/components/BudgetProgressPanel';
 
 import { auth } from '@/firebase';
 
@@ -26,6 +28,7 @@ export default function Dashboard() {
   const { gameState, theme, gameMode } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
   const { assets, transactions, loading } = useReino();
+  const { categories } = useCategories();
 
   // Cálculos de resumo financeiro baseados em dados do Reino
   const totalIncome = transactions
@@ -34,6 +37,29 @@ export default function Dashboard() {
 
   const totalExpenses = transactions
     .filter(t => t.type === 'expense')
+    .reduce((acc, curr) => acc + curr.amount, 0);
+
+  // Helper function to get rpg_group for a transaction
+  const getTransactionRpgGroup = (categoryId: string) => {
+    const category = categories.find(c => c.id === categoryId);
+    return category?.rpg_group || '';
+  };
+
+  // Totais por grupo RPG
+  const cofreReinoTotal = transactions
+    .filter(t => t.type === 'income' && getTransactionRpgGroup(t.category_id || '').includes('Cofre do Reino'))
+    .reduce((acc, curr) => acc + curr.amount, 0);
+    
+  const saquesMissoesTotal = transactions
+    .filter(t => t.type === 'income' && getTransactionRpgGroup(t.category_id || '').includes('Saques de Miss'))
+    .reduce((acc, curr) => acc + curr.amount, 0);
+
+  const tributosReinoTotal = transactions
+    .filter(t => t.type === 'expense' && getTransactionRpgGroup(t.category_id || '').includes('Tributos do Reino'))
+    .reduce((acc, curr) => acc + curr.amount, 0);
+
+  const aventurasHeroiTotal = transactions
+    .filter(t => t.type === 'expense' && getTransactionRpgGroup(t.category_id || '').includes('Aventuras do Her'))
     .reduce((acc, curr) => acc + curr.amount, 0);
   
   // Total investido na Caverna
@@ -169,26 +195,69 @@ export default function Dashboard() {
 
                 {/* [RESPONSIVIDADE] Grid de receitas/despesas: 1 coluna no mobile muito pequeno, 2 colunas a partir de sm */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Resumo de Receitas */}
-                  <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
-                    <div className="flex items-center gap-2 mb-1">
-                      <TrendingUp className="w-3 h-3 text-white/60" />
-                      <span className="text-[9px] font-black text-white/80 uppercase tracking-wider">
-                        {gameMode === 'reino' ? 'Receitas do Reino' : 'Receitas'}
+                  {/* Coluna de Receitas */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="w-4 h-4 text-emerald-300" />
+                      <span className="text-xs font-black text-white/80 uppercase tracking-wider">
+                        Receitas
                       </span>
                     </div>
-                    <p className="text-lg font-bold">{formatCurrency(totalIncome)}</p>
-                  </Link>
-                  {/* Resumo de Despesas */}
-                  <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
-                    <div className="flex items-center gap-2 mb-1">
-                      <TrendingDown className="w-3 h-3 text-red-300" />
-                      <span className="text-[9px] font-black text-white/80 uppercase tracking-wider">
-                        {gameMode === 'reino' ? 'Despesas do Reino' : 'Despesas'}
+                    
+                    <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">💎</span>
+                        <span className="text-[10px] font-black text-white/80 uppercase tracking-wider">
+                          Cofre do Reino
+                        </span>
+                      </div>
+                      <p className="text-xs text-white/60 mb-2">Receitas Fixas</p>
+                      <p className="text-lg font-bold text-emerald-300">{formatCurrency(cofreReinoTotal)}</p>
+                    </Link>
+
+                    <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">⚡</span>
+                        <span className="text-[10px] font-black text-white/80 uppercase tracking-wider">
+                          Saques de Missões
+                        </span>
+                      </div>
+                      <p className="text-xs text-white/60 mb-2">Receitas Variáveis</p>
+                      <p className="text-lg font-bold text-emerald-300">{formatCurrency(saquesMissoesTotal)}</p>
+                    </Link>
+                  </div>
+
+                  {/* Coluna de Despesas */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingDown className="w-4 h-4 text-red-300" />
+                      <span className="text-xs font-black text-white/80 uppercase tracking-wider">
+                        Despesas
                       </span>
                     </div>
-                    <p className="text-lg font-bold">{formatCurrency(totalExpenses)}</p>
-                  </Link>
+
+                    <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">🛡️</span>
+                        <span className="text-[10px] font-black text-white/80 uppercase tracking-wider">
+                          Tributos do Reino
+                        </span>
+                      </div>
+                      <p className="text-xs text-white/60 mb-2">Despesas Fixas</p>
+                      <p className="text-lg font-bold text-red-300">{formatCurrency(tributosReinoTotal)}</p>
+                    </Link>
+
+                    <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">⚔️</span>
+                        <span className="text-[10px] font-black text-white/80 uppercase tracking-wider">
+                          Aventuras do Herói
+                        </span>
+                      </div>
+                      <p className="text-xs text-white/60 mb-2">Despesas Variáveis</p>
+                      <p className="text-lg font-bold text-red-300">{formatCurrency(aventurasHeroiTotal)}</p>
+                    </Link>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -251,6 +320,9 @@ export default function Dashboard() {
                 </div>
               </div>
             </section>
+
+            {/* Painel Orçado vs Realizado */}
+            <BudgetProgressPanel />
           </div>
 
           {/* [RESPONSIVIDADE] Coluna Direita no Desktop (Ocupa 5 de 12 colunas) */}

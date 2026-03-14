@@ -1,35 +1,32 @@
-import { doc, getDoc, setDoc, updateDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { AppUser, Role } from '../../lib/types';
-import { logService } from './logService';
+import { UserEntity } from '../../lib/financialEngine';
 
 export const userService = {
-  async createUser(userId: string, organizationId: string, email: string, role: Role, name?: string): Promise<AppUser> {
+  async createUser(userId: string, email: string, name?: string): Promise<UserEntity> {
     const userRef = doc(db, 'users', userId);
-    const newUser: AppUser = {
-      userId,
-      organizationId,
-      role,
+    const newUser: UserEntity = {
+      id: userId,
       email,
       name: name || '',
-      createdAt: new Date().toISOString(),
-      status: 'active'
+      level: 1,
+      xp: 0,
+      created_at: new Date()
     };
 
     await setDoc(userRef, {
       ...newUser,
-      createdAt: serverTimestamp()
+      created_at: serverTimestamp()
     });
 
-    await logService.createLog(organizationId, userId, 'CREATE_USER', { email, role });
     return newUser;
   },
 
-  async getUser(userId: string): Promise<AppUser | null> {
+  async getUser(userId: string): Promise<UserEntity | null> {
     const userRef = doc(db, 'users', userId);
     const snap = await getDoc(userRef);
     if (snap.exists()) {
-      return snap.data() as AppUser;
+      return snap.data() as UserEntity;
     }
     return null;
   }

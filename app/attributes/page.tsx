@@ -3,27 +3,29 @@
 import { motion } from 'motion/react';
 import { Header } from '@/components/Header';
 import { BottomNav } from '@/components/BottomNav';
-import { MOCK_BUDGET } from '@/lib/data';
-import { BudgetItem } from '@/lib/types';
 import { formatCurrency, cn } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { TrendingUp, TrendingDown, Wallet, Target, ArrowRight } from 'lucide-react';
 import { useReino } from '@/hooks/useReino';
+import { BudgetProgressPanel } from '@/src/components/BudgetProgressPanel';
+import { CategoryManagerPanel } from '@/src/components/CategoryManagerPanel';
 
 export default function Attributes() {
   const { theme } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
   const { transactions } = useReino();
 
-  const totalPlannedIncome = MOCK_BUDGET.income.reduce((acc: number, curr: BudgetItem) => acc + curr.planned, 0);
-  const totalActualIncome = transactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
-  
-  const totalPlannedExpenses = MOCK_BUDGET.expenses.reduce((acc: number, curr: BudgetItem) => acc + curr.planned, 0);
-  const totalActualExpenses = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
+  // For now, we'll just calculate actuals from transactions for the summary cards.
+  // The detailed budget planning is handled by BudgetProgressPanel.
+  const today = new Date();
+  const currentMonthTransactions = transactions.filter(t => {
+    const d = new Date(t.date);
+    return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+  });
 
-  const incomeDiff = totalActualIncome - totalPlannedIncome;
-  const expenseDiff = totalActualExpenses - totalPlannedExpenses;
+  const totalActualIncome = currentMonthTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
+  const totalActualExpenses = currentMonthTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
   
   const surplus = totalActualIncome - totalActualExpenses;
 
@@ -45,21 +47,11 @@ export default function Attributes() {
                 <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
                   <TrendingUp className="w-5 h-5" />
                 </div>
-                <span className="text-sm font-bold text-gray-900">Receitas</span>
+                <span className="text-sm font-bold text-gray-900">Receitas (Realizado)</span>
               </div>
-              <span className={cn("text-xs font-bold px-2 py-1 rounded-full", incomeDiff >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600")}>
-                {incomeDiff >= 0 ? '+' : ''}{formatCurrency(incomeDiff)}
-              </span>
             </div>
-            <div className="grid grid-cols-2 gap-4 pt-2">
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Previsto</p>
-                <p className="text-lg font-display font-bold text-gray-900">{formatCurrency(totalPlannedIncome)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Realizado</p>
-                <p className="text-lg font-display font-bold text-emerald-600">{formatCurrency(totalActualIncome)}</p>
-              </div>
+            <div className="pt-2">
+              <p className="text-2xl font-display font-bold text-emerald-600">{formatCurrency(totalActualIncome)}</p>
             </div>
           </section>
 
@@ -69,21 +61,11 @@ export default function Attributes() {
                 <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-600">
                   <TrendingDown className="w-5 h-5" />
                 </div>
-                <span className="text-sm font-bold text-gray-900">Despesas</span>
+                <span className="text-sm font-bold text-gray-900">Despesas (Realizado)</span>
               </div>
-              <span className={cn("text-xs font-bold px-2 py-1 rounded-full", expenseDiff <= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600")}>
-                {expenseDiff > 0 ? '+' : ''}{formatCurrency(expenseDiff)}
-              </span>
             </div>
-            <div className="grid grid-cols-2 gap-4 pt-2">
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Previsto</p>
-                <p className="text-lg font-display font-bold text-gray-900">{formatCurrency(totalPlannedExpenses)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Realizado</p>
-                <p className="text-lg font-display font-bold text-red-600">{formatCurrency(totalActualExpenses)}</p>
-              </div>
+            <div className="pt-2">
+              <p className="text-2xl font-display font-bold text-red-600">{formatCurrency(totalActualExpenses)}</p>
             </div>
           </section>
         </div>
@@ -105,52 +87,20 @@ export default function Attributes() {
           </div>
         </section>
 
-        {/* Detailed List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <section className="space-y-4">
-            <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Detalhamento de Receitas</h4>
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-              {MOCK_BUDGET.income.map((item: BudgetItem, i: number) => (
-                <div key={i} className="p-4 border-b border-gray-50 last:border-0 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">{item.name}</p>
-                    <p className="text-[10px] text-gray-400">Previsto: {formatCurrency(item.planned)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className={cn("text-sm font-bold", item.actual >= item.planned ? "text-emerald-600" : "text-gray-900")}>
-                      {formatCurrency(item.actual)}
-                    </p>
-                    <p className={cn("text-[10px] font-bold", item.actual >= item.planned ? "text-emerald-500" : "text-red-500")}>
-                      {((item.actual / item.planned) * 100).toFixed(0)}% do plano
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+        {/* Budget Planning Section */}
+        <section className="space-y-4">
+          <header>
+            <h3 className="text-xl font-display font-bold text-gray-900">Planejamento (Orçados)</h3>
+            <p className="text-sm text-gray-500">Defina seus limites de gastos para cada atributo.</p>
+          </header>
+          
+          <BudgetProgressPanel />
+        </section>
 
-          <section className="space-y-4">
-            <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Detalhamento de Despesas</h4>
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-              {MOCK_BUDGET.expenses.map((item: BudgetItem, i: number) => (
-                <div key={i} className="p-4 border-b border-gray-50 last:border-0 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">{item.name}</p>
-                    <p className="text-[10px] text-gray-400">Previsto: {formatCurrency(item.planned)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className={cn("text-sm font-bold", item.actual <= item.planned ? "text-emerald-600" : "text-red-600")}>
-                      {formatCurrency(item.actual)}
-                    </p>
-                    <p className={cn("text-[10px] font-bold", item.actual <= item.planned ? "text-emerald-500" : "text-red-500")}>
-                      {((item.actual / item.planned) * 100).toFixed(0)}% do plano
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
+        {/* Categories Manager Section */}
+        <section className="space-y-4 pt-4 border-t border-gray-100">
+          <CategoryManagerPanel />
+        </section>
       </main>
       
       <BottomNav />
