@@ -108,6 +108,25 @@ export function useReino() {
     await setDoc(doc(db, 'transactions', newId), newTransaction);
   };
 
+  const updateTransaction = async (id: string, transaction: Partial<Omit<Transaction, 'id' | 'organizationId' | 'userId' | 'createdAt'>>) => {
+    if (!auth.currentUser) return;
+    const updateData: any = {};
+    if (transaction.type) updateData.type = transaction.type;
+    if (transaction.category) updateData.category = transaction.category;
+    if (transaction.category_id) updateData.category_id = transaction.category_id;
+    if (transaction.amount !== undefined) updateData.amount = transaction.amount;
+    if (transaction.description || transaction.title) updateData.description = transaction.description || transaction.title;
+    if (transaction.date) updateData.date = new Date(transaction.date);
+    
+    await setDoc(doc(db, 'transactions', id), updateData, { merge: true });
+  };
+
+  const deleteTransaction = async (id: string) => {
+    if (!auth.currentUser) return;
+    const { deleteDoc } = await import('firebase/firestore');
+    await deleteDoc(doc(db, 'transactions', id));
+  };
+
   const updateAsset = async (asset: Omit<Asset, 'organizationId'>) => {
     if (!auth.currentUser) return;
     const newId = asset.id || doc(collection(db, 'investments')).id;
@@ -125,5 +144,24 @@ export function useReino() {
     await setDoc(doc(db, 'investments', newId), newInvestment);
   };
 
-  return { assets, transactions, loading, addTransaction, updateAsset };
+  const addInvestment = async (investment: { type: string, ticker: string, value: number }) => {
+    if (!auth.currentUser) return;
+    const { doc, collection, setDoc } = await import('firebase/firestore');
+    const newId = doc(collection(db, 'investments')).id;
+    const newInvestment = {
+      id: newId,
+      user_id: auth.currentUser.uid,
+      type: investment.type,
+      ticker: investment.ticker,
+      quantity: 1,
+      average_price: investment.value,
+      invested_value: investment.value,
+      current_value: investment.value,
+      earnings: 0,
+      created_at: new Date()
+    };
+    await setDoc(doc(db, 'investments', newId), newInvestment);
+  };
+
+  return { assets, transactions, loading, addTransaction, updateTransaction, deleteTransaction, updateAsset, addInvestment };
 }

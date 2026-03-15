@@ -23,8 +23,18 @@ export function useCategories() {
 
       // Check if user has categories, if not, create defaults
       const snapshot = await getDocs(q);
-      if (snapshot.empty) {
+      const hasRpgCategories = snapshot.docs.some(doc => doc.data().rpg_group);
+      const hasEnoughCategories = snapshot.docs.length >= 20;
+
+      if (snapshot.empty || !hasRpgCategories || !hasEnoughCategories) {
         const batch = writeBatch(db);
+        
+        // Delete old categories if they exist
+        if (!snapshot.empty) {
+          snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+          });
+        }
         
         // Load default categories from JSON schema
         const profileType = 'MonoUsuario'; // Defaulting to MonoUsuario for now
@@ -49,13 +59,13 @@ export function useCategories() {
           }
 
           schemaPart.subcategorias.forEach((sub: any) => {
-            const newDocRef = doc(categoriesRef);
+            const newDocRef = doc(collection(db, 'categories'));
             const cat: Omit<CategoryEntity, 'id' | 'user_id' | 'created_at'> = {
               name: sub.nome,
               flow_type: flowType,
               group_type: groupType,
               rpg_group: schemaPart.titulo,
-              allowed_profiles: sub.usuarios,
+              allowed_profiles: sub.usuarios || ['MonoUsuario', 'MultiUsuario'],
               icon,
               color,
               rpg_theme_name: rpgThemeName

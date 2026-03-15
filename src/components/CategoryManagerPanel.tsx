@@ -217,9 +217,9 @@ export function CategoryManagerPanel() {
                 <h4 className={cn("text-sm font-bold uppercase tracking-wider", text)}>{groupName}</h4>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-3">
                 {groupCats.map(cat => (
-                  <div key={cat.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group">
+                  <div key={cat.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-emerald-100 transition-colors">
                     <div>
                       <p className="text-sm font-bold text-gray-900">{cat.name}</p>
                       <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
