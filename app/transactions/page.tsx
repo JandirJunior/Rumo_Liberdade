@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Search, Filter, ArrowUpRight, ArrowDownLeft, Wallet, Plus, Sparkles } from 'lucide-react';
+import { Search, Filter, ArrowUpRight, ArrowDownLeft, Wallet, Plus, Sparkles, Edit2, Trash2 } from 'lucide-react';
 import { BottomNav } from '@/components/BottomNav';
 import { Header } from '@/components/Header';
 import { Modal } from '@/components/Modal';
@@ -23,13 +23,14 @@ import { GoogleGenAI, Type } from '@google/genai';
 export default function Transactions() {
   const { theme, user, gameMode } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
-  const { transactions, addTransaction } = useReino();
+  const { transactions, addTransaction, updateTransaction, deleteTransaction } = useReino();
   const { categories } = useCategories();
   
   const [filter, setFilter] = useState<'all' | 'income' | 'expense' | 'investment'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
 
   // Estado para o formulário de nova transação
   const [newTransaction, setNewTransaction] = useState({
@@ -38,6 +39,23 @@ export default function Transactions() {
     type: 'expense' as 'income' | 'expense' | 'investment',
     category_id: ''
   });
+
+  const handleEditTransaction = (t: Transaction) => {
+    setEditingTransactionId(t.id);
+    setNewTransaction({
+      description: t.description || t.title || '',
+      amount: t.amount.toString(),
+      type: t.type,
+      category_id: t.category_id || ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir esta transação?')) {
+      await deleteTransaction(id);
+    }
+  };
 
   const handleSuggestCategory = async () => {
     if (!newTransaction.description) return;
@@ -104,11 +122,16 @@ export default function Transactions() {
     };
 
     try {
-      await addTransaction(transactionData);
+      if (editingTransactionId) {
+        await updateTransaction(editingTransactionId, transactionData);
+      } else {
+        await addTransaction(transactionData);
+      }
       setIsModalOpen(false);
+      setEditingTransactionId(null);
       setNewTransaction({ description: '', amount: '', type: 'expense', category_id: '' });
     } catch (error) {
-      console.error("Error adding transaction: ", error);
+      console.error("Error saving transaction: ", error);
     }
   };
 
@@ -132,6 +155,17 @@ export default function Transactions() {
     return acc;
   }, {} as Record<string, typeof categories>);
 
+  const today = new Date();
+  const currentMonthTransactions = transactions.filter(t => {
+    const d = new Date(t.date);
+    return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+  });
+
+  const totalActualIncome = currentMonthTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
+  const totalActualExpenses = currentMonthTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
+  
+  const surplus = totalActualIncome - totalActualExpenses;
+
   return (
     <div className={cn("min-h-screen transition-colors duration-500", colors.bg)}>
       <Header />
@@ -151,6 +185,23 @@ export default function Transactions() {
             </button>
           </div>
         
+        {/* Surplus Card */}
+        <section className={cn("p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden", colors.primary)}>
+          <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 blur-3xl"></div>
+          <div className="relative z-10 flex flex-col items-center text-center space-y-4">
+            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20">
+              <Wallet className="w-8 h-8" />
+            </div>
+            <div>
+              <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1">Saldo para a Caverna</p>
+              <h3 className="text-3xl font-display font-bold">{formatCurrency(surplus)}</h3>
+            </div>
+            <p className="text-white/60 text-xs max-w-[200px]">
+              Este é o valor disponível para ser investido na Caverna este mês.
+            </p>
+          </div>
+        </section>
+
         {/* Search and Filter */}
         <div className="space-y-4">
           <div className="relative">
@@ -203,7 +254,7 @@ export default function Transactions() {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="flex items-center gap-4 p-4 bg-white border border-gray-50 rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+                  className="flex items-center gap-4 p-4 bg-white border border-gray-50 rounded-2xl shadow-sm hover:shadow-md transition-shadow group"
                 >
                   <div className={cn(
                     "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0",
@@ -222,14 +273,21 @@ export default function Transactions() {
                     </p>
                   </div>
                   
-                  <div className="text-right">
+                  <div className="text-right flex flex-col items-end gap-1">
                     <p className={cn(
                       "text-sm font-bold",
                       t.type === 'income' ? "text-emerald-600" : "text-gray-900"
                     )}>
                       {t.type === 'income' ? '+' : '-'} {formatCurrency(t.amount)}
                     </p>
-                    <p className="text-[10px] text-gray-400 font-medium">Confirmado</p>
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleEditTransaction(t)} className="text-gray-400 hover:text-blue-500 transition-colors">
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => handleDeleteTransaction(t.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               );
@@ -245,11 +303,15 @@ export default function Transactions() {
         </div>
       </section>
 
-      {/* Modal para Adicionar Transação */}
+      {/* Modal para Adicionar/Editar Transação */}
       <Modal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        title="Nova Transação"
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingTransactionId(null);
+          setNewTransaction({ description: '', amount: '', type: 'expense', category_id: '' });
+        }} 
+        title={editingTransactionId ? "Editar Transação" : "Nova Transação"}
       >
         <div className="space-y-4">
           <div>

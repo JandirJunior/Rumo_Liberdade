@@ -18,6 +18,7 @@ import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { useReino } from '@/hooks/useReino';
 import { useCategories } from '@/hooks/useCategories';
+import { useBudgets } from '@/hooks/useBudgets';
 import { getNextCharacter, STATIC_CHARACTERS } from '@/lib/characters';
 import { BudgetProgressPanel } from '@/src/components/BudgetProgressPanel';
 
@@ -30,38 +31,24 @@ export default function Dashboard() {
   const { assets, transactions, loading } = useReino();
   const { categories } = useCategories();
 
-  // Cálculos de resumo financeiro baseados em dados do Reino
-  const totalIncome = transactions
-    .filter(t => t.type === 'income')
-    .reduce((acc, curr) => acc + curr.amount, 0);
+  const today = new Date();
+  const [month, setMonth] = useState(today.getMonth() + 1);
+  const [year, setYear] = useState(today.getFullYear());
 
-  const totalExpenses = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((acc, curr) => acc + curr.amount, 0);
+  const { budgetProgress } = useBudgets(month, year);
 
-  // Helper function to get rpg_group for a transaction
-  const getTransactionRpgGroup = (categoryId: string) => {
-    const category = categories.find(c => c.id === categoryId);
-    return category?.rpg_group || '';
+  const getRpgGroupTotals = (groupName: string) => {
+    const groupItems = budgetProgress.filter(b => b.rpg_group === groupName);
+    const orcado = groupItems.reduce((acc, curr) => acc + curr.orcado, 0);
+    const realizado = groupItems.reduce((acc, curr) => acc + curr.gasto_real, 0);
+    return { orcado, realizado };
   };
 
-  // Totais por grupo RPG
-  const cofreReinoTotal = transactions
-    .filter(t => t.type === 'income' && getTransactionRpgGroup(t.category_id || '').includes('Cofre do Reino'))
-    .reduce((acc, curr) => acc + curr.amount, 0);
-    
-  const saquesMissoesTotal = transactions
-    .filter(t => t.type === 'income' && getTransactionRpgGroup(t.category_id || '').includes('Saques de Miss'))
-    .reduce((acc, curr) => acc + curr.amount, 0);
+  const cofreReino = getRpgGroupTotals('💎 Cofre do Reino (Receitas Fixas)');
+  const saquesMissoes = getRpgGroupTotals('⚡ Saques de Misssões (Receitas Variáveis)');
+  const tributosReino = getRpgGroupTotals('🛡️ Tributos do Reino (Despesas Fixas)');
+  const aventurasHeroi = getRpgGroupTotals('⚔️ Aventuras do Herói (Despesas Variáveis)');
 
-  const tributosReinoTotal = transactions
-    .filter(t => t.type === 'expense' && getTransactionRpgGroup(t.category_id || '').includes('Tributos do Reino'))
-    .reduce((acc, curr) => acc + curr.amount, 0);
-
-  const aventurasHeroiTotal = transactions
-    .filter(t => t.type === 'expense' && getTransactionRpgGroup(t.category_id || '').includes('Aventuras do Her'))
-    .reduce((acc, curr) => acc + curr.amount, 0);
-  
   // Total investido na Caverna
   const totalInvested = assets.reduce((acc, curr) => acc + curr.value, 0);
   const totalYields = totalInvested * 0.15; // Mock de rendimentos (15%)
@@ -143,9 +130,33 @@ export default function Dashboard() {
       
       <main className="w-full px-4 sm:px-6 lg:px-8 py-6 pb-32">
         {/* [RESPONSIVIDADE] Título da Seção com margem inferior ajustada */}
-        <header className="mb-8">
-          <h2 className="text-2xl font-display font-bold text-gray-900">Reino</h2>
-          <p className="text-sm text-gray-500">Seu centro de comando e progresso</p>
+        <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-display font-bold text-gray-900">Reino</h2>
+            <p className="text-sm text-gray-500">Seu centro de comando e progresso</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <select 
+              value={month} 
+              onChange={(e) => setMonth(parseInt(e.target.value))}
+              className="text-sm border-gray-200 rounded-xl bg-white text-gray-700 focus:ring-emerald-500 focus:border-emerald-500 p-2 shadow-sm"
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                <option key={m} value={m}>
+                  {new Date(2000, m - 1).toLocaleString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date(2000, m - 1).toLocaleString('pt-BR', { month: 'long' }).slice(1)}
+                </option>
+              ))}
+            </select>
+            <select 
+              value={year} 
+              onChange={(e) => setYear(parseInt(e.target.value))}
+              className="text-sm border-gray-200 rounded-xl bg-white text-gray-700 focus:ring-emerald-500 focus:border-emerald-500 p-2 shadow-sm"
+            >
+              {[year - 1, year, year + 1].map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
         </header>
 
         {/* [RESPONSIVIDADE] Container principal usando CSS Grid. 
@@ -179,17 +190,6 @@ export default function Dashboard() {
                       <p className="text-white/80 text-[10px] font-black uppercase tracking-[0.2em]">Seu Poder (Herói)</p>
                     </div>
                     <h4 className="text-2xl font-display font-bold mb-4">R$ {myInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h4>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-[9px] font-black text-white/60 uppercase tracking-wider mb-1">Suas Receitas</p>
-                        <p className="text-sm font-bold">{formatCurrency(myIncome)}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-black text-white/60 uppercase tracking-wider mb-1">Suas Despesas</p>
-                        <p className="text-sm font-bold">{formatCurrency(myExpenses)}</p>
-                      </div>
-                    </div>
                   </div>
                 )}
 
@@ -212,7 +212,16 @@ export default function Dashboard() {
                         </span>
                       </div>
                       <p className="text-xs text-white/60 mb-2">Receitas Fixas</p>
-                      <p className="text-lg font-bold text-emerald-300">{formatCurrency(cofreReinoTotal)}</p>
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Realizado</p>
+                          <p className="text-lg font-bold text-emerald-300">{formatCurrency(cofreReino.realizado)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Orçado</p>
+                          <p className="text-sm font-medium text-white/80">{formatCurrency(cofreReino.orcado)}</p>
+                        </div>
+                      </div>
                     </Link>
 
                     <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
@@ -223,7 +232,16 @@ export default function Dashboard() {
                         </span>
                       </div>
                       <p className="text-xs text-white/60 mb-2">Receitas Variáveis</p>
-                      <p className="text-lg font-bold text-emerald-300">{formatCurrency(saquesMissoesTotal)}</p>
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Realizado</p>
+                          <p className="text-lg font-bold text-emerald-300">{formatCurrency(saquesMissoes.realizado)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Orçado</p>
+                          <p className="text-sm font-medium text-white/80">{formatCurrency(saquesMissoes.orcado)}</p>
+                        </div>
+                      </div>
                     </Link>
                   </div>
 
@@ -244,7 +262,16 @@ export default function Dashboard() {
                         </span>
                       </div>
                       <p className="text-xs text-white/60 mb-2">Despesas Fixas</p>
-                      <p className="text-lg font-bold text-red-300">{formatCurrency(tributosReinoTotal)}</p>
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Realizado</p>
+                          <p className="text-lg font-bold text-red-300">{formatCurrency(tributosReino.realizado)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Orçado</p>
+                          <p className="text-sm font-medium text-white/80">{formatCurrency(tributosReino.orcado)}</p>
+                        </div>
+                      </div>
                     </Link>
 
                     <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
@@ -255,12 +282,35 @@ export default function Dashboard() {
                         </span>
                       </div>
                       <p className="text-xs text-white/60 mb-2">Despesas Variáveis</p>
-                      <p className="text-lg font-bold text-red-300">{formatCurrency(aventurasHeroiTotal)}</p>
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Realizado</p>
+                          <p className="text-lg font-bold text-red-300">{formatCurrency(aventurasHeroi.realizado)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Orçado</p>
+                          <p className="text-sm font-medium text-white/80">{formatCurrency(aventurasHeroi.orcado)}</p>
+                        </div>
+                      </div>
                     </Link>
                   </div>
                 </div>
               </div>
             </motion.div>
+
+            {/* Botão Poder dos Investimentos */}
+            <Link href="/investments" className={cn("w-full p-4 rounded-2xl border flex items-center justify-between transition-all hover:scale-[1.02] bg-white border-gray-100 shadow-sm block")}>
+              <div className="flex items-center gap-3">
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm", colors.primary)}>
+                  <Zap className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-gray-900">Poder dos Investimentos</p>
+                  <p className="text-[10px] text-gray-500 font-medium">Visualizar detalhes na Caverna</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </Link>
 
             {/* Acesso Rápido */}
             {/* [RESPONSIVIDADE] 2 colunas no mobile, 2 colunas no desktop (já que está dentro da coluna esquerda) */}
@@ -322,7 +372,7 @@ export default function Dashboard() {
             </section>
 
             {/* Painel Orçado vs Realizado */}
-            <BudgetProgressPanel />
+            <BudgetProgressPanel month={month} year={year} hideSelectors={true} />
           </div>
 
           {/* [RESPONSIVIDADE] Coluna Direita no Desktop (Ocupa 5 de 12 colunas) */}

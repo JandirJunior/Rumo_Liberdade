@@ -7,17 +7,48 @@ import { BottomNav } from '@/components/BottomNav';
 import { Header } from '@/components/Header';
 import { MOCK_ASSETS } from '@/lib/data';
 import { formatCurrency, cn } from '@/lib/utils';
-import { Info, TrendingUp, AlertCircle, Sparkles, Zap, Shield, Swords, Compass, Wand2 } from 'lucide-react';
+import { Info, TrendingUp, AlertCircle, Sparkles, Zap, Shield, Swords, Compass, Wand2, Plus } from 'lucide-react';
 
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { useReino } from '@/hooks/useReino';
 
+import { Modal } from '@/components/Modal';
+
 export default function Investments() {
   const { theme } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
-  const { assets, loading } = useReino();
+  const { assets, loading, addInvestment } = useReino();
   const totalValue = assets.reduce((acc, curr) => acc + curr.value, 0);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newInvestment, setNewInvestment] = useState({
+    type: 'F',
+    ticker: '',
+    value: ''
+  });
+
+  const handleAddInvestment = async () => {
+    if (!newInvestment.ticker || !newInvestment.value) return;
+    
+    const typeMap: Record<string, string> = {
+      'F': 'fii',
+      'A': 'stock',
+      'C': 'crypto',
+      'E': 'etf',
+      'R': 'fixed_income',
+      'O': 'other'
+    };
+
+    await addInvestment({
+      type: typeMap[newInvestment.type],
+      ticker: newInvestment.ticker,
+      value: parseFloat(newInvestment.value)
+    });
+    
+    setIsModalOpen(false);
+    setNewInvestment({ type: 'F', ticker: '', value: '' });
+  };
 
   // Estado para garantir que o gráfico só seja renderizado no cliente (evita erro de SSR do Recharts)
   const [mounted, setMounted] = useState(false);
@@ -82,8 +113,17 @@ export default function Investments() {
             <h2 className="text-2xl font-display font-bold text-gray-900">Caverna</h2>
             <p className="text-sm text-gray-500">Onde seus rendimentos se transformam em poder</p>
           </div>
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
-            <Info className={cn("w-5 h-5", colors.accent)} />
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className={cn("px-4 h-10 rounded-xl flex items-center gap-2 text-white shadow-sm font-bold text-sm transition-transform active:scale-95", colors.primary)}
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Investir</span>
+            </button>
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
+              <Info className={cn("w-5 h-5", colors.accent)} />
+            </div>
           </div>
         </header>
 
@@ -226,6 +266,70 @@ export default function Investments() {
       </div>
       </main>
       <BottomNav />
+
+      {/* Modal para Adicionar Investimento */}
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setNewInvestment({ type: 'F', ticker: '', value: '' });
+        }} 
+        title="Novo Investimento"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Categoria F.A.C.E.R.O.</label>
+            <select 
+              value={newInvestment.type}
+              onChange={(e) => setNewInvestment({...newInvestment, type: e.target.value})}
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium text-gray-900"
+            >
+              <option value="F">Fundo Imobiliário</option>
+              <option value="A">Ações</option>
+              <option value="C">Cripto</option>
+              <option value="E">Exterior / ETFs</option>
+              <option value="R">Renda Fixa</option>
+              <option value="O">Outros investimentos / Oportunidades</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Ativo / Ticker</label>
+            <input 
+              type="text"
+              placeholder="Ex: MXRF11, PETR4, BTC"
+              value={newInvestment.ticker}
+              onChange={(e) => setNewInvestment({...newInvestment, ticker: e.target.value})}
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium text-gray-900"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Valor Investido</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">R$</span>
+              <input 
+                type="number"
+                placeholder="0.00"
+                value={newInvestment.value}
+                onChange={(e) => setNewInvestment({...newInvestment, value: e.target.value})}
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-bold text-gray-900"
+              />
+            </div>
+          </div>
+
+          <button 
+            onClick={handleAddInvestment}
+            disabled={!newInvestment.ticker || !newInvestment.value}
+            className={cn(
+              "w-full py-4 rounded-xl font-bold text-white shadow-lg transition-transform active:scale-95 mt-4",
+              (!newInvestment.ticker || !newInvestment.value) ? "bg-gray-300 cursor-not-allowed" : colors.primary
+            )}
+          >
+            Adicionar Investimento
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

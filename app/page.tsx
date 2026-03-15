@@ -47,7 +47,11 @@ export default function LoginPage() {
       router.push('/dashboard');
     } catch (err: any) {
       console.error(err);
-      setError('Falha ao autenticar. Tente novamente.');
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('O login foi cancelado. Por favor, tente novamente.');
+      } else {
+        setError('Falha ao autenticar. Tente novamente.');
+      }
     }
   };
 
