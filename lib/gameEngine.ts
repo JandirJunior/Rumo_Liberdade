@@ -1,5 +1,8 @@
 // lib/gameEngine.ts
 
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '@/firebase';
+
 export interface GameState {
   level: number;
   xp: number;
@@ -42,6 +45,27 @@ export function calculatePlayerLevel(xp: number): GameState {
     xp,
     title
   };
+}
+
+export async function addXP(userId: string, xpToAdd: number) {
+  if (xpToAdd <= 0) return;
+  
+  const userRef = doc(db, 'users', userId);
+  const userSnap = await getDoc(userRef);
+  
+  if (userSnap.exists()) {
+    const userData = userSnap.data();
+    const currentXp = userData.xp || 0;
+    const newXp = currentXp + xpToAdd;
+    const newState = calculatePlayerLevel(newXp);
+    
+    await updateDoc(userRef, {
+      xp: newXp,
+      level: newState.level,
+      title: newState.title,
+      lastActivityDate: new Date()
+    });
+  }
 }
 
 export function calculateXPFromBudgetControl(planned: number, actual: number): number {

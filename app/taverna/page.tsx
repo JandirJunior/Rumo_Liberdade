@@ -40,16 +40,16 @@ const ARCHETYPES: { type: Archetype; name: string; desc: string; icon: any; colo
     illustration: ARCHETYPE_IMAGES['Mago']
   },
   { 
-    type: 'Dwarf Minerador', 
+    type: 'Dwarf', 
     name: 'CACHE', 
     desc: 'Foco em Cripto Ativos e Moedas Digitais.', 
     icon: Pickaxe,
     color: 'bg-emerald-600',
-    illustration: ARCHETYPE_IMAGES['Dwarf Minerador']
+    illustration: ARCHETYPE_IMAGES['Dwarf']
   },
   { 
     type: 'Elfo', 
-    name: 'EXODO', 
+    name: 'EXODIA', 
     desc: 'Foco em Ações e Fundos e Variação Cambial, investimentos fora do Brasil.', 
     icon: Compass,
     color: 'bg-blue-600',

@@ -5,6 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { BudgetEntity, TransactionEntity, CategoryEntity } from '@/lib/financialEngine';
 import { useCategories } from './useCategories';
 import { useTheme } from '@/lib/ThemeContext';
+import { addXP } from '@/lib/gameEngine';
 
 export interface BudgetProgress {
   category_id: string;
@@ -102,6 +103,9 @@ export function useBudgets(month: number, year: number) {
     };
 
     await setDoc(doc(db, 'budgets', budgetId), budgetData, { merge: true });
+    
+    // Add XP for setting a budget
+    await addXP(auth.currentUser.uid, 20);
   };
 
   // Calculate progress

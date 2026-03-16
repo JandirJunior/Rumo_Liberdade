@@ -4,7 +4,7 @@
  */
 
 // Tipos de temas disponíveis
-export type ThemeType = 'festim' | 'arcano' | 'cache' | 'exodo' | 'reaver' | 'orbit' | 'default';
+export type ThemeType = 'festim' | 'arcano' | 'cache' | 'exodia' | 'reaver' | 'orbit' | 'default';
 
 // Interface que define as propriedades de cor de cada tema
 export interface ThemeColors {
@@ -50,7 +50,7 @@ export const THEMES: Record<ThemeType, ThemeColors> = {
     border: 'border-emerald-100',
     shadow: 'shadow-emerald-100',
   },
-  exodo: {
+  exodia: {
     primary: 'bg-blue-600',
     secondary: 'bg-blue-50',
     accent: 'text-blue-600',
@@ -96,8 +96,8 @@ export const THEMES: Record<ThemeType, ThemeColors> = {
 export const ARCHETYPE_THEME_MAP: Record<string, ThemeType> = {
   'Paladino': 'festim',
   'Mago': 'arcano',
-  'Dwarf Minerador': 'cache',
-  'Elfo': 'exodo',
+  'Dwarf': 'cache',
+  'Elfo': 'exodia',
   'Ladrão': 'reaver',
   'Hobbit': 'orbit',
   'Iniciante': 'default'

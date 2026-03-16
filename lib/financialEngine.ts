@@ -12,6 +12,7 @@ export interface UserEntity {
   mentor_selected?: string;
   level: number;
   xp: number;
+  title?: string;
   created_at: Date;
   avatarUrl?: string;
 }
@@ -184,6 +185,35 @@ export function calculateInvestmentPower(assets: any[]) {
   };
 }
 
+export function calculateUserBalance(transactions: TransactionEntity[]): number {
+  const income = transactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const expense = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const investment = transactions.filter(t => t.type === 'investment').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  return income - expense - investment;
+}
+
+export function calculateNetWorth(transactions: TransactionEntity[], investments: any[]): number {
+  const balance = calculateUserBalance(transactions);
+  const totalInvested = investments.reduce((acc, curr) => {
+    const val = Number(curr.current_value ?? curr.value ?? 0);
+    return acc + val;
+  }, 0);
+  return Number(balance || 0) + totalInvested;
+}
+
+export function calculateBudgetProgress(planned: number, actual: number) {
+  const percentage = planned > 0 ? (actual / planned) * 100 : 0;
+  return {
+    planned,
+    actual,
+    percentage
+  };
+}
+
+export function calculatePlayerPower(netWorth: number, totalInvested: number, budgetControlScore: number, consistencyScore: number): number {
+  return (netWorth * 0.4) + (totalInvested * 0.3) + (budgetControlScore * 0.2) + (consistencyScore * 0.1);
+}
+
 export const financialEngine = {
   // Cálculos
   calculateTotalBalance,
@@ -193,6 +223,10 @@ export const financialEngine = {
   calculateEarnings,
   calculateTotalEarnings,
   calculateInvestmentPower,
+  calculateUserBalance,
+  calculateNetWorth,
+  calculateBudgetProgress,
+  calculatePlayerPower,
 
   // Buscas
   async getUserAccounts(userId: string): Promise<AccountEntity[]> {

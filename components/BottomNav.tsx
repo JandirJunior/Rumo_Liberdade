@@ -6,7 +6,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Pickaxe, ScrollText, MessageSquare, BarChart3 } from 'lucide-react';
+import { Home, Pickaxe, ScrollText, MessageSquare, BarChart3, Skull } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
@@ -22,6 +22,7 @@ export function BottomNav() {
     { icon: BarChart3, label: 'Atributos', href: '/attributes' },
     { icon: Pickaxe, label: 'Caverna', href: '/investments' },
     { icon: ScrollText, label: 'Quests', href: '/transactions' },
+    { icon: Skull, label: 'Vilões', href: '/bosses' },
     { icon: MessageSquare, label: 'Mentor', href: '/chat' },
   ];
 

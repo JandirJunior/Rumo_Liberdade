@@ -60,7 +60,7 @@ export function AnnualChartPanel() {
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+          margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
         >
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
           <XAxis 
@@ -68,15 +68,13 @@ export function AnnualChartPanel() {
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 10, fill: '#6b7280' }}
-            angle={-45}
-            textAnchor="end"
-            height={60}
+            tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 12)}...` : value}
           />
           <YAxis 
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 10, fill: '#6b7280' }}
-            tickFormatter={(value) => `R$ ${value / 1000}k`}
+            tickFormatter={(value) => `R$ ${value >= 1000 ? value / 1000 + 'k' : value}`}
           />
           <Tooltip 
             formatter={(value: number) => formatCurrency(value)}
@@ -84,8 +82,8 @@ export function AnnualChartPanel() {
             contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
           />
           <Legend wrapperStyle={{ paddingTop: '20px' }} />
-          <Bar dataKey="Orçado" fill="#9ca3af" radius={[4, 4, 0, 0]} maxBarSize={40} />
-          <Bar dataKey="Realizado" radius={[4, 4, 0, 0]} maxBarSize={40}>
+          <Bar dataKey="Orçado" fill="#e5e7eb" radius={[6, 6, 0, 0]} maxBarSize={32} />
+          <Bar dataKey="Realizado" radius={[6, 6, 0, 0]} maxBarSize={32}>
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.flowType === 'income' ? '#10b981' : '#ef4444'} />
             ))}

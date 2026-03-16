@@ -104,13 +104,13 @@ export interface FaceroStats {
   F: number; // Festim (Renda Passiva)
   A: number; // Arcano (Ações/RV)
   C: number; // Cache (Cripto/Opções)
-  E: number; // Êxodo (Exterior)
+  E: number; // Exodia (Exterior)
   R: number; // Reaver (Renda Fixa)
   O: number; // Órbit (Oportunidades/Caixa)
 }
 
 // Arquétipos (Classes de Herói) disponíveis
-export type Archetype = 'Paladino' | 'Mago' | 'Dwarf Minerador' | 'Elfo' | 'Ladrão' | 'Hobbit' | 'Iniciante';
+export type Archetype = 'Paladino' | 'Mago' | 'Dwarf' | 'Elfo' | 'Ladrão' | 'Hobbit' | 'Iniciante';
 
 // Interface para o estado global do jogo do usuário
 export interface UserGameState {

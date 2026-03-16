@@ -5,8 +5,9 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
+import { useSearchParams } from 'next/navigation';
 import { Search, Filter, ArrowUpRight, ArrowDownLeft, Wallet, Plus, Sparkles, Edit2, Trash2 } from 'lucide-react';
 import { BottomNav } from '@/components/BottomNav';
 import { Header } from '@/components/Header';
@@ -32,6 +33,15 @@ export default function Transactions() {
 
   const [filter, setFilter] = useState<'all' | 'income' | 'expense' | 'investment'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const search = searchParams.get('search');
+    if (search) {
+      setSearchTerm(search);
+    }
+  }, [searchParams]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);

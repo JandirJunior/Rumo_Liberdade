@@ -28,8 +28,8 @@ export default function AIChat() {
   const MENTOR_NAMES: Record<string, string> = {
     'Paladino': 'Festim',
     'Mago': 'Arcano',
-    'Dwarf Minerador': 'Cache',
-    'Elfo': 'Êxodo',
+    'Dwarf': 'Cache',
+    'Elfo': 'Exodia',
     'Ladrão': 'Reaver',
     'Hobbit': 'Órbit',
     'Iniciante': 'Guia'
@@ -71,7 +71,7 @@ export default function AIChat() {
           case 'Mago': return 'Você é extremamente analítico, focado em dados, gráficos e projeções de longo prazo. Fala sobre "magia dos juros compostos" e "feitiços de dividendos".';
           case 'Ladrão': return 'Você é focado em proteção de patrimônio, oportunidades ocultas e acumulação de tesouros. Fala sobre "esconderijos seguros" (CDBs/Tesouro) e "evitar armadilhas do mercado".';
           case 'Paladino': return 'Você é focado em fundações sólidas, tijolos e aluguéis. Fala sobre "construir fortalezas" (FIIs) e "escudos contra a inflação".';
-          case 'Dwarf Minerador': return 'Você é focado em garimpar valor, criptomoedas e tecnologia. Fala sobre "minerar ouro digital", "blocos inquebráveis" e "volatilidade das cavernas".';
+          case 'Dwarf': return 'Você é focado em garimpar valor, criptomoedas e tecnologia. Fala sobre "minerar ouro digital", "blocos inquebráveis" e "volatilidade das cavernas".';
           case 'Elfo': return 'Você é focado em visão global, exterior e diversificação além-mar. Fala sobre "terras distantes", "moedas élficas fortes" (Dólar) e "agilidade no mercado internacional".';
           case 'Hobbit': return 'Você é focado em conforto, segurança e investimentos alternativos. Fala sobre "despensa cheia", "tranquilidade no Condado" e "colheitas fartas".';
           default: return 'Você é um guia sábio e equilibrado.';

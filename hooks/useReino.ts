@@ -8,6 +8,7 @@ import { collection, onSnapshot, query, orderBy, setDoc, doc, where } from 'fire
 import { onAuthStateChanged } from 'firebase/auth';
 import { Asset, Transaction } from '@/lib/types';
 import { MOCK_ASSETS, MOCK_TRANSACTIONS } from '@/lib/data';
+import { addXP, calculateXPFromInvestments } from '@/lib/gameEngine';
 
 export function useReino() {
   const [assets, setAssets] = useState<Asset[]>(MOCK_ASSETS);
@@ -106,6 +107,9 @@ export function useReino() {
       created_at: new Date()
     };
     await setDoc(doc(db, 'transactions', newId), newTransaction);
+    
+    // Add XP for registering a transaction (e.g., 10 XP per transaction)
+    await addXP(auth.currentUser.uid, 10);
   };
 
   const updateTransaction = async (id: string, transaction: Partial<Omit<Transaction, 'id' | 'organizationId' | 'userId' | 'createdAt'>>) => {
@@ -180,6 +184,10 @@ export function useReino() {
     batch.set(doc(db, 'transactions', newTransactionId), newTransaction);
 
     await batch.commit();
+    
+    // Add XP for investing
+    const xpGained = calculateXPFromInvestments(investment.value);
+    await addXP(auth.currentUser.uid, xpGained);
   };
 
   return { assets, transactions, loading, addTransaction, updateTransaction, deleteTransaction, updateAsset, addInvestment };

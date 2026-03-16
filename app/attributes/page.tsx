@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { BottomNav } from '@/components/BottomNav';
 import { formatCurrency, cn } from '@/lib/utils';
@@ -9,6 +10,7 @@ import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { TrendingUp, TrendingDown, Settings2, X, Target } from 'lucide-react';
 import { useReino } from '@/hooks/useReino';
+import { useBudgets } from '@/hooks/useBudgets';
 import { BudgetProgressPanel } from '@/src/components/BudgetProgressPanel';
 import { CategoryManagerPanel } from '@/src/components/CategoryManagerPanel';
 import { AnnualChartPanel } from '@/src/components/AnnualChartPanel';
@@ -20,15 +22,23 @@ export default function Attributes() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
 
-  // For now, we'll just calculate actuals from transactions for the summary cards.
   const today = new Date();
-  const currentMonthTransactions = transactions.filter(t => {
-    const d = new Date(t.date);
-    return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
-  });
+  const [month, setMonth] = useState(today.getMonth() + 1);
+  const [year, setYear] = useState(today.getFullYear());
 
-  const totalActualIncome = currentMonthTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
-  const totalActualExpenses = currentMonthTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
+  const { budgetProgress } = useBudgets(month, year);
+
+  const getRpgGroupTotals = (groupName: string) => {
+    const groupItems = budgetProgress.filter(b => b.rpg_group === groupName);
+    const orcado = groupItems.reduce((acc, curr) => acc + curr.orcado, 0);
+    const realizado = groupItems.reduce((acc, curr) => acc + curr.gasto_real, 0);
+    return { orcado, realizado };
+  };
+
+  const cofreReino = getRpgGroupTotals('💎 Cofre do Reino (Receitas Fixas)');
+  const saquesMissoes = getRpgGroupTotals('⚡ Saques de Misssões (Receitas Variáveis)');
+  const tributosReino = getRpgGroupTotals('🛡️ Tributos do Reino (Despesas Fixas)');
+  const aventurasHeroi = getRpgGroupTotals('⚔️ Aventuras do Herói (Despesas Variáveis)');
   
   return (
     <div className={cn("min-h-screen transition-colors duration-500", colors.bg)}>
@@ -58,35 +68,107 @@ export default function Attributes() {
           </div>
         </header>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <section className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
-                  <TrendingUp className="w-5 h-5" />
-                </div>
-                <span className="text-sm font-bold text-gray-900">Receitas (Realizado)</span>
+        {/* Grid de receitas/despesas */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Coluna de Receitas */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-4 h-4 text-emerald-500" />
+              <span className="text-xs font-black text-gray-700 uppercase tracking-wider">
+                Receitas
+              </span>
+            </div>
+            
+            <Link href="/transactions" className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer block">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">💎</span>
+                <span className="text-[10px] font-black text-gray-700 uppercase tracking-wider">
+                  Cofre do Reino
+                </span>
               </div>
-            </div>
-            <div className="pt-2">
-              <p className="text-2xl font-display font-bold text-emerald-600">{formatCurrency(totalActualIncome)}</p>
-            </div>
-          </section>
+              <p className="text-xs text-gray-500 mb-2">Receitas Fixas</p>
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Realizado</p>
+                  <p className="text-lg font-bold text-emerald-600">{formatCurrency(cofreReino.realizado)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Orçado</p>
+                  <p className="text-sm font-medium text-gray-700">{formatCurrency(cofreReino.orcado)}</p>
+                </div>
+              </div>
+            </Link>
 
-          <section className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-600">
-                  <TrendingDown className="w-5 h-5" />
-                </div>
-                <span className="text-sm font-bold text-gray-900">Despesas (Realizado)</span>
+            <Link href="/transactions" className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer block">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">⚡</span>
+                <span className="text-[10px] font-black text-gray-700 uppercase tracking-wider">
+                  Saques de Missões
+                </span>
               </div>
+              <p className="text-xs text-gray-500 mb-2">Receitas Variáveis</p>
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Realizado</p>
+                  <p className="text-lg font-bold text-emerald-600">{formatCurrency(saquesMissoes.realizado)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Orçado</p>
+                  <p className="text-sm font-medium text-gray-700">{formatCurrency(saquesMissoes.orcado)}</p>
+                </div>
+              </div>
+            </Link>
+          </div>
+
+          {/* Coluna de Despesas */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingDown className="w-4 h-4 text-red-500" />
+              <span className="text-xs font-black text-gray-700 uppercase tracking-wider">
+                Despesas
+              </span>
             </div>
-            <div className="pt-2">
-              <p className="text-2xl font-display font-bold text-red-600">{formatCurrency(totalActualExpenses)}</p>
-            </div>
-          </section>
+
+            <Link href="/transactions" className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer block">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">🛡️</span>
+                <span className="text-[10px] font-black text-gray-700 uppercase tracking-wider">
+                  Tributos do Reino
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mb-2">Despesas Fixas</p>
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Realizado</p>
+                  <p className="text-lg font-bold text-red-600">{formatCurrency(tributosReino.realizado)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Orçado</p>
+                  <p className="text-sm font-medium text-gray-700">{formatCurrency(tributosReino.orcado)}</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/transactions" className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer block">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">⚔️</span>
+                <span className="text-[10px] font-black text-gray-700 uppercase tracking-wider">
+                  Aventuras do Herói
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mb-2">Despesas Variáveis</p>
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Realizado</p>
+                  <p className="text-lg font-bold text-red-600">{formatCurrency(aventurasHeroi.realizado)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Orçado</p>
+                  <p className="text-sm font-medium text-gray-700">{formatCurrency(aventurasHeroi.orcado)}</p>
+                </div>
+              </div>
+            </Link>
+          </div>
         </div>
 
         {/* Annual Chart Section */}
@@ -96,6 +178,11 @@ export default function Attributes() {
             <p className="text-sm text-gray-500">Comparativo de Orçamento vs Realizado no mês atual.</p>
           </header>
           <AnnualChartPanel />
+        </section>
+
+        {/* Budget Progress Panel */}
+        <section className="space-y-6">
+          <BudgetProgressPanel month={today.getMonth() + 1} year={today.getFullYear()} hideSelectors={true} />
         </section>
 
       </main>

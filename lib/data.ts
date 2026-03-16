@@ -93,7 +93,7 @@ export const MOCK_TRANSACTIONS: Transaction[] = [
 export const ARCHETYPE_IMAGES: Record<string, ImageKey> = {
   'Paladino': 'FESTIN',
   'Mago': 'ARCANO',
-  'Dwarf Minerador': 'CACHE',
+  'Dwarf': 'CACHE',
   'Elfo': 'EXODIA',
   'Ladrão': 'REAVER',
   'Hobbit': 'ORBIT',

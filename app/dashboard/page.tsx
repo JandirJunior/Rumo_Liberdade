@@ -20,7 +20,7 @@ import { useReino } from '@/hooks/useReino';
 import { useCategories } from '@/hooks/useCategories';
 import { useBudgets } from '@/hooks/useBudgets';
 import { getNextCharacter, STATIC_CHARACTERS } from '@/lib/characters';
-import { BudgetProgressPanel } from '@/src/components/BudgetProgressPanel';
+
 
 import { auth } from '@/firebase';
 
@@ -86,7 +86,7 @@ export default function Dashboard() {
     { subject: 'Festim', A: getFaceroPercent('F'), fullMark: 100 },
     { subject: 'Arcano', A: getFaceroPercent('A'), fullMark: 100 },
     { subject: 'Cache', A: getFaceroPercent('C'), fullMark: 100 },
-    { subject: 'Êxodo', A: getFaceroPercent('E'), fullMark: 100 },
+    { subject: 'Exodia', A: getFaceroPercent('E'), fullMark: 100 },
     { subject: 'Reaver', A: getFaceroPercent('R'), fullMark: 100 },
     { subject: 'Órbit', A: getFaceroPercent('O'), fullMark: 100 },
   ];
@@ -115,7 +115,7 @@ export default function Dashboard() {
     switch(gameState.archetype) {
       case 'Paladino': return <Shield className="w-6 h-6" />;
       case 'Mago': return <Wand2 className="w-6 h-6" />;
-      case 'Dwarf Minerador': return <Pickaxe className="w-6 h-6" />;
+      case 'Dwarf': return <Pickaxe className="w-6 h-6" />;
       case 'Elfo': return <Compass className="w-6 h-6" />;
       case 'Ladrão': return <VenetianMask className="w-6 h-6" />;
       case 'Hobbit': return <Home className="w-6 h-6" />;
@@ -193,108 +193,7 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {/* [RESPONSIVIDADE] Grid de receitas/despesas: 1 coluna no mobile muito pequeno, 2 colunas a partir de sm */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Coluna de Receitas */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="w-4 h-4 text-emerald-300" />
-                      <span className="text-xs font-black text-white/80 uppercase tracking-wider">
-                        Receitas
-                      </span>
-                    </div>
-                    
-                    <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">💎</span>
-                        <span className="text-[10px] font-black text-white/80 uppercase tracking-wider">
-                          Cofre do Reino
-                        </span>
-                      </div>
-                      <p className="text-xs text-white/60 mb-2">Receitas Fixas</p>
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Realizado</p>
-                          <p className="text-lg font-bold text-emerald-300">{formatCurrency(cofreReino.realizado)}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Orçado</p>
-                          <p className="text-sm font-medium text-white/80">{formatCurrency(cofreReino.orcado)}</p>
-                        </div>
-                      </div>
-                    </Link>
-
-                    <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">⚡</span>
-                        <span className="text-[10px] font-black text-white/80 uppercase tracking-wider">
-                          Saques de Missões
-                        </span>
-                      </div>
-                      <p className="text-xs text-white/60 mb-2">Receitas Variáveis</p>
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Realizado</p>
-                          <p className="text-lg font-bold text-emerald-300">{formatCurrency(saquesMissoes.realizado)}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Orçado</p>
-                          <p className="text-sm font-medium text-white/80">{formatCurrency(saquesMissoes.orcado)}</p>
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-
-                  {/* Coluna de Despesas */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingDown className="w-4 h-4 text-red-300" />
-                      <span className="text-xs font-black text-white/80 uppercase tracking-wider">
-                        Despesas
-                      </span>
-                    </div>
-
-                    <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">🛡️</span>
-                        <span className="text-[10px] font-black text-white/80 uppercase tracking-wider">
-                          Tributos do Reino
-                        </span>
-                      </div>
-                      <p className="text-xs text-white/60 mb-2">Despesas Fixas</p>
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Realizado</p>
-                          <p className="text-lg font-bold text-red-300">{formatCurrency(tributosReino.realizado)}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Orçado</p>
-                          <p className="text-sm font-medium text-white/80">{formatCurrency(tributosReino.orcado)}</p>
-                        </div>
-                      </div>
-                    </Link>
-
-                    <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">⚔️</span>
-                        <span className="text-[10px] font-black text-white/80 uppercase tracking-wider">
-                          Aventuras do Herói
-                        </span>
-                      </div>
-                      <p className="text-xs text-white/60 mb-2">Despesas Variáveis</p>
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Realizado</p>
-                          <p className="text-lg font-bold text-red-300">{formatCurrency(aventurasHeroi.realizado)}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Orçado</p>
-                          <p className="text-sm font-medium text-white/80">{formatCurrency(aventurasHeroi.orcado)}</p>
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-                </div>
+                {/* [RESPONSIVIDADE] Grid de receitas/despesas removido para a página de Atributos */}
               </div>
             </motion.div>
 
@@ -371,8 +270,7 @@ export default function Dashboard() {
               </div>
             </section>
 
-            {/* Painel Orçado vs Realizado */}
-            <BudgetProgressPanel month={month} year={year} hideSelectors={true} />
+
           </div>
 
           {/* [RESPONSIVIDADE] Coluna Direita no Desktop (Ocupa 5 de 12 colunas) */}
