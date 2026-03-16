@@ -50,7 +50,7 @@ export function useCategories() {
 
           if (schemaPart.titulo === '💎 Cofre do Reino (Receitas Fixas)') {
             icon = 'Castle'; color = 'bg-emerald-500'; rpgThemeName = 'Cofre do Reino';
-          } else if (schemaPart.titulo === '⚡ Saques de Misssões (Receitas Variáveis)') {
+          } else if (schemaPart.titulo === '⚡ Saques de Missões (Receitas Variáveis)') {
             icon = 'Target'; color = 'bg-amber-500'; rpgThemeName = 'Saques de Missões';
           } else if (schemaPart.titulo === '🛡️ Tributos do Reino (Despesas Fixas)') {
             icon = 'Castle'; color = 'bg-indigo-500'; rpgThemeName = 'Tributos do Reino';

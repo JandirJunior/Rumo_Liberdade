@@ -26,7 +26,7 @@ export function CategoryManagerPanel() {
 
   const rpgGroups = [
     '💎 Cofre do Reino (Receitas Fixas)',
-    '⚡ Saques de Misssões (Receitas Variáveis)',
+    '⚡ Saques de Missões (Receitas Variáveis)',
     '🛡️ Tributos do Reino (Despesas Fixas)',
     '⚔️ Aventuras do Herói (Despesas Variáveis)'
   ];
@@ -34,7 +34,7 @@ export function CategoryManagerPanel() {
   const getRpgGroupDetails = (rpgGroup: string) => {
     switch (rpgGroup) {
       case '💎 Cofre do Reino (Receitas Fixas)': return { icon: <Castle className="w-4 h-4" />, color: 'bg-emerald-500', text: 'text-emerald-500' };
-      case '⚡ Saques de Misssões (Receitas Variáveis)': return { icon: <Target className="w-4 h-4" />, color: 'bg-amber-500', text: 'text-amber-500' };
+      case '⚡ Saques de Missões (Receitas Variáveis)': return { icon: <Target className="w-4 h-4" />, color: 'bg-amber-500', text: 'text-amber-500' };
       case '🛡️ Tributos do Reino (Despesas Fixas)': return { icon: <Castle className="w-4 h-4" />, color: 'bg-indigo-500', text: 'text-indigo-500' };
       case '⚔️ Aventuras do Herói (Despesas Variáveis)': return { icon: <Compass className="w-4 h-4" />, color: 'bg-rose-500', text: 'text-rose-500' };
       default: return { icon: <Target className="w-4 h-4" />, color: 'bg-gray-500', text: 'text-gray-500' };
@@ -170,7 +170,7 @@ export function CategoryManagerPanel() {
                   let group_type: 'fixed' | 'variable' = 'variable';
                   
                   if (group === '💎 Cofre do Reino (Receitas Fixas)') { flow_type = 'income'; group_type = 'fixed'; }
-                  else if (group === '⚡ Saques de Misssões (Receitas Variáveis)') { flow_type = 'income'; group_type = 'variable'; }
+                  else if (group === '⚡ Saques de Missões (Receitas Variáveis)') { flow_type = 'income'; group_type = 'variable'; }
                   else if (group === '🛡️ Tributos do Reino (Despesas Fixas)') { flow_type = 'expense'; group_type = 'fixed'; }
                   else if (group === '⚔️ Aventuras do Herói (Despesas Variáveis)') { flow_type = 'expense'; group_type = 'variable'; }
 
