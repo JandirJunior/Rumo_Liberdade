@@ -26,6 +26,10 @@ export default function Transactions() {
   const { transactions, addTransaction, updateTransaction, deleteTransaction } = useReino();
   const { categories } = useCategories();
   
+  const today = new Date();
+  const [month, setMonth] = useState(today.getMonth() + 1);
+  const [year, setYear] = useState(today.getFullYear());
+
   const [filter, setFilter] = useState<'all' | 'income' | 'expense' | 'investment'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -136,9 +140,12 @@ export default function Transactions() {
   };
 
   const filteredTransactions = transactions.filter(t => {
+    const d = new Date(t.date);
+    const matchesMonth = d.getMonth() + 1 === month;
+    const matchesYear = d.getFullYear() === year;
     const matchesFilter = filter === 'all' || t.type === filter;
     const matchesSearch = (t.description || '').toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
+    return matchesMonth && matchesYear && matchesFilter && matchesSearch;
   });
 
   // Group categories by rpg_group for the select dropdown
@@ -155,16 +162,35 @@ export default function Transactions() {
     return acc;
   }, {} as Record<string, typeof categories>);
 
-  const today = new Date();
   const currentMonthTransactions = transactions.filter(t => {
     const d = new Date(t.date);
-    return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+    return d.getMonth() + 1 === month && d.getFullYear() === year;
   });
 
   const totalActualIncome = currentMonthTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
   const totalActualExpenses = currentMonthTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
   
   const surplus = totalActualIncome - totalActualExpenses;
+
+  const handlePrevMonth = () => {
+    if (month === 1) {
+      setMonth(12);
+      setYear(y => y - 1);
+    } else {
+      setMonth(m => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (month === 12) {
+      setMonth(1);
+      setYear(y => y + 1);
+    } else {
+      setMonth(m => m + 1);
+    }
+  };
+
+  const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
   return (
     <div className={cn("min-h-screen transition-colors duration-500", colors.bg)}>
@@ -182,6 +208,20 @@ export default function Transactions() {
               className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform active:scale-95", colors.primary)}
             >
               <Plus className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Month/Year Filter */}
+          <div className="flex items-center justify-between bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
+            <button onClick={handlePrevMonth} className="p-2 text-gray-400 hover:text-gray-900 transition-colors">
+              <ArrowDownLeft className="w-5 h-5 rotate-45" />
+            </button>
+            <div className="text-center">
+              <p className="text-sm font-bold text-gray-900">{monthNames[month - 1]}</p>
+              <p className="text-xs text-gray-500">{year}</p>
+            </div>
+            <button onClick={handleNextMonth} className="p-2 text-gray-400 hover:text-gray-900 transition-colors">
+              <ArrowUpRight className="w-5 h-5 rotate-45" />
             </button>
           </div>
         

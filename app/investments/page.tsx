@@ -15,11 +15,14 @@ import { useReino } from '@/hooks/useReino';
 
 import { Modal } from '@/components/Modal';
 
+import { financialEngine } from '@/lib/financialEngine';
+
 export default function Investments() {
   const { theme } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
   const { assets, loading, addInvestment } = useReino();
-  const totalValue = assets.reduce((acc, curr) => acc + curr.value, 0);
+  
+  const { totalValue, aggregated } = financialEngine.calculateInvestmentPower(assets);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newInvestment, setNewInvestment] = useState({
@@ -57,9 +60,9 @@ export default function Investments() {
     setMounted(true);
   }, []);
 
-  const chartData = assets.map(asset => ({
-    name: asset.type,
-    atual: (asset.value / totalValue) * 100,
+  const chartData = aggregated.map(asset => ({
+    name: asset.name,
+    atual: asset.currentPercent * 100,
     alvo: asset.targetPercent * 100,
     valor: asset.value,
   }));
@@ -197,20 +200,20 @@ export default function Investments() {
               </div>
               
               <div className="space-y-4">
-                {assets.filter(a => (a.value / totalValue) < a.targetPercent).map((asset, i) => (
+                {aggregated.filter(a => a.deficit > 0).map((asset, i) => (
                   <div key={i} className="flex items-center justify-between bg-white/10 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
                         {getFaceroIcon(asset.faceroType)}
                       </div>
                       <div>
-                        <p className="text-sm font-bold">{asset.type}</p>
+                        <p className="text-sm font-bold">{asset.name}</p>
                         <p className="text-[10px] text-white/60 font-bold uppercase tracking-wider">Déficit de Poder</p>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm font-black text-white">Aportar</p>
-                      <p className="text-[10px] text-white/60">-{((asset.targetPercent - (asset.value / totalValue)) * 100).toFixed(1)}%</p>
+                      <p className="text-[10px] text-white/60">-{((asset.deficit) * 100).toFixed(1)}%</p>
                     </div>
                   </div>
                 ))}
@@ -226,35 +229,19 @@ export default function Investments() {
             <h4 className="text-lg font-display font-bold text-gray-900">Inventário de Ativos</h4>
             {/* [RESPONSIVIDADE] No mobile é 1 coluna, no tablet (sm) divide em 2 colunas, no desktop (lg) volta pra 1 coluna pois já está na coluna direita do grid principal */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-              {assets.map((asset, i) => (
+              {aggregated.map((asset, i) => (
                 <div key={i} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-emerald-600 shrink-0">
                       {getFaceroIcon(asset.faceroType)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-gray-900 truncate">{asset.type}</p>
-                      <p className="text-xs text-gray-500 truncate">{asset.segment}</p>
+                      <p className="text-sm font-bold text-gray-900 truncate">{asset.name}</p>
+                      <p className="text-xs text-gray-500 truncate">Alvo: {(asset.targetPercent * 100).toFixed(0)}%</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm font-bold text-gray-900">{formatCurrency(asset.value)}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{((asset.value / totalValue) * 100).toFixed(1)}%</p>
-                    </div>
-                  </div>
-                  
-                  {/* Item Status (P/VP, etc) */}
-                  <div className="flex gap-2 border-t border-gray-50 pt-3 mt-auto">
-                    <div className="flex-1 bg-gray-50 rounded-xl p-2 text-center">
-                      <p className="text-[8px] font-black text-gray-400 uppercase">P/VP</p>
-                      <p className="text-xs font-bold text-emerald-600">0.92</p>
-                    </div>
-                    <div className="flex-1 bg-gray-50 rounded-xl p-2 text-center">
-                      <p className="text-[8px] font-black text-gray-400 uppercase">DY</p>
-                      <p className="text-xs font-bold text-emerald-600">10.5%</p>
-                    </div>
-                    <div className="flex-1 bg-gray-50 rounded-xl p-2 text-center">
-                      <p className="text-[8px] font-black text-gray-400 uppercase">Status</p>
-                      <p className="text-[10px] font-bold text-emerald-500">BARATO</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{(asset.currentPercent * 100).toFixed(1)}%</p>
                     </div>
                   </div>
                 </div>

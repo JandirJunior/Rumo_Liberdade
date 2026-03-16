@@ -146,7 +146,9 @@ export function useReino() {
 
   const addInvestment = async (investment: { type: string, ticker: string, value: number }) => {
     if (!auth.currentUser) return;
-    const { doc, collection, setDoc } = await import('firebase/firestore');
+    const { doc, collection, setDoc, writeBatch } = await import('firebase/firestore');
+    const batch = writeBatch(db);
+
     const newId = doc(collection(db, 'investments')).id;
     const newInvestment = {
       id: newId,
@@ -160,7 +162,24 @@ export function useReino() {
       earnings: 0,
       created_at: new Date()
     };
-    await setDoc(doc(db, 'investments', newId), newInvestment);
+    batch.set(doc(db, 'investments', newId), newInvestment);
+
+    const newTransactionId = doc(collection(db, 'transactions')).id;
+    const newTransaction = {
+      id: newTransactionId,
+      user_id: auth.currentUser.uid,
+      account_id: 'default',
+      type: 'investment',
+      category: 'Investimento',
+      category_id: 'investment_auto',
+      amount: investment.value,
+      description: `Aporte em ${investment.ticker}`,
+      date: new Date().toISOString().split('T')[0],
+      created_at: new Date()
+    };
+    batch.set(doc(db, 'transactions', newTransactionId), newTransaction);
+
+    await batch.commit();
   };
 
   return { assets, transactions, loading, addTransaction, updateTransaction, deleteTransaction, updateAsset, addInvestment };

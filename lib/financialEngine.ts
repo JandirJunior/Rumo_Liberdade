@@ -141,6 +141,49 @@ export function calculateTotalEarnings(investments: InvestmentEntity[]): number 
 // FUNÇÕES DE ACESSO A DADOS (Firestore)
 // ==========================================
 
+export const FACERO_TARGETS: Record<string, number> = {
+  'F': 0.40, // 40% Fundo Imobiliário
+  'A': 0.30, // 30% Ações
+  'C': 0.05, // 5% Cripto
+  'E': 0.10, // 10% Exterior / ETFs
+  'R': 0.10, // 10% Renda Fixa
+  'O': 0.05, // 5% Outros
+};
+
+export const FACERO_LABELS: Record<string, string> = {
+  'F': 'Fundo Imobiliário',
+  'A': 'Ações',
+  'C': 'Cripto',
+  'E': 'Exterior / ETFs',
+  'R': 'Renda Fixa',
+  'O': 'Outros',
+};
+
+export function calculateInvestmentPower(assets: any[]) {
+  const totalValue = assets.reduce((acc, curr) => acc + curr.value, 0);
+  
+  const aggregated = Object.keys(FACERO_TARGETS).map(key => {
+    const typeAssets = assets.filter(a => a.faceroType === key);
+    const value = typeAssets.reduce((acc, curr) => acc + curr.value, 0);
+    const targetPercent = FACERO_TARGETS[key];
+    const currentPercent = totalValue > 0 ? value / totalValue : 0;
+    
+    return {
+      faceroType: key as 'F' | 'A' | 'C' | 'E' | 'R' | 'O',
+      name: FACERO_LABELS[key],
+      value,
+      targetPercent,
+      currentPercent,
+      deficit: targetPercent - currentPercent > 0 ? targetPercent - currentPercent : 0
+    };
+  });
+
+  return {
+    totalValue,
+    aggregated
+  };
+}
+
 export const financialEngine = {
   // Cálculos
   calculateTotalBalance,
@@ -149,6 +192,7 @@ export const financialEngine = {
   calculateTotalWealth,
   calculateEarnings,
   calculateTotalEarnings,
+  calculateInvestmentPower,
 
   // Buscas
   async getUserAccounts(userId: string): Promise<AccountEntity[]> {
