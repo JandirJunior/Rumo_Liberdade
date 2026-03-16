@@ -14,6 +14,7 @@ import { useBudgets } from '@/hooks/useBudgets';
 import { BudgetProgressPanel } from '@/src/components/BudgetProgressPanel';
 import { CategoryManagerPanel } from '@/src/components/CategoryManagerPanel';
 import { AnnualChartPanel } from '@/src/components/AnnualChartPanel';
+import { RecurringAccountsPanel } from '@/src/components/RecurringAccountsPanel';
 
 export default function Attributes() {
   const { theme } = useTheme();
@@ -170,6 +171,11 @@ export default function Attributes() {
             </Link>
           </div>
         </div>
+
+        {/* Recurring Accounts Panel */}
+        <section>
+          <RecurringAccountsPanel />
+        </section>
 
         {/* Annual Chart Section */}
         <section className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-6">

@@ -181,6 +181,87 @@
         "earnings": { "type": "number" }
       },
       "required": ["id", "user_id", "type", "ticker", "quantity", "average_price", "invested_value", "current_value", "earnings"]
+    },
+    "AccountPayable": {
+      "title": "AccountPayable",
+      "description": "Represents an account payable (bill).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "dueDate": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["pending", "paid", "overdue", "cancelled"] },
+        "paymentMethod": { "type": "string" },
+        "creditCardId": { "type": "string" },
+        "installments": { "type": "number" },
+        "currentInstallment": { "type": "number" },
+        "isRecurring": { "type": "boolean" },
+        "recurrenceRule": { "type": "string" },
+        "nextRecurrenceDate": { "type": "string", "format": "date" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "paidAt": { "type": "string", "format": "date-time" },
+        "transactionId": { "type": "string" }
+      },
+      "required": ["id", "userId", "description", "amount", "dueDate", "status", "createdAt"]
+    },
+    "AccountReceivable": {
+      "title": "AccountReceivable",
+      "description": "Represents an account receivable.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "dueDate": { "type": "string", "format": "date" },
+        "payer": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "received", "defaulted", "cancelled"] },
+        "isRecurring": { "type": "boolean" },
+        "recurrenceRule": { "type": "string" },
+        "nextRecurrenceDate": { "type": "string", "format": "date" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "receivedAt": { "type": "string", "format": "date-time" },
+        "transactionId": { "type": "string" }
+      },
+      "required": ["id", "userId", "description", "amount", "dueDate", "status", "createdAt"]
+    },
+    "CreditCard": {
+      "title": "CreditCard",
+      "description": "Represents a credit card.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "limit": { "type": "number" },
+        "closingDay": { "type": "number" },
+        "dueDay": { "type": "number" }
+      },
+      "required": ["id", "userId", "name", "limit", "closingDay", "dueDay"]
+    },
+    "CreditCardInvoice": {
+      "title": "CreditCardInvoice",
+      "description": "Represents a credit card invoice.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "cardId": { "type": "string" },
+        "userId": { "type": "string" },
+        "month": { "type": "number" },
+        "year": { "type": "number" },
+        "closingDate": { "type": "string", "format": "date" },
+        "dueDate": { "type": "string", "format": "date" },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["open", "closed", "paid", "overdue"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "paidAt": { "type": "string", "format": "date-time" },
+        "transactionId": { "type": "string" }
+      },
+      "required": ["id", "cardId", "userId", "month", "year", "closingDate", "dueDate", "totalAmount", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -208,5 +289,21 @@
       "schema": { "$ref": "#/entities/Investment" },
       "description": "Stores investments."
     },
+    "accounts_payable/{payableId}": {
+      "schema": { "$ref": "#/entities/AccountPayable" },
+      "description": "Stores accounts payable (bills)."
+    },
+    "accounts_receivable/{receivableId}": {
+      "schema": { "$ref": "#/entities/AccountReceivable" },
+      "description": "Stores accounts receivable."
+    },
+    "credit_cards/{cardId}": {
+      "schema": { "$ref": "#/entities/CreditCard" },
+      "description": "Stores credit cards."
+    },
+    "credit_card_invoices/{invoiceId}": {
+      "schema": { "$ref": "#/entities/CreditCardInvoice" },
+      "description": "Stores credit card invoices."
+    }
   }
 }

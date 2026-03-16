@@ -134,6 +134,75 @@ export interface MonthlyBudget {
   expenses: BudgetItem[];
 }
 
+// --- NOVAS INTERFACES DE CONTAS E CARTÕES ---
+
+export type AccountStatus = 'pending' | 'paid' | 'overdue' | 'cancelled';
+export type ReceivableStatus = 'pending' | 'received' | 'defaulted' | 'cancelled';
+export type InvoiceStatus = 'open' | 'closed' | 'paid' | 'overdue';
+
+export interface AccountPayable {
+  id: string;
+  userId: string;
+  description: string;
+  amount: number;
+  category?: string;
+  dueDate: string;
+  status: AccountStatus;
+  paymentMethod?: string;
+  creditCardId?: string;
+  installments?: number;
+  currentInstallment?: number;
+  isRecurring?: boolean;
+  recurrenceRule?: string;
+  nextRecurrenceDate?: string;
+  createdAt: string;
+  paidAt?: string;
+  transactionId?: string;
+}
+
+export interface AccountReceivable {
+  id: string;
+  userId: string;
+  description: string;
+  amount: number;
+  category?: string;
+  dueDate: string;
+  payer?: string;
+  status: ReceivableStatus;
+  isRecurring?: boolean;
+  recurrenceRule?: string;
+  nextRecurrenceDate?: string;
+  createdAt: string;
+  receivedAt?: string;
+  transactionId?: string;
+}
+
+export interface CreditCard {
+  id: string;
+  userId: string;
+  name: string;
+  limit: number;
+  closingDay: number;
+  dueDay: number;
+}
+
+export interface CreditCardInvoice {
+  id: string;
+  cardId: string;
+  userId: string;
+  month: number;
+  year: number;
+  closingDate: string;
+  dueDate: string;
+  totalAmount: number;
+  status: InvoiceStatus;
+  createdAt: string;
+  paidAt?: string;
+  transactionId?: string;
+}
+
+// --- FIM NOVAS INTERFACES ---
+
 // Interface para o perfil financeiro detalhado do usuário
 export interface FinancialProfile {
   monthlyIncome: {
