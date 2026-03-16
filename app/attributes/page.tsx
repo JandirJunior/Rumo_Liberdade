@@ -37,7 +37,7 @@ export default function Attributes() {
   };
 
   const cofreReino = getRpgGroupTotals('💎 Cofre do Reino (Receitas Fixas)');
-  const saquesMissoes = getRpgGroupTotals('⚡ Saques de Misssões (Receitas Variáveis)');
+  const saquesMissoes = getRpgGroupTotals('⚡ Saques de Missões (Receitas Variáveis)');
   const tributosReino = getRpgGroupTotals('🛡️ Tributos do Reino (Despesas Fixas)');
   const aventurasHeroi = getRpgGroupTotals('⚔️ Aventuras do Herói (Despesas Variáveis)');
   
