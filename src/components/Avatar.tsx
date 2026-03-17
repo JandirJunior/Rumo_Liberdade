@@ -1,4 +1,5 @@
 import { IMAGES } from "@/src/assets/images";
+import Image from "next/image";
 
 type AvatarProps = {
   character: keyof typeof IMAGES;
@@ -7,12 +8,14 @@ type AvatarProps = {
 
 export function Avatar({ character, size = 64 }: AvatarProps) {
   return (
-    <img
-      src={IMAGES[character]}
-      width={size}
-      height={size}
-      loading="lazy"
-      alt={character}
-    />
+    <div style={{ width: size, height: size, position: 'relative' }}>
+      <Image
+        src={IMAGES[character]}
+        fill
+        className="object-cover rounded-full"
+        alt={character}
+        referrerPolicy="no-referrer"
+      />
+    </div>
   );
 }

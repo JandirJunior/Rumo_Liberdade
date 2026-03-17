@@ -4,24 +4,29 @@ import { collection, onSnapshot, query, where, doc, getDocs, writeBatch, setDoc,
 import { onAuthStateChanged } from 'firebase/auth';
 import { CategoryEntity } from '@/lib/financialEngine';
 import { RPG_CATEGORIES_SCHEMA } from '@/lib/rpgCategories';
+import { useKingdom } from './useKingdom';
 
 export function useCategories() {
   const [categories, setCategories] = useState<CategoryEntity[]>([]);
   const [loading, setLoading] = useState(true);
+  const { kingdom, loading: kingdomLoading } = useKingdom();
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        setCategories([]);
-        setLoading(false);
-        return;
-      }
+    if (kingdomLoading) return;
 
-      const userId = user.uid;
-      const categoriesRef = collection(db, 'categories');
-      const q = query(categoriesRef, where('user_id', '==', userId));
+    if (!kingdom || !auth.currentUser) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCategories([]);
+      setLoading(false);
+      return;
+    }
 
-      // Check if user has categories, if not, create defaults
+    const userId = auth.currentUser.uid;
+    const categoriesRef = collection(db, 'categories');
+    const q = query(categoriesRef, where('kingdom_id', '==', kingdom.id));
+
+    // Check if kingdom has categories, if not, create defaults
+    const checkAndCreateDefaults = async () => {
       const snapshot = await getDocs(q);
       const hasRpgCategories = snapshot.docs.some(doc => doc.data().rpg_group);
       const hasEnoughCategories = snapshot.docs.length >= 20;
@@ -68,7 +73,9 @@ export function useCategories() {
               allowed_profiles: sub.usuarios || ['MonoUsuario', 'MultiUsuario'],
               icon,
               color,
-              rpg_theme_name: rpgThemeName
+              rpg_theme_name: rpgThemeName,
+              kingdom_id: kingdom.id,
+              created_by: userId
             };
             
             batch.set(newDocRef, {
@@ -88,35 +95,42 @@ export function useCategories() {
 
         await batch.commit();
       }
+    };
 
-      // Listen to categories
-      const unsubscribeCategories = onSnapshot(q, (snapshot) => {
-        const loadedCategories = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            ...data,
-            id: doc.id,
-            created_at: data.created_at?.toDate() || new Date()
-          } as CategoryEntity;
-        });
-        setCategories(loadedCategories);
-        setLoading(false);
+    checkAndCreateDefaults();
+
+    // Listen to categories
+    const unsubscribeCategories = onSnapshot(q, (snapshot) => {
+      const loadedCategories = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          ...data,
+          id: doc.id,
+          created_at: data.created_at?.toDate() || new Date()
+        } as CategoryEntity;
       });
-
-      return () => unsubscribeCategories();
+      setCategories(loadedCategories);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching categories:', error);
+      setLoading(false);
     });
 
-    return () => unsubscribeAuth();
-  }, []);
+    return () => {
+      unsubscribeCategories();
+    };
+  }, [kingdom, kingdomLoading]);
 
   const addCategory = async (category: Omit<CategoryEntity, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !kingdom) return;
     const newId = doc(collection(db, 'categories')).id;
     const newCategory = {
       ...category,
       id: newId,
       user_id: auth.currentUser.uid,
-      created_at: new Date()
+      created_at: new Date(),
+      kingdom_id: kingdom.id,
+      created_by: auth.currentUser.uid
     };
     await setDoc(doc(db, 'categories', newId), newCategory);
   };

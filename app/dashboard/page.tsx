@@ -22,7 +22,7 @@ import { useBudgets } from '@/hooks/useBudgets';
 import { getNextCharacter, STATIC_CHARACTERS } from '@/lib/characters';
 import { ActiveQuestsBoard } from '@/components/ActiveQuestsBoard';
 import { generateRecurringQuests } from '@/lib/recurringTasks';
-
+import { financialEngine } from '@/lib/financialEngine';
 
 import { auth } from '@/firebase';
 
@@ -57,24 +57,22 @@ export default function Dashboard() {
   };
 
   const cofreReino = getRpgGroupTotals('💎 Cofre do Reino (Receitas Fixas)');
-  const saquesMissoes = getRpgGroupTotals('⚡ Saques de Misssões (Receitas Variáveis)');
+  const saquesMissoes = getRpgGroupTotals('⚡ Saques de Missões (Receitas Variáveis)');
   const tributosReino = getRpgGroupTotals('🛡️ Tributos do Reino (Despesas Fixas)');
   const aventurasHeroi = getRpgGroupTotals('⚔️ Aventuras do Herói (Despesas Variáveis)');
 
   // Total investido na Caverna
-  const totalInvested = assets.reduce((acc, curr) => acc + curr.value, 0);
+  const { totalValue: totalInvested } = financialEngine.calculateInvestmentPower(assets);
   const totalYields = totalInvested * 0.15; // Mock de rendimentos (15%)
   const totalPower = totalInvested + totalYields;
 
   // Cálculos individuais do Herói
   const myAssets = assets.filter(a => a.userId === auth.currentUser?.uid);
-  const myInvested = myAssets.reduce((acc, curr) => acc + curr.value, 0);
-  const myIncome = transactions
-    .filter(t => t.type === 'income' && t.userId === auth.currentUser?.uid)
-    .reduce((acc, curr) => acc + curr.amount, 0);
-  const myExpenses = transactions
-    .filter(t => t.type === 'expense' && t.userId === auth.currentUser?.uid)
-    .reduce((acc, curr) => acc + curr.amount, 0);
+  const { totalValue: myInvested } = financialEngine.calculateInvestmentPower(myAssets);
+  
+  // Use financialEngine for transactions
+  const myTransactions = transactions.filter(t => t.userId === auth.currentUser?.uid);
+  const { income: myIncome, expense: myExpenses } = financialEngine.calculateMonthlySummary(myTransactions as any, month, year);
 
   // Lógica da Próxima Masmorra (a cada R$ 10.000)
   const nextCharacter = getNextCharacter(totalPower) || STATIC_CHARACTERS[STATIC_CHARACTERS.length - 1];

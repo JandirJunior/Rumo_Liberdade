@@ -32,7 +32,7 @@ export function AnnualChartPanel() {
         const d = new Date(t.date);
         return d.getFullYear() === currentYear && 
                d.getMonth() + 1 === currentMonth &&
-               (t.category_id === cat.id || t.category === cat.name);
+               (t.category_id === cat.id || (t as any).category === cat.name);
       });
       const realizado = catTransactions.reduce((sum, t) => sum + t.amount, 0);
 
@@ -77,7 +77,7 @@ export function AnnualChartPanel() {
             tickFormatter={(value) => `R$ ${value >= 1000 ? value / 1000 + 'k' : value}`}
           />
           <Tooltip 
-            formatter={(value: number) => formatCurrency(value)}
+            formatter={(value: any) => formatCurrency(Number(value) || 0)}
             cursor={{ fill: '#f9fafb' }}
             contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
           />

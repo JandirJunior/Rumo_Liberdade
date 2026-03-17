@@ -29,6 +29,8 @@ export interface CategoryEntity {
   color: string;
   rpg_theme_name: string;
   created_at: Date;
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 export type AccountType = 'checking' | 'credit_card' | 'wallet' | 'digital_account';
@@ -40,6 +42,8 @@ export interface AccountEntity {
   type: AccountType;
   current_balance: number;
   created_at: Date;
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 export type TransactionType = 'income' | 'expense' | 'transfer' | 'investment';
@@ -55,6 +59,8 @@ export interface TransactionEntity {
   description: string;
   date: Date;
   created_at: Date;
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 export interface BudgetEntity {
@@ -65,6 +71,8 @@ export interface BudgetEntity {
   budget_amount: number;
   month: number;
   year: number;
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 export type InvestmentType = 'stock' | 'fii' | 'crypto' | 'etf' | 'fixed_income';
@@ -79,6 +87,8 @@ export interface InvestmentEntity {
   invested_value: number;
   current_value: number;
   earnings: number;
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 // ==========================================
@@ -192,6 +202,19 @@ export function calculateUserBalance(transactions: TransactionEntity[]): number 
   return income - expense - investment;
 }
 
+export function calculateMonthlySummary(transactions: TransactionEntity[], month: number, year: number) {
+  const monthlyTransactions = transactions.filter(t => {
+    const date = t.date instanceof Date ? t.date : new Date(t.date);
+    return date.getMonth() + 1 === month && date.getFullYear() === year;
+  });
+
+  const income = monthlyTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const expense = monthlyTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const investment = monthlyTransactions.filter(t => t.type === 'investment').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+
+  return { income, expense, investment };
+}
+
 export function calculateNetWorth(transactions: TransactionEntity[], investments: any[]): number {
   const balance = calculateUserBalance(transactions);
   const totalInvested = investments.reduce((acc, curr) => {
@@ -224,6 +247,7 @@ export const financialEngine = {
   calculateTotalEarnings,
   calculateInvestmentPower,
   calculateUserBalance,
+  calculateMonthlySummary,
   calculateNetWorth,
   calculateBudgetProgress,
   calculatePlayerPower,

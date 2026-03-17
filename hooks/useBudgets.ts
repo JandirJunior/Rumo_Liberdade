@@ -6,6 +6,7 @@ import { BudgetEntity, TransactionEntity, CategoryEntity } from '@/lib/financial
 import { useCategories } from './useCategories';
 import { useTheme } from '@/lib/ThemeContext';
 import { addXP } from '@/lib/gameEngine';
+import { useKingdom } from './useKingdom';
 
 export interface BudgetProgress {
   category_id: string;
@@ -29,77 +30,79 @@ export function useBudgets(month: number, year: number) {
   const [loading, setLoading] = useState(true);
   const { categories, loading: categoriesLoading } = useCategories();
   const { gameMode } = useTheme();
+  const { kingdom, loading: kingdomLoading } = useKingdom();
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        setBudgets([]);
-        setTransactions([]);
-        setLoading(false);
-        return;
-      }
+    if (kingdomLoading) return;
 
-      const userId = user.uid;
+    if (!kingdom || !auth.currentUser) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setBudgets([]);
+      setTransactions([]);
+      setLoading(false);
+      return;
+    }
 
-      // Fetch Budgets (Global, not per month/year)
-      const budgetsRef = collection(db, 'budgets');
-      const budgetsQuery = query(
-        budgetsRef,
-        where('user_id', '==', userId)
-      );
+    const userId = auth.currentUser.uid;
 
-      const unsubscribeBudgets = onSnapshot(budgetsQuery, (snapshot) => {
-        const loadedBudgets = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as BudgetEntity));
-        // If there are multiple budgets for the same category (from previous version), take the first one
-        const uniqueBudgets = loadedBudgets.reduce((acc, curr) => {
-          if (!acc.find(b => b.category_id === curr.category_id)) {
-            acc.push(curr);
-          }
-          return acc;
-        }, [] as BudgetEntity[]);
-        setBudgets(uniqueBudgets);
-      });
+    // Fetch Budgets (Global, not per month/year)
+    const budgetsRef = collection(db, 'budgets');
+    const budgetsQuery = query(
+      budgetsRef,
+      where('kingdom_id', '==', kingdom.id)
+    );
 
-      // Fetch Transactions for the specific month
-      const transactionsRef = collection(db, 'transactions');
-      const transactionsQuery = query(transactionsRef, where('user_id', '==', userId));
-
-      const unsubscribeTransactions = onSnapshot(transactionsQuery, (snapshot) => {
-        const loadedTransactions = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            ...data,
-            id: doc.id,
-            date: data.date?.toDate() || new Date(),
-            created_at: data.created_at?.toDate() || new Date(),
-          } as TransactionEntity;
-        });
-        setTransactions(loadedTransactions);
-        setLoading(false);
-      });
-
-      return () => {
-        unsubscribeBudgets();
-        unsubscribeTransactions();
-      };
+    const unsubscribeBudgets = onSnapshot(budgetsQuery, (snapshot) => {
+      const loadedBudgets = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as BudgetEntity));
+      // If there are multiple budgets for the same category (from previous version), take the first one
+      const uniqueBudgets = loadedBudgets.reduce((acc, curr) => {
+        if (!acc.find(b => b.category_id === curr.category_id)) {
+          acc.push(curr);
+        }
+        return acc;
+      }, [] as BudgetEntity[]);
+      setBudgets(uniqueBudgets);
     });
 
-    return () => unsubscribeAuth();
-  }, [month, year]);
+    // Fetch Transactions for the specific month
+    const transactionsRef = collection(db, 'transactions');
+    const transactionsQuery = query(transactionsRef, where('kingdom_id', '==', kingdom.id));
+
+    const unsubscribeTransactions = onSnapshot(transactionsQuery, (snapshot) => {
+      const loadedTransactions = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          ...data,
+          id: doc.id,
+          date: data.date?.toDate() || new Date(),
+          created_at: data.created_at?.toDate() || new Date(),
+        } as TransactionEntity;
+      });
+      setTransactions(loadedTransactions);
+      setLoading(false);
+    });
+
+    return () => {
+      unsubscribeBudgets();
+      unsubscribeTransactions();
+    };
+  }, [month, year, kingdom, kingdomLoading]);
 
   const saveBudget = async (category_id: string, amount: number) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !kingdom) return;
     
     // Find if budget already exists for this category_id
     const existingBudget = budgets.find(b => b.category_id === category_id);
     
-    const budgetId = existingBudget ? existingBudget.id : `${auth.currentUser.uid}_${category_id}`;
+    const budgetId = existingBudget ? existingBudget.id : `${kingdom.id}_${category_id}`;
     
     const budgetData: Partial<BudgetEntity> = {
       id: budgetId,
       user_id: auth.currentUser.uid,
       category_id,
-      budget_amount: amount
+      budget_amount: amount,
+      kingdom_id: kingdom.id,
+      created_by: auth.currentUser.uid
     };
 
     await setDoc(doc(db, 'budgets', budgetId), budgetData, { merge: true });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Shield, Sword, Skull, Trophy, Flame } from 'lucide-react';
 import { BottomNav } from '@/components/BottomNav';
@@ -17,21 +17,18 @@ export default function Bosses() {
   const colors = THEMES[theme] || THEMES.default;
   const { transactions, assets, loading } = useReino();
 
-  const [playerPower, setPlayerPower] = useState(0);
-
-  useEffect(() => {
-    if (loading) return;
+  const playerPower = useMemo(() => {
+    if (loading) return 0;
 
     // Calculate player power based on financial data
     const netWorth = financialEngine.calculateNetWorth(transactions as any, assets as any);
-    const totalInvested = assets.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
+    const { totalValue: totalInvested } = financialEngine.calculateInvestmentPower(assets);
     
     // Mock scores for budget control and consistency for now
     const budgetControlScore = 1000;
     const consistencyScore = 500;
 
-    const power = financialEngine.calculatePlayerPower(netWorth, totalInvested, budgetControlScore, consistencyScore);
-    setPlayerPower(power);
+    return financialEngine.calculatePlayerPower(netWorth, totalInvested, budgetControlScore, consistencyScore);
   }, [transactions, assets, loading]);
 
   return (

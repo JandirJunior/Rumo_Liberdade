@@ -5,7 +5,7 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useSearchParams } from 'next/navigation';
 import { Search, Filter, ArrowUpRight, ArrowDownLeft, Wallet, Plus, Sparkles, Edit2, Trash2 } from 'lucide-react';
@@ -20,8 +20,9 @@ import { THEMES } from '@/lib/themes';
 import { useReino } from '@/hooks/useReino';
 import { useCategories } from '@/hooks/useCategories';
 import { GoogleGenAI, Type } from '@google/genai';
+import { financialEngine } from '@/lib/financialEngine';
 
-export default function Transactions() {
+function TransactionsContent() {
   const { theme, user, gameMode } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
   const { transactions, addTransaction, updateTransaction, deleteTransaction } = useReino();
@@ -57,7 +58,7 @@ export default function Transactions() {
   const handleEditTransaction = (t: Transaction) => {
     setEditingTransactionId(t.id);
     setNewTransaction({
-      description: t.description || t.title || '',
+      description: t.description || '',
       amount: t.amount.toString(),
       type: t.type,
       category_id: t.category_id || ''
@@ -172,13 +173,7 @@ export default function Transactions() {
     return acc;
   }, {} as Record<string, typeof categories>);
 
-  const currentMonthTransactions = transactions.filter(t => {
-    const d = new Date(t.date);
-    return d.getMonth() + 1 === month && d.getFullYear() === year;
-  });
-
-  const totalActualIncome = currentMonthTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
-  const totalActualExpenses = currentMonthTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
+  const { income: totalActualIncome, expense: totalActualExpenses } = financialEngine.calculateMonthlySummary(transactions as any, month, year);
   
   const surplus = totalActualIncome - totalActualExpenses;
 
@@ -296,7 +291,7 @@ export default function Transactions() {
             filteredTransactions.map((t, i) => {
               const userName = (t as any).userName || 'Herói Desconhecido';
               const categoryObj = categories.find(c => c.id === t.category_id);
-              const categoryName = categoryObj ? categoryObj.name : t.category || 'Sem Categoria';
+              const categoryName = categoryObj ? categoryObj.name : (t as any).category || 'Sem Categoria';
               
               return (
                 <motion.div
@@ -449,5 +444,13 @@ export default function Transactions() {
       </main>
       <BottomNav />
     </div>
+  );
+}
+
+export default function Transactions() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Carregando...</div>}>
+      <TransactionsContent />
+    </Suspense>
   );
 }

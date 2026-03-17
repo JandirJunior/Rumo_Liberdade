@@ -72,12 +72,9 @@ export function ActiveQuestsBoard() {
           userId: quest.originalData.userId,
           amount: quest.amount,
           type: 'expense',
-          title: quest.title,
           description: quest.title,
-          category: quest.originalData.categoryId || 'Outros',
           category_id: quest.originalData.categoryId || '',
-          date: now,
-          createdAt: now
+          date: now
         });
       } else if (quest.type === 'receivable') {
         await updateReceivable(quest.originalData.id, { status: 'received', receivedAt: now });
@@ -85,12 +82,9 @@ export function ActiveQuestsBoard() {
           userId: quest.originalData.userId,
           amount: quest.amount,
           type: 'income',
-          title: quest.title,
           description: quest.title,
-          category: quest.originalData.categoryId || 'Outros',
           category_id: quest.originalData.categoryId || '',
-          date: now,
-          createdAt: now
+          date: now
         });
       } else if (quest.type === 'invoice') {
         await updateInvoice(quest.originalData.id, { status: 'paid', paidAt: now });
@@ -98,12 +92,9 @@ export function ActiveQuestsBoard() {
           userId: quest.originalData.userId,
           amount: quest.amount,
           type: 'expense',
-          title: quest.title,
           description: quest.title,
-          category: 'Cartão de Crédito',
           category_id: 'credit_card',
-          date: now,
-          createdAt: now
+          date: now
         });
       }
     } catch (error) {

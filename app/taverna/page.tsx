@@ -18,8 +18,11 @@ import { Shield, Wand2, Pickaxe, Compass, VenetianMask, Home, Zap, Trophy, User,
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/Header';
 import { useReino } from '@/hooks/useReino';
+import { KingdomManager } from './KingdomManager';
 
 import { ImageKey } from '@/src/assets/images';
+
+import { financialEngine } from '@/lib/financialEngine';
 
 // Definição das classes disponíveis com seus nomes, descrições, ícones e imagens ilustrativas.
 const ARCHETYPES: { type: Archetype; name: string; desc: string; icon: any; color: string; illustration: ImageKey }[] = [
@@ -78,7 +81,7 @@ export default function Tavern() {
   const colors = THEMES[theme] || THEMES.default;
   const { assets } = useReino();
 
-  const totalInvested = assets.reduce((acc, curr) => acc + curr.value, 0);
+  const { totalValue: totalInvested } = financialEngine.calculateInvestmentPower(assets);
   const totalYields = totalInvested * 0.15; // Mock de rendimentos (15%)
   const totalPower = totalInvested + totalYields;
 
@@ -310,61 +313,69 @@ export default function Tavern() {
           </div>
         </section>
 
-      {/* 
-        [RESPONSIVIDADE] Opções de Customização Interativas
-        No desktop (md), os itens podem se alinhar em um grid ou manter a lista.
-        Mantivemos como lista pois são poucos itens, mas com padding responsivo.
-      */}
-      <section className="space-y-4">
-        <h4 className="text-lg font-display font-bold text-gray-900">Customização</h4>
-        <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="flex items-center justify-between md:flex-col md:items-start md:gap-4">
-            <span className="text-sm font-medium text-gray-700">Notificações de Quest</span>
-            <button 
-              onClick={() => setNotifications(!notifications)}
-              className={cn(
-                "w-12 h-6 rounded-full relative transition-colors", 
-                notifications ? colors.primary : "bg-gray-200"
-              )}
-            >
-              <div className={cn(
-                "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
-                notifications ? "right-1" : "left-1"
-              )}></div>
-            </button>
+        {/* 
+          [RESPONSIVIDADE] Opções de Customização Interativas
+          No desktop (md), os itens podem se alinhar em um grid ou manter a lista.
+          Mantivemos como lista pois são poucos itens, mas com padding responsivo.
+        */}
+        <section className="space-y-4">
+          <h4 className="text-lg font-display font-bold text-gray-900">Customização</h4>
+          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex items-center justify-between md:flex-col md:items-start md:gap-4">
+              <span className="text-sm font-medium text-gray-700">Notificações de Quest</span>
+              <button 
+                onClick={() => setNotifications(!notifications)}
+                className={cn(
+                  "w-12 h-6 rounded-full relative transition-colors", 
+                  notifications ? colors.primary : "bg-gray-200"
+                )}
+              >
+                <div className={cn(
+                  "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                  notifications ? "right-1" : "left-1"
+                )}></div>
+              </button>
+            </div>
+            <div className="flex items-center justify-between md:flex-col md:items-start md:gap-4">
+              <span className="text-sm font-medium text-gray-700">Modo Imersivo (RPG)</span>
+              <button 
+                onClick={() => setImmersiveMode(!immersiveMode)}
+                className={cn(
+                  "w-12 h-6 rounded-full relative transition-colors", 
+                  immersiveMode ? colors.primary : "bg-gray-200"
+                )}
+              >
+                <div className={cn(
+                  "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                  immersiveMode ? "right-1" : "left-1"
+                )}></div>
+              </button>
+            </div>
+            <div className="flex items-center justify-between md:flex-col md:items-start md:gap-4">
+              <span className="text-sm font-medium text-gray-700">Visibilidade do Ranking</span>
+              <button 
+                onClick={() => setRankingVisible(!rankingVisible)}
+                className={cn(
+                  "w-12 h-6 rounded-full relative transition-colors", 
+                  rankingVisible ? colors.primary : "bg-gray-200"
+                )}
+              >
+                <div className={cn(
+                  "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                  rankingVisible ? "right-1" : "left-1"
+                )}></div>
+              </button>
+            </div>
           </div>
-          <div className="flex items-center justify-between md:flex-col md:items-start md:gap-4">
-            <span className="text-sm font-medium text-gray-700">Modo Imersivo (RPG)</span>
-            <button 
-              onClick={() => setImmersiveMode(!immersiveMode)}
-              className={cn(
-                "w-12 h-6 rounded-full relative transition-colors", 
-                immersiveMode ? colors.primary : "bg-gray-200"
-              )}
-            >
-              <div className={cn(
-                "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
-                immersiveMode ? "right-1" : "left-1"
-              )}></div>
-            </button>
-          </div>
-          <div className="flex items-center justify-between md:flex-col md:items-start md:gap-4">
-            <span className="text-sm font-medium text-gray-700">Visibilidade do Ranking</span>
-            <button 
-              onClick={() => setRankingVisible(!rankingVisible)}
-              className={cn(
-                "w-12 h-6 rounded-full relative transition-colors", 
-                rankingVisible ? colors.primary : "bg-gray-200"
-              )}
-            >
-              <div className={cn(
-                "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
-                rankingVisible ? "right-1" : "left-1"
-              )}></div>
-            </button>
-          </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Gerenciamento do Reino (Aparece apenas quando o modo Reino está ativo) */}
+        {gameMode === 'reino' && (
+          <section className="space-y-4 mt-8">
+            <h4 className="text-lg font-display font-bold text-gray-900">Gestão do Reino</h4>
+            <KingdomManager colors={colors} />
+          </section>
+        )}
 
       </main>
       <BottomNav />

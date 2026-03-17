@@ -6,8 +6,63 @@
 // Tipos de transações financeiras
 export type TransactionType = 'income' | 'expense' | 'investment';
 
-// Categorias de gastos e investimentos
-export type Category = 'Fixed' | 'Lifestyle' | 'Investment' | 'Emergency';
+export type CategoryGroup =
+  | 'cofre'
+  | 'missoes'
+  | 'tributos'
+  | 'aventuras';
+
+export interface Category {
+  id: string;
+  name: string;
+  type: 'income' | 'expense' | 'investment';
+  group: CategoryGroup;
+}
+
+// --- KINGDOM INTERFACES ---
+
+export type KingdomRole = 'admin' | 'member' | 'viewer';
+
+export interface Kingdom {
+  id: string;
+  name: string;
+  owner_id: string;
+  created_at: string;
+  invite_code?: string;
+}
+
+export interface KingdomMember {
+  id: string;
+  kingdom_id: string;
+  user_id: string;
+  role: KingdomRole;
+  joined_at: string;
+  user_name?: string;
+  user_email?: string;
+}
+
+export interface KingdomInvite {
+  id: string;
+  kingdom_id: string;
+  email: string;
+  role: KingdomRole;
+  status: 'pending' | 'accepted' | 'rejected';
+  invited_by: string;
+  created_at: string;
+  kingdom_name?: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  kingdom_id: string;
+  user_id: string;
+  user_name: string;
+  action: string;
+  entity_type: 'transaction' | 'payable' | 'receivable' | 'asset' | 'member' | 'kingdom';
+  entity_id: string;
+  details?: string;
+  created_at: string;
+}
 
 // Interface para uma transação financeira individual
 export interface Transaction {
@@ -15,12 +70,15 @@ export interface Transaction {
   description: string;
   amount: number;
   type: TransactionType;
-  category?: Category | string;
-  category_id?: string;
+  category_id: string;
+  category_name?: string;
+  category_group?: string;
   date: string;
   userId?: string;
   userName?: string;
   organizationId: string; // SaaS: Identificador do tenant
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 // Interface para metas financeiras (Objetivos)
@@ -43,6 +101,8 @@ export interface Asset {
   userId?: string;
   userName?: string;
   organizationId: string; // SaaS: Identificador do tenant
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 // --- SAAS INTERFACES ---
@@ -158,6 +218,8 @@ export interface AccountPayable {
   createdAt: string;
   paidAt?: string;
   transactionId?: string;
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 export interface AccountReceivable {
@@ -175,6 +237,8 @@ export interface AccountReceivable {
   createdAt: string;
   receivedAt?: string;
   transactionId?: string;
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 export interface CreditCard {
@@ -184,6 +248,8 @@ export interface CreditCard {
   limit: number;
   closingDay: number;
   dueDay: number;
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 export interface CreditCardInvoice {
@@ -199,6 +265,8 @@ export interface CreditCardInvoice {
   createdAt: string;
   paidAt?: string;
   transactionId?: string;
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 // --- FIM NOVAS INTERFACES ---
