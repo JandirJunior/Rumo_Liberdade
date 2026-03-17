@@ -144,7 +144,8 @@ export function useReino() {
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'organizationId'>) => {
     if (!auth.currentUser || !kingdom) return;
-    if (!canCreateTransaction(role)) throw new Error('Sem permissão para criar transações');
+    // Adicionamos o "?? undefined" para converter null em undefined caso role seja nulo
+    if (!canCreateTransaction(role ?? undefined)) throw new Error('Sem permissão para criar transações');
     
     const newId = doc(collection(db, 'transactions')).id;
     const newTransaction = {
