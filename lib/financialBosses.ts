@@ -13,7 +13,7 @@ export const FINANCIAL_BOSSES: FinancialBoss[] = [
   {
     id: 'goblin_impulso',
     name: 'Goblin do Impulso',
-    title: 'O Ladrão de Trocados',
+    title: 'O Ladino de Trocados',
     description: 'Representa compras impulsivas e pequenos gastos não planejados que corroem o orçamento.',
     hp: 1000,
     weakness: 'Planejamento e disciplina',

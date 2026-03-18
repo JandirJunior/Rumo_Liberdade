@@ -25,6 +25,7 @@ export const viewport: Viewport = {
 };
 
 import { ThemeProvider } from '@/lib/ThemeContext';
+import { SpeedDial } from '@/components/SpeedDial';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="min-h-screen flex flex-col">
             <main className="w-full min-h-screen relative pb-24 bg-white overflow-x-hidden">
               {children}
+              <SpeedDial />
             </main>
           </div>
         </ThemeProvider>

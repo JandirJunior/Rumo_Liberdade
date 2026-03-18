@@ -98,7 +98,7 @@ export const ARCHETYPE_THEME_MAP: Record<string, ThemeType> = {
   'Mago': 'arcano',
   'Dwarf': 'cache',
   'Elfo': 'exodia',
-  'Ladrão': 'reaver',
+  'Ladino': 'reaver',
   'Hobbit': 'orbit',
   'Iniciante': 'default'
 };

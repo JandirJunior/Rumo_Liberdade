@@ -17,6 +17,7 @@ import { ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis } fro
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { useReino } from '@/hooks/useReino';
+import { useKingdom } from '@/hooks/useKingdom';
 import { useCategories } from '@/hooks/useCategories';
 import { useBudgets } from '@/hooks/useBudgets';
 import { getNextCharacter, STATIC_CHARACTERS } from '@/lib/characters';
@@ -39,15 +40,17 @@ export default function Dashboard() {
 
   const { budgetProgress } = useBudgets(month, year);
 
+  const { kingdom } = useKingdom();
+
   useEffect(() => {
     // Generate recurring quests when dashboard loads
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        generateRecurringQuests();
+      if (user && kingdom?.id) {
+        generateRecurringQuests(kingdom.id);
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [kingdom?.id]);
 
   const getRpgGroupTotals = (groupName: string) => {
     const groupItems = budgetProgress.filter(b => b.rpg_group === groupName);
@@ -61,7 +64,7 @@ export default function Dashboard() {
   const tributosReino = getRpgGroupTotals('🛡️ Tributos do Reino (Despesas Fixas)');
   const aventurasHeroi = getRpgGroupTotals('⚔️ Aventuras do Herói (Despesas Variáveis)');
 
-  // Total investido na Caverna
+  // Total investido no Inventário
   const { totalValue: totalInvested } = financialEngine.calculateInvestmentPower(assets);
   const totalYields = totalInvested * 0.15; // Mock de rendimentos (15%)
   const totalPower = totalInvested + totalYields;
@@ -115,7 +118,7 @@ export default function Dashboard() {
       case 'Mago': return <Wand2 className="w-6 h-6" />;
       case 'Dwarf': return <Pickaxe className="w-6 h-6" />;
       case 'Elfo': return <Compass className="w-6 h-6" />;
-      case 'Ladrão': return <VenetianMask className="w-6 h-6" />;
+      case 'Ladino': return <VenetianMask className="w-6 h-6" />;
       case 'Hobbit': return <Home className="w-6 h-6" />;
       default: return <Trophy className="w-6 h-6" />;
     }
@@ -203,7 +206,7 @@ export default function Dashboard() {
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-bold text-gray-900">Poder dos Investimentos</p>
-                  <p className="text-[10px] text-gray-500 font-medium">Visualizar detalhes na Caverna</p>
+                  <p className="text-[10px] text-gray-500 font-medium">Visualizar detalhes no Inventário</p>
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -222,7 +225,7 @@ export default function Dashboard() {
                 <div className={cn("w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg", colors.primary)}>
                   <Pickaxe className="w-6 h-6" />
                 </div>
-                <span className="text-sm font-bold text-gray-900">Caverna</span>
+                <span className="text-sm font-bold text-gray-900">Inventário</span>
               </Link>
             </section>
 

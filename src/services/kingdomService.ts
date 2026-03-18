@@ -1,6 +1,7 @@
-import { db } from '@/firebase';
+import { db, auth } from '@/firebase';
 import { collection, doc, getDoc, getDocs, query, where, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { Kingdom, KingdomMember, KingdomInvite, KingdomRole } from '@/lib/types';
+import { logActivity } from '@/lib/auditLogger';
 
 export const kingdomService = {
   async createKingdom(name: string, ownerId: string): Promise<Kingdom> {
@@ -72,15 +73,36 @@ export const kingdomService = {
       joined_at: new Date().toISOString()
     };
     await setDoc(memberRef, newMember);
+    
+    if (auth.currentUser) {
+      await logActivity(kingdomId, auth.currentUser.uid, 'USER_JOINED', userId, { role });
+    }
+    
     return newMember;
   },
 
   async removeMember(memberId: string): Promise<void> {
-    await deleteDoc(doc(db, 'kingdom_members', memberId));
+    const memberRef = doc(db, 'kingdom_members', memberId);
+    const memberSnap = await getDoc(memberRef);
+    if (memberSnap.exists()) {
+      const memberData = memberSnap.data() as KingdomMember;
+      await deleteDoc(memberRef);
+      if (auth.currentUser) {
+        await logActivity(memberData.kingdom_id, auth.currentUser.uid, 'USER_LEFT', memberData.user_id, { removed_member_id: memberId });
+      }
+    }
   },
 
   async updateMemberRole(memberId: string, role: KingdomRole): Promise<void> {
-    await updateDoc(doc(db, 'kingdom_members', memberId), { role });
+    const memberRef = doc(db, 'kingdom_members', memberId);
+    const memberSnap = await getDoc(memberRef);
+    if (memberSnap.exists()) {
+      const memberData = memberSnap.data() as KingdomMember;
+      await updateDoc(memberRef, { role });
+      if (auth.currentUser) {
+        await logActivity(memberData.kingdom_id, auth.currentUser.uid, 'ROLE_UPDATED', memberData.user_id, { new_role: role });
+      }
+    }
   },
 
   async getKingdomMembers(kingdomId: string): Promise<KingdomMember[]> {
@@ -115,6 +137,11 @@ export const kingdomService = {
       created_at: new Date().toISOString()
     };
     await setDoc(inviteRef, newInvite);
+    
+    if (auth.currentUser) {
+      await logActivity(kingdomId, auth.currentUser.uid, 'INVITE_SENT', inviteRef.id, { email, role });
+    }
+    
     return newInvite;
   },
 

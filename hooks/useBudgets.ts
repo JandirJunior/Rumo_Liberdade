@@ -7,6 +7,7 @@ import { useCategories } from './useCategories';
 import { useTheme } from '@/lib/ThemeContext';
 import { addXP } from '@/lib/gameEngine';
 import { useKingdom } from './useKingdom';
+import { getCollectionByKingdom } from '@/lib/firebaseUtils';
 
 export interface BudgetProgress {
   category_id: string;
@@ -46,11 +47,7 @@ export function useBudgets(month: number, year: number) {
     const userId = auth.currentUser.uid;
 
     // Fetch Budgets (Global, not per month/year)
-    const budgetsRef = collection(db, 'budgets');
-    const budgetsQuery = query(
-      budgetsRef,
-      where('kingdom_id', '==', kingdom.id)
-    );
+    const budgetsQuery = getCollectionByKingdom('budgets', kingdom.id);
 
     const unsubscribeBudgets = onSnapshot(budgetsQuery, (snapshot) => {
       const loadedBudgets = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as BudgetEntity));
@@ -65,17 +62,34 @@ export function useBudgets(month: number, year: number) {
     });
 
     // Fetch Transactions for the specific month
-    const transactionsRef = collection(db, 'transactions');
-    const transactionsQuery = query(transactionsRef, where('kingdom_id', '==', kingdom.id));
+    const transactionsQuery = getCollectionByKingdom('transactions', kingdom.id);
 
     const unsubscribeTransactions = onSnapshot(transactionsQuery, (snapshot) => {
       const loadedTransactions = snapshot.docs.map(doc => {
         const data = doc.data();
+        let date = new Date();
+        if (data.date) {
+          if (typeof data.date.toDate === 'function') {
+            date = data.date.toDate();
+          } else {
+            date = new Date(data.date);
+          }
+        }
+        
+        let createdAt = new Date();
+        if (data.created_at) {
+          if (typeof data.created_at.toDate === 'function') {
+            createdAt = data.created_at.toDate();
+          } else {
+            createdAt = new Date(data.created_at);
+          }
+        }
+
         return {
           ...data,
           id: doc.id,
-          date: data.date?.toDate() || new Date(),
-          created_at: data.created_at?.toDate() || new Date(),
+          date,
+          created_at: createdAt,
         } as TransactionEntity;
       });
       setTransactions(loadedTransactions);

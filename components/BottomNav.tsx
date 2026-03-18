@@ -20,9 +20,9 @@ export function BottomNav() {
   const navItems = [
     { icon: Home, label: 'Reino', href: '/dashboard' },
     { icon: BarChart3, label: 'Atributos', href: '/attributes' },
-    { icon: Pickaxe, label: 'Caverna', href: '/investments' },
+    { icon: Pickaxe, label: 'Inventário', href: '/investments' },
     { icon: ScrollText, label: 'Quests', href: '/transactions' },
-    { icon: Skull, label: 'Vilões', href: '/bosses' },
+    { icon: Skull, label: 'Masmorra', href: '/masmorra' },
     { icon: MessageSquare, label: 'Mentor', href: '/chat' },
   ];
 

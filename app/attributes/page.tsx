@@ -104,7 +104,7 @@ export default function Attributes() {
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">⚡</span>
                 <span className="text-[10px] font-black text-gray-700 uppercase tracking-wider">
-                  Saques de Missões
+                  Saque de Missões
                 </span>
               </div>
               <p className="text-xs text-gray-500 mb-2">Receitas Variáveis</p>

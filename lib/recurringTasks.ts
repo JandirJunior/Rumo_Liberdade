@@ -9,9 +9,8 @@ function addMonths(dateStr: string, months: number): string {
   return date.toISOString().split('T')[0];
 }
 
-export async function generateRecurringQuests() {
-  if (!auth.currentUser) return;
-  const userId = auth.currentUser.uid;
+export async function generateRecurringQuests(kingdomId?: string) {
+  if (!auth.currentUser || !kingdomId) return;
   const today = new Date().toISOString().split('T')[0];
 
   try {
@@ -19,7 +18,7 @@ export async function generateRecurringQuests() {
     const payablesRef = collection(db, 'accounts_payable');
     const payablesQuery = query(
       payablesRef, 
-      where('userId', '==', userId),
+      where('kingdom_id', '==', kingdomId),
       where('isRecurring', '==', true)
     );
     
@@ -70,7 +69,7 @@ export async function generateRecurringQuests() {
     const receivablesRef = collection(db, 'accounts_receivable');
     const receivablesQuery = query(
       receivablesRef, 
-      where('userId', '==', userId),
+      where('kingdom_id', '==', kingdomId),
       where('isRecurring', '==', true)
     );
     

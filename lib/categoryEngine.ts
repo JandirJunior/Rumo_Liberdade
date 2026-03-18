@@ -96,7 +96,7 @@ export const categoryEngine = {
   getGroupName(group: CategoryGroup | string | undefined): string {
     switch (group) {
       case 'cofre': return '💎 Cofre do Reino (Receitas Fixas)';
-      case 'missoes': return '⚡ Saques de Missões (Receitas Variáveis)';
+      case 'missoes': return '⚡ Saque de Missões (Receitas Variáveis)';
       case 'tributos': return '🛡️ Tributos do Reino (Despesas Fixas)';
       case 'aventuras': return '⚔️ Aventuras do Herói (Despesas Variáveis)';
       default: return 'Outros';

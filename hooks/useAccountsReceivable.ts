@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import { db, auth } from '@/firebase';
-import { collection, onSnapshot, query, orderBy, setDoc, doc, where, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, setDoc, doc, where, deleteDoc, runTransaction } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { AccountReceivable } from '@/lib/types';
 import { useKingdom } from './useKingdom';
+import { getCollectionByKingdom } from '@/lib/firebaseUtils';
+import { canCreateTransaction, canEditTransaction, canDeleteTransaction } from '@/lib/permissionEngine';
+import { logActivity } from '@/lib/auditLogger';
 
 export function useAccountsReceivable() {
   const [receivables, setReceivables] = useState<AccountReceivable[]>([]);
   const [loading, setLoading] = useState(true);
-  const { kingdom, loading: kingdomLoading } = useKingdom();
+  const { kingdom, role, loading: kingdomLoading } = useKingdom();
 
   useEffect(() => {
     if (kingdomLoading) return;
@@ -20,8 +23,10 @@ export function useAccountsReceivable() {
       return;
     }
 
-    const receivablesRef = collection(db, 'accounts_receivable');
-    const receivablesQuery = query(receivablesRef, where('kingdom_id', '==', kingdom.id), orderBy('dueDate', 'asc'));
+    const receivablesQuery = query(
+      getCollectionByKingdom('accounts_receivable', kingdom.id),
+      orderBy('dueDate', 'asc')
+    );
 
     const unsubscribeReceivables = onSnapshot(receivablesQuery, (snapshot) => {
       if (!snapshot.empty) {
@@ -55,7 +60,11 @@ export function useAccountsReceivable() {
   }, [kingdom, kingdomLoading]);
 
   const addReceivable = async (receivable: Omit<AccountReceivable, 'id' | 'userId' | 'createdAt'>) => {
-    if (!auth.currentUser || !kingdom) return;
+    if (!auth.currentUser || !kingdom || !role) return;
+    if (!canCreateTransaction(role)) {
+      throw new Error('Sem permissão para criar contas a receber.');
+    }
+
     const newId = doc(collection(db, 'accounts_receivable')).id;
     const newReceivable: AccountReceivable = {
       ...receivable,
@@ -66,17 +75,49 @@ export function useAccountsReceivable() {
       created_by: auth.currentUser.uid
     };
     await setDoc(doc(db, 'accounts_receivable', newId), newReceivable);
+    await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'receivable', amount: receivable.amount });
   };
 
   const updateReceivable = async (id: string, receivable: Partial<AccountReceivable>) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !kingdom || !role) return;
+    if (!canEditTransaction(role)) {
+      throw new Error('Sem permissão para editar contas a receber.');
+    }
+
     await setDoc(doc(db, 'accounts_receivable', id), receivable, { merge: true });
+    await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'receivable', updates: receivable });
+  };
+
+  const receiveReceivable = async (id: string, receivedAt: string) => {
+    if (!auth.currentUser || !kingdom || !role) return;
+    if (!canEditTransaction(role)) {
+      throw new Error('Sem permissão para editar contas a receber.');
+    }
+
+    const docRef = doc(db, 'accounts_receivable', id);
+    await runTransaction(db, async (transaction) => {
+      const docSnap = await transaction.get(docRef);
+      if (!docSnap.exists()) {
+        throw new Error('Conta a receber não encontrada.');
+      }
+      const data = docSnap.data() as AccountReceivable;
+      if (data.status === 'received') {
+        throw new Error('Esta conta já foi recebida por outro membro.');
+      }
+      transaction.update(docRef, { status: 'received', receivedAt });
+    });
+    await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'receivable', status: 'received' });
   };
 
   const deleteReceivable = async (id: string) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !kingdom || !role) return;
+    if (!canDeleteTransaction(role)) {
+      throw new Error('Sem permissão para deletar contas a receber.');
+    }
+
     await deleteDoc(doc(db, 'accounts_receivable', id));
+    await logActivity(kingdom.id, auth.currentUser.uid, 'DELETE_TRANSACTION', id, { type: 'receivable' });
   };
 
-  return { receivables, loading, addReceivable, updateReceivable, deleteReceivable };
+  return { receivables, loading, addReceivable, updateReceivable, receiveReceivable, deleteReceivable };
 }

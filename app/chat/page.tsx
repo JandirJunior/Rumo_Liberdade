@@ -30,7 +30,7 @@ export default function AIChat() {
     'Mago': 'Arcano',
     'Dwarf': 'Cache',
     'Elfo': 'Exodia',
-    'Ladrão': 'Reaver',
+    'Ladino': 'Reaver',
     'Hobbit': 'Órbit',
     'Iniciante': 'Guia'
   };
@@ -69,7 +69,7 @@ export default function AIChat() {
       const getPersonality = (archetype: string) => {
         switch (archetype) {
           case 'Mago': return 'Você é extremamente analítico, focado em dados, gráficos e projeções de longo prazo. Fala sobre "magia dos juros compostos" e "feitiços de dividendos".';
-          case 'Ladrão': return 'Você é focado em proteção de patrimônio, oportunidades ocultas e acumulação de tesouros. Fala sobre "esconderijos seguros" (CDBs/Tesouro) e "evitar armadilhas do mercado".';
+          case 'Ladino': return 'Você é focado em proteção de patrimônio, oportunidades ocultas e acumulação de tesouros. Fala sobre "esconderijos seguros" (CDBs/Tesouro) e "evitar armadilhas do mercado".';
           case 'Paladino': return 'Você é focado em fundações sólidas, tijolos e aluguéis. Fala sobre "construir fortalezas" (FIIs) e "escudos contra a inflação".';
           case 'Dwarf': return 'Você é focado em garimpar valor, criptomoedas e tecnologia. Fala sobre "minerar ouro digital", "blocos inquebráveis" e "volatilidade das cavernas".';
           case 'Elfo': return 'Você é focado em visão global, exterior e diversificação além-mar. Fala sobre "terras distantes", "moedas élficas fortes" (Dólar) e "agilidade no mercado internacional".';

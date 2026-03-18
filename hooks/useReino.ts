@@ -4,18 +4,20 @@
  */
 import { useState, useEffect } from 'react';
 import { db, auth } from '@/firebase';
-import { collection, onSnapshot, query, orderBy, setDoc, doc, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, setDoc, doc, where, deleteDoc, writeBatch } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { Asset, Transaction, ActivityLog } from '@/lib/types';
 import { MOCK_ASSETS, MOCK_TRANSACTIONS } from '@/lib/data';
 import { addXP, calculateXPFromInvestments } from '@/lib/gameEngine';
 import { categoryEngine } from '@/lib/categoryEngine';
 import { useKingdom } from './useKingdom';
-import { canCreateTransaction, canEditTransaction, canDeleteTransaction } from '@/lib/permissionEngine';
+import { canCreateTransaction, canEditTransaction, canDeleteTransaction, hasPermission } from '@/lib/permissionEngine';
+import { logActivity } from '@/lib/auditLogger';
+import { getCollectionByKingdom } from '@/lib/firebaseUtils';
 
 export function useReino() {
-  const [assets, setAssets] = useState<Asset[]>(MOCK_ASSETS);
-  const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const { kingdom, role, loading: kingdomLoading } = useKingdom();
@@ -24,15 +26,18 @@ export function useReino() {
     if (kingdomLoading) return;
 
     if (!kingdom) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAssets([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTransactions([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActivityLogs([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }
 
-    const assetsRef = collection(db, 'investments');
-    const assetsQuery = query(assetsRef, where('kingdom_id', '==', kingdom.id));
+    const assetsQuery = query(getCollectionByKingdom('investments', kingdom.id));
 
     const unsubscribeAssets = onSnapshot(assetsQuery, (snapshot) => {
       if (!snapshot.empty) {
@@ -42,10 +47,12 @@ export function useReino() {
             id: doc.id,
             userId: data.user_id,
             name: data.ticker || 'Investimento',
-            value: data.current_value || 0,
+            value: Number(data.current_value || data.value || 0),
             faceroType: data.type === 'fii' ? 'F' : data.type === 'stock' ? 'A' : data.type === 'crypto' ? 'C' : data.type === 'etf' ? 'E' : data.type === 'fixed_income' ? 'R' : 'O',
             type: data.type,
-            yield: data.earnings || 0,
+            yield: Number(data.earnings || 0),
+            quantity: Number(data.quantity || 0),
+            operation_date: data.operation_date || data.created_at || '',
             color: 'bg-emerald-500',
             kingdom_id: data.kingdom_id,
             created_by: data.created_by,
@@ -62,13 +69,30 @@ export function useReino() {
       console.error('Error fetching assets:', error);
     });
 
-    const transactionsRef = collection(db, 'transactions');
-    const transactionsQuery = query(transactionsRef, where('kingdom_id', '==', kingdom.id), orderBy('created_at', 'desc'));
+    const transactionsQuery = query(getCollectionByKingdom('transactions', kingdom.id), orderBy('created_at', 'desc'));
 
     const unsubscribeTransactions = onSnapshot(transactionsQuery, (snapshot) => {
       if (!snapshot.empty) {
         const loadedTransactions = snapshot.docs.map(doc => {
           const data = doc.data();
+          
+          let dateStr = new Date().toISOString();
+          if (data.date) {
+            if (data.date.seconds) {
+              dateStr = new Date(data.date.seconds * 1000).toISOString();
+            } else if (typeof data.date === 'string') {
+              dateStr = new Date(data.date).toISOString();
+            }
+          }
+
+          let createdAtStr = new Date().toISOString();
+          if (data.created_at) {
+            if (data.created_at.seconds) {
+              createdAtStr = new Date(data.created_at.seconds * 1000).toISOString();
+            } else if (typeof data.created_at === 'string') {
+              createdAtStr = new Date(data.created_at).toISOString();
+            }
+          }
           
           const rawTransaction = {
             id: doc.id,
@@ -79,8 +103,8 @@ export function useReino() {
             description: data.description || 'Transação',
             category: data.category,
             category_id: data.category_id,
-            date: data.date ? new Date(data.date.seconds * 1000).toISOString() : new Date().toISOString(),
-            createdAt: data.created_at ? new Date(data.created_at.seconds * 1000).toISOString() : new Date().toISOString(),
+            date: dateStr,
+            createdAt: createdAtStr,
             kingdom_id: data.kingdom_id,
             created_by: data.created_by
           };
@@ -97,8 +121,7 @@ export function useReino() {
       setLoading(false);
     });
 
-    const logsRef = collection(db, 'activity_logs');
-    const logsQuery = query(logsRef, where('kingdom_id', '==', kingdom.id), orderBy('created_at', 'desc'));
+    const logsQuery = query(getCollectionByKingdom('activity_logs', kingdom.id), orderBy('created_at', 'desc'));
 
     const unsubscribeLogs = onSnapshot(logsQuery, (snapshot) => {
       if (!snapshot.empty) {
@@ -125,27 +148,9 @@ export function useReino() {
     };
   }, [kingdom, kingdomLoading]);
 
-  const logActivity = async (action: string, entity_type: ActivityLog['entity_type'], entity_id: string, details?: string) => {
-    if (!auth.currentUser || !kingdom) return;
-    const newId = doc(collection(db, 'activity_logs')).id;
-    const log = {
-      id: newId,
-      kingdom_id: kingdom.id,
-      user_id: auth.currentUser.uid,
-      user_name: auth.currentUser.displayName || auth.currentUser.email || 'Herói Desconhecido',
-      action,
-      entity_type,
-      entity_id,
-      details,
-      created_at: new Date()
-    };
-    await setDoc(doc(db, 'activity_logs', newId), log);
-  };
-
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'organizationId'>) => {
-    if (!auth.currentUser || !kingdom) return;
-    // Adicionamos o "?? undefined" para converter null em undefined caso role seja nulo
-    if (!canCreateTransaction(role ?? undefined)) throw new Error('Sem permissão para criar transações');
+    if (!auth.currentUser || !kingdom || !role) return;
+    if (!canCreateTransaction(role)) throw new Error('Sem permissão para criar transações');
     
     const newId = doc(collection(db, 'transactions')).id;
     const newTransaction = {
@@ -156,20 +161,20 @@ export function useReino() {
       category_id: transaction.category_id || '',
       amount: transaction.amount,
       description: transaction.description || 'Transação',
-      date: new Date(),
+      date: transaction.date ? new Date(transaction.date) : new Date(),
       created_at: new Date(),
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid
     };
     await setDoc(doc(db, 'transactions', newId), newTransaction);
-    await logActivity('CREATE_TRANSACTION', 'transaction', newId, `Criou transação: ${transaction.description}`);
+    await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { description: transaction.description, amount: transaction.amount });
     
     // Add XP for registering a transaction (e.g., 10 XP per transaction)
     await addXP(auth.currentUser.uid, 10);
   };
 
   const updateTransaction = async (id: string, transaction: Partial<Omit<Transaction, 'id' | 'organizationId' | 'userId' | 'createdAt'>>) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !kingdom || !role) return;
     if (!canEditTransaction(role)) throw new Error('Sem permissão para editar transações');
     
     const updateData: any = {};
@@ -180,20 +185,19 @@ export function useReino() {
     if (transaction.date) updateData.date = new Date(transaction.date);
     
     await setDoc(doc(db, 'transactions', id), updateData, { merge: true });
-    await logActivity('EDIT_TRANSACTION', 'transaction', id, `Editou transação: ${transaction.description || id}`);
+    await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { updates: updateData });
   };
 
   const deleteTransaction = async (id: string) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !kingdom || !role) return;
     if (!canDeleteTransaction(role)) throw new Error('Sem permissão para deletar transações');
     
-    const { deleteDoc } = await import('firebase/firestore');
     await deleteDoc(doc(db, 'transactions', id));
-    await logActivity('DELETE_TRANSACTION', 'transaction', id, `Deletou transação: ${id}`);
+    await logActivity(kingdom.id, auth.currentUser.uid, 'DELETE_TRANSACTION', id, {});
   };
 
   const updateAsset = async (asset: Omit<Asset, 'organizationId'>) => {
-    if (!auth.currentUser || !kingdom) return;
+    if (!auth.currentUser || !kingdom || !role) return;
     if (!hasPermission(role, 'EDIT_ASSET')) throw new Error('Sem permissão para editar ativos');
     
     const newId = asset.id || doc(collection(db, 'investments')).id;
@@ -211,14 +215,19 @@ export function useReino() {
       created_by: auth.currentUser.uid
     };
     await setDoc(doc(db, 'investments', newId), newInvestment);
-    await logActivity('EDIT_ASSET', 'asset', newId, `Atualizou ativo: ${asset.segment}`);
+    await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_ASSET', newId, { ticker: asset.segment });
   };
 
-  const addInvestment = async (investment: { type: string, ticker: string, value: number }) => {
-    if (!auth.currentUser || !kingdom) return;
+  const addInvestment = async (investment: { 
+    type: string, 
+    ticker: string, 
+    value: number, 
+    quantity: number, 
+    operation_date: string 
+  }) => {
+    if (!auth.currentUser || !kingdom || !role) return;
     if (!hasPermission(role, 'CREATE_ASSET')) throw new Error('Sem permissão para criar ativos');
     
-    const { doc, collection, setDoc, writeBatch } = await import('firebase/firestore');
     const batch = writeBatch(db);
 
     const newId = doc(collection(db, 'investments')).id;
@@ -227,11 +236,12 @@ export function useReino() {
       user_id: auth.currentUser.uid,
       type: investment.type,
       ticker: investment.ticker,
-      quantity: 1,
-      average_price: investment.value,
+      quantity: investment.quantity,
+      average_price: investment.value / investment.quantity,
       invested_value: investment.value,
       current_value: investment.value,
       earnings: 0,
+      operation_date: investment.operation_date,
       created_at: new Date(),
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid
@@ -247,8 +257,8 @@ export function useReino() {
       category: 'Investimento',
       category_id: 'investment_auto',
       amount: investment.value,
-      description: `Aporte em ${investment.ticker}`,
-      date: new Date().toISOString().split('T')[0],
+      description: `Aporte em ${investment.ticker} (${investment.quantity} unidades)`,
+      date: investment.operation_date,
       created_at: new Date(),
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid
@@ -256,12 +266,12 @@ export function useReino() {
     batch.set(doc(db, 'transactions', newTransactionId), newTransaction);
 
     await batch.commit();
-    await logActivity('CREATE_ASSET', 'asset', newId, `Criou investimento: ${investment.ticker}`);
+    await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_ASSET', newId, { ticker: investment.ticker, value: investment.value });
     
     // Add XP for investing
     const xpGained = calculateXPFromInvestments(investment.value);
     await addXP(auth.currentUser.uid, xpGained);
   };
 
-  return { assets, transactions, activityLogs, loading, addTransaction, updateTransaction, deleteTransaction, updateAsset, addInvestment, logActivity };
+  return { assets, transactions, activityLogs, loading, addTransaction, updateTransaction, deleteTransaction, updateAsset, addInvestment };
 }

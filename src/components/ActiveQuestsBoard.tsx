@@ -18,10 +18,11 @@ interface QuestItem {
 }
 
 export function ActiveQuestsBoard() {
-  const { payables, updatePayable } = useAccountsPayable();
-  const { receivables, updateReceivable } = useAccountsReceivable();
-  const { invoices, updateInvoice } = useCreditCardInvoices();
+  const { payables, payPayable } = useAccountsPayable();
+  const { receivables, receiveReceivable } = useAccountsReceivable();
+  const { invoices, payInvoice } = useCreditCardInvoices();
   const { addTransaction } = useReino();
+
   const [isCompleting, setIsCompleting] = useState<string | null>(null);
 
   // Combine and sort all active quests
@@ -67,7 +68,7 @@ export function ActiveQuestsBoard() {
     try {
       const now = new Date().toISOString();
       if (quest.type === 'payable') {
-        await updatePayable(quest.originalData.id, { status: 'paid', paidAt: now });
+        await payPayable(quest.originalData.id, now);
         await addTransaction({
           userId: quest.originalData.userId,
           amount: quest.amount,
@@ -77,7 +78,7 @@ export function ActiveQuestsBoard() {
           date: now
         });
       } else if (quest.type === 'receivable') {
-        await updateReceivable(quest.originalData.id, { status: 'received', receivedAt: now });
+        await receiveReceivable(quest.originalData.id, now);
         await addTransaction({
           userId: quest.originalData.userId,
           amount: quest.amount,
@@ -87,7 +88,7 @@ export function ActiveQuestsBoard() {
           date: now
         });
       } else if (quest.type === 'invoice') {
-        await updateInvoice(quest.originalData.id, { status: 'paid', paidAt: now });
+        await payInvoice(quest.originalData.id, now);
         await addTransaction({
           userId: quest.originalData.userId,
           amount: quest.amount,
@@ -97,8 +98,9 @@ export function ActiveQuestsBoard() {
           date: now
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error completing quest:", error);
+      alert(error.message || "Erro ao concluir quest.");
     } finally {
       setIsCompleting(null);
     }

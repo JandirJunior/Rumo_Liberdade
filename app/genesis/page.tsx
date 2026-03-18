@@ -90,7 +90,7 @@ export default function GenesisQuiz() {
       A: 'Mago',
       C: 'Dwarf',
       E: 'Elfo',
-      R: 'Ladrão',
+      R: 'Ladino',
       O: 'Hobbit'
     };
     return mapping[maxStat[0]] || 'Iniciante';

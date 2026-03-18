@@ -48,18 +48,18 @@ export const MOCK_ASSETS: Asset[] = [
 
 // Estado inicial do jogo (Progresso do Herói)
 export const MOCK_GAME_STATE: UserGameState = {
-  level: 12,
-  xp: 110000,
-  archetype: 'Paladino',
+  level: 1,
+  xp: 0,
+  archetype: 'Aprendiz',
   stats: {
-    F: 8,
-    A: 7,
-    C: 3,
-    E: 4,
-    R: 9,
-    O: 2
+    F: 0,
+    A: 0,
+    C: 0,
+    E: 0,
+    R: 0,
+    O: 0
   },
-  completedQuests: ['Dízimo do Herói']
+  completedQuests: []
 };
 
 // Orçamento mensal (Planejamento vs Realidade)
@@ -95,7 +95,7 @@ export const ARCHETYPE_IMAGES: Record<string, ImageKey> = {
   'Mago': 'ARCANO',
   'Dwarf': 'CACHE',
   'Elfo': 'EXODIA',
-  'Ladrão': 'REAVER',
+  'Ladino': 'REAVER',
   'Hobbit': 'ORBIT',
   'Iniciante': 'FESTIN'
 };

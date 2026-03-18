@@ -59,12 +59,12 @@ const ARCHETYPES: { type: Archetype; name: string; desc: string; icon: any; colo
     illustration: ARCHETYPE_IMAGES['Elfo']
   },
   { 
-    type: 'Ladrão', 
+    type: 'Ladino', 
     name: 'REAVER', 
     desc: 'Foco em CDBs e também em Previdencia privada VGBL e tesouro selic e tesouro direto.', 
     icon: VenetianMask,
     color: 'bg-slate-700',
-    illustration: ARCHETYPE_IMAGES['Ladrão']
+    illustration: ARCHETYPE_IMAGES['Ladino']
   },
   { 
     type: 'Hobbit', 
@@ -91,7 +91,7 @@ export default function Tavern() {
     'A': 'bg-indigo-500',  // Mago/Arcano
     'C': 'bg-amber-500',   // Dwarf/Cache
     'E': 'bg-teal-500',    // Elfo/Exodia
-    'R': 'bg-rose-500',    // Ladrão/Reaver
+    'R': 'bg-rose-500',    // Ladino/Reaver
     'O': 'bg-orange-500',  // Hobbit/Orbit
   };
 
@@ -220,7 +220,7 @@ export default function Tavern() {
               })}
             </div>
             <p className="text-xs text-gray-500 mt-4 text-center">
-              A distribuição das suas skills reflete exatamente a alocação dos seus investimentos na Caverna.
+              A distribuição das suas skills reflete exatamente a alocação dos seus investimentos no Inventário.
             </p>
           </div>
         </section>

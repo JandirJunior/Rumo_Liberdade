@@ -1,17 +1,22 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'motion/react';
 import { useKingdom, useKingdomMembers, useKingdomInvites } from '@/hooks/useKingdom';
 import { kingdomService } from '@/src/services/kingdomService';
-import { auth } from '@/firebase';
-import { Users, UserPlus, Shield, User, Eye, Check, X, Copy } from 'lucide-react';
+import { auth, db } from '@/firebase';
+import { collection, doc, updateDoc } from 'firebase/firestore';
+import { Users, UserPlus, Shield, User, Eye, Check, X, Copy, Activity, Edit3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { KingdomRole } from '@/lib/types';
+import { ActivityFeed } from '@/components/ActivityFeed';
+import { useReino } from '@/hooks/useReino';
 
 export function KingdomManager({ colors }: { colors: any }) {
   const { kingdom, role, loading: kingdomLoading } = useKingdom();
   const { members, loading: membersLoading } = useKingdomMembers(kingdom?.id);
   const { invites, loading: invitesLoading } = useKingdomInvites(auth.currentUser?.email || undefined);
+  const { activityLogs } = useReino();
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<KingdomRole>('member');
@@ -19,11 +24,50 @@ export function KingdomManager({ colors }: { colors: any }) {
   const [copied, setCopied] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
-  const { joinKingdomByCode } = useKingdom();
+  const [newKingdomName, setNewKingdomName] = useState(kingdom?.name || '');
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
+  const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const { joinKingdomByCode, memberId: myMemberId } = useKingdom();
 
   if (kingdomLoading || membersLoading || invitesLoading) {
     return <div className="text-center py-8 text-gray-500">Carregando dados do Reino...</div>;
   }
+
+  const showStatus = (type: 'success' | 'error', message: string) => {
+    setStatus({ type, message });
+    setTimeout(() => setStatus(null), 3000);
+  };
+
+  const handleUpdateKingdomName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!kingdom || !newKingdomName || role !== 'admin') return;
+    setIsUpdatingName(true);
+    try {
+      await updateDoc(doc(db, 'kingdoms', kingdom.id), { name: newKingdomName });
+      showStatus('success', 'Nome do Reino atualizado!');
+    } catch (error) {
+      console.error('Erro ao atualizar nome:', error);
+      showStatus('error', 'Erro ao atualizar nome.');
+    } finally {
+      setIsUpdatingName(false);
+    }
+  };
+
+  const handleLeaveKingdom = async () => {
+    if (!myMemberId) return;
+    if (role === 'admin' && members.length > 1) {
+      showStatus('error', 'Transfira a liderança antes de sair ou remova todos os membros.');
+      return;
+    }
+    
+    try {
+      await kingdomService.removeMember(myMemberId);
+      window.location.reload(); // Reload to trigger kingdom creation or join
+    } catch (error) {
+      console.error('Erro ao sair do reino:', error);
+      showStatus('error', 'Erro ao sair do reino.');
+    }
+  };
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,10 +77,10 @@ export function KingdomManager({ colors }: { colors: any }) {
     try {
       await kingdomService.createInvite(kingdom.id, inviteEmail, inviteRole, auth.currentUser.uid);
       setInviteEmail('');
-      alert('Convite enviado com sucesso!');
+      showStatus('success', 'Convite enviado com sucesso!');
     } catch (error) {
       console.error('Erro ao enviar convite:', error);
-      alert('Erro ao enviar convite.');
+      showStatus('error', 'Erro ao enviar convite.');
     } finally {
       setIsInviting(false);
     }
@@ -46,43 +90,41 @@ export function KingdomManager({ colors }: { colors: any }) {
     if (!auth.currentUser) return;
     try {
       await kingdomService.acceptInvite(inviteId, auth.currentUser.uid);
-      alert('Convite aceito! Bem-vindo ao novo Reino.');
+      showStatus('success', 'Convite aceito! Bem-vindo ao novo Reino.');
       window.location.reload();
     } catch (error) {
       console.error('Erro ao aceitar convite:', error);
-      alert('Erro ao aceitar convite.');
+      showStatus('error', 'Erro ao aceitar convite.');
     }
   };
 
   const handleRejectInvite = async (inviteId: string) => {
     try {
       await kingdomService.rejectInvite(inviteId);
-      alert('Convite recusado.');
+      showStatus('success', 'Convite recusado.');
     } catch (error) {
       console.error('Erro ao recusar convite:', error);
-      alert('Erro ao recusar convite.');
+      showStatus('error', 'Erro ao recusar convite.');
     }
   };
 
   const handleUpdateRole = async (memberId: string, newRole: KingdomRole) => {
     try {
       await kingdomService.updateMemberRole(memberId, newRole);
-      alert('Cargo atualizado com sucesso.');
+      showStatus('success', 'Cargo atualizado com sucesso.');
     } catch (error) {
       console.error('Erro ao atualizar cargo:', error);
-      alert('Erro ao atualizar cargo.');
+      showStatus('error', 'Erro ao atualizar cargo.');
     }
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    if (confirm('Tem certeza que deseja remover este membro do Reino?')) {
-      try {
-        await kingdomService.removeMember(memberId);
-        alert('Membro removido com sucesso.');
-      } catch (error) {
-        console.error('Erro ao remover membro:', error);
-        alert('Erro ao remover membro.');
-      }
+    try {
+      await kingdomService.removeMember(memberId);
+      showStatus('success', 'Membro removido com sucesso.');
+    } catch (error) {
+      console.error('Erro ao remover membro:', error);
+      showStatus('error', 'Erro ao remover membro.');
     }
   };
 
@@ -113,16 +155,52 @@ export function KingdomManager({ colors }: { colors: any }) {
 
   return (
     <div className="space-y-8">
+      {/* Status Messages */}
+      {status && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={cn(
+            "p-4 rounded-2xl text-sm font-bold shadow-sm flex items-center gap-2",
+            status.type === 'success' ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-rose-50 text-rose-700 border border-rose-100"
+          )}
+        >
+          {status.type === 'success' ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+          {status.message}
+        </motion.div>
+      )}
+
       {/* Informações do Reino */}
       <section className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-display font-bold text-gray-900">{kingdom?.name || 'Seu Reino'}</h3>
+          <div className="flex-1">
+            {role === 'admin' ? (
+              <form onSubmit={handleUpdateKingdomName} className="flex items-center gap-2 group">
+                <input
+                  type="text"
+                  value={newKingdomName}
+                  onChange={(e) => setNewKingdomName(e.target.value)}
+                  className="text-xl font-display font-bold text-gray-900 bg-transparent border-b border-transparent focus:border-indigo-500 outline-none transition-all"
+                />
+                <button type="submit" disabled={isUpdatingName} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-indigo-500">
+                  <Edit3 className="w-4 h-4" />
+                </button>
+              </form>
+            ) : (
+              <h3 className="text-xl font-display font-bold text-gray-900">{kingdom?.name || 'Seu Reino'}</h3>
+            )}
             <p className="text-sm text-gray-500">Gerencie os heróis que compartilham este reino.</p>
           </div>
-          <div className={cn("px-4 py-2 rounded-xl text-sm font-bold text-white", colors.primary)}>
+          <div className={cn("px-4 py-2 rounded-xl text-sm font-bold text-white shrink-0", colors.primary)}>
             Seu Cargo: {role === 'admin' ? 'Administrador' : role === 'member' ? 'Membro' : 'Observador'}
           </div>
+          <button
+            onClick={handleLeaveKingdom}
+            className="ml-4 p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors"
+            title="Sair do Reino"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {role === 'admin' && kingdom?.invite_code && (
@@ -193,6 +271,14 @@ export function KingdomManager({ colors }: { colors: any }) {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* Feed de Atividades */}
+      <section className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+        <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-4">
+          <Activity className="w-4 h-4" /> Atividades Recentes do Reino
+        </h4>
+        <ActivityFeed logs={activityLogs} colors={colors} />
       </section>
 
       {/* Entrar em um Reino por Código */}

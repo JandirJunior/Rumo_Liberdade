@@ -60,7 +60,7 @@ export interface ActivityLog {
   action: string;
   entity_type: 'transaction' | 'payable' | 'receivable' | 'asset' | 'member' | 'kingdom';
   entity_id: string;
-  details?: string;
+  details?: any;
   created_at: string;
 }
 
@@ -103,6 +103,10 @@ export interface Asset {
   organizationId: string; // SaaS: Identificador do tenant
   kingdom_id?: string;
   created_by?: string;
+  ticker?: string;
+  quantity?: number;
+  operation_date?: string;
+  average_cost?: number;
 }
 
 // --- SAAS INTERFACES ---
@@ -170,7 +174,7 @@ export interface FaceroStats {
 }
 
 // Arquétipos (Classes de Herói) disponíveis
-export type Archetype = 'Paladino' | 'Mago' | 'Dwarf' | 'Elfo' | 'Ladrão' | 'Hobbit' | 'Iniciante';
+export type Archetype = 'Paladino' | 'Mago' | 'Dwarf' | 'Elfo' | 'Ladino' | 'Hobbit' | 'Iniciante';
 
 // Interface para o estado global do jogo do usuário
 export interface UserGameState {
@@ -205,7 +209,7 @@ export interface AccountPayable {
   userId: string;
   description: string;
   amount: number;
-  category?: string;
+  category_id: string;
   dueDate: string;
   status: AccountStatus;
   paymentMethod?: string;
@@ -227,7 +231,7 @@ export interface AccountReceivable {
   userId: string;
   description: string;
   amount: number;
-  category?: string;
+  category_id: string;
   dueDate: string;
   payer?: string;
   status: ReceivableStatus;
@@ -248,6 +252,7 @@ export interface CreditCard {
   limit: number;
   closingDay: number;
   dueDay: number;
+  category_id: string;
   kingdom_id?: string;
   created_by?: string;
 }

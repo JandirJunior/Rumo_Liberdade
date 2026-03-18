@@ -23,9 +23,26 @@ export function hasPermission(role: KingdomRole | undefined | null, action: keyo
   return PERMISSIONS[action].includes(role);
 }
 
-export function canCreateTransaction(role?: KingdomRole) { return hasPermission(role, 'CREATE_TRANSACTION'); }
-export function canEditTransaction(role?: KingdomRole) { return hasPermission(role, 'EDIT_TRANSACTION'); }
-export function canDeleteTransaction(role?: KingdomRole) { return hasPermission(role, 'DELETE_TRANSACTION'); }
+export function canCreateTransaction(role: string) {
+  return role === 'admin' || role === 'member';
+}
 
-export function canManageUsers(role?: KingdomRole) { return hasPermission(role, 'MANAGE_USERS'); }
-export function canEditKingdom(role?: KingdomRole) { return hasPermission(role, 'EDIT_KINGDOM'); }
+export function canManageUsers(role: string) {
+  return role === 'admin';
+}
+
+export function canEditCategories(role: string) {
+  return role === 'admin';
+}
+
+export function canDeleteTransaction(role: string) {
+  return role === 'admin';
+}
+
+export function canEditTransaction(role: string) {
+  return role === 'admin' || role === 'member';
+}
+
+export function canEditKingdom(role: string) {
+  return role === 'admin';
+}

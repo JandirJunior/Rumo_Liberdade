@@ -5,11 +5,14 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { CategoryEntity } from '@/lib/financialEngine';
 import { RPG_CATEGORIES_SCHEMA } from '@/lib/rpgCategories';
 import { useKingdom } from './useKingdom';
+import { getCollectionByKingdom } from '@/lib/firebaseUtils';
+import { canEditCategories } from '@/lib/permissionEngine';
+import { logActivity } from '@/lib/auditLogger';
 
 export function useCategories() {
   const [categories, setCategories] = useState<CategoryEntity[]>([]);
   const [loading, setLoading] = useState(true);
-  const { kingdom, loading: kingdomLoading } = useKingdom();
+  const { kingdom, role, loading: kingdomLoading } = useKingdom();
 
   useEffect(() => {
     if (kingdomLoading) return;
@@ -22,8 +25,7 @@ export function useCategories() {
     }
 
     const userId = auth.currentUser.uid;
-    const categoriesRef = collection(db, 'categories');
-    const q = query(categoriesRef, where('kingdom_id', '==', kingdom.id));
+    const q = getCollectionByKingdom('categories', kingdom.id);
 
     // Check if kingdom has categories, if not, create defaults
     const checkAndCreateDefaults = async () => {
@@ -122,7 +124,11 @@ export function useCategories() {
   }, [kingdom, kingdomLoading]);
 
   const addCategory = async (category: Omit<CategoryEntity, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!auth.currentUser || !kingdom) return;
+    if (!auth.currentUser || !kingdom || !role) return;
+    if (!canEditCategories(role)) {
+      throw new Error('Sem permissão para criar categorias.');
+    }
+
     const newId = doc(collection(db, 'categories')).id;
     const newCategory = {
       ...category,
@@ -133,10 +139,15 @@ export function useCategories() {
       created_by: auth.currentUser.uid
     };
     await setDoc(doc(db, 'categories', newId), newCategory);
+    await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_CATEGORY', newId, { name: category.name });
   };
 
   const updateCategory = async (id: string, category: Partial<CategoryEntity>) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !kingdom || !role) return;
+    if (!canEditCategories(role)) {
+      throw new Error('Sem permissão para editar categorias.');
+    }
+
     await updateDoc(doc(db, 'categories', id), {
       ...category,
       updated_at: new Date()
@@ -144,8 +155,13 @@ export function useCategories() {
   };
 
   const deleteCategory = async (id: string) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !kingdom || !role) return;
+    if (!canEditCategories(role)) {
+      throw new Error('Sem permissão para deletar categorias.');
+    }
+
     await deleteDoc(doc(db, 'categories', id));
+    await logActivity(kingdom.id, auth.currentUser.uid, 'DELETE_CATEGORY', id);
   };
 
   return { categories, loading, addCategory, updateCategory, deleteCategory };

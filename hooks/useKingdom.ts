@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db, auth } from '@/firebase';
-import { collection, onSnapshot, query, where, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { Kingdom, KingdomMember, KingdomInvite, KingdomRole } from '@/lib/types';
 import { kingdomService } from '@/src/services/kingdomService';
@@ -8,6 +8,7 @@ import { kingdomService } from '@/src/services/kingdomService';
 export function useKingdom() {
   const [kingdom, setKingdom] = useState<Kingdom | null>(null);
   const [role, setRole] = useState<KingdomRole | null>(null);
+  const [memberId, setMemberId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,6 +18,7 @@ export function useKingdom() {
       if (!user) {
         setKingdom(null);
         setRole(null);
+        setMemberId(null);
         setLoading(false);
         return;
       }
@@ -34,6 +36,7 @@ export function useKingdom() {
           unsubscribeMembers = onSnapshot(q, (snapshot) => {
             if (!snapshot.empty) {
               setRole(snapshot.docs[0].data().role as KingdomRole);
+              setMemberId(snapshot.docs[0].id);
             }
             setLoading(false);
           });
@@ -41,6 +44,9 @@ export function useKingdom() {
           const newKingdom = await kingdomService.createKingdom(`Reino de ${user.displayName || 'Herói'}`, user.uid);
           setKingdom(newKingdom);
           setRole('admin');
+          // Note: memberId will be set by the snapshot listener if we had one for the new kingdom,
+          // but here we just created it. For simplicity, we can fetch it or just wait for the next load.
+          // Actually, createKingdom calls addMember which returns the member.
           setLoading(false);
         }
       } catch (error) {
@@ -74,7 +80,7 @@ export function useKingdom() {
     return kingdomToJoin;
   };
 
-  return { kingdom, role, loading, joinKingdomByCode };
+  return { kingdom, role, memberId, loading, joinKingdomByCode };
 }
 
 export function useKingdomMembers(kingdomId: string | undefined) {
@@ -93,19 +99,23 @@ export function useKingdomMembers(kingdomId: string | undefined) {
     const q = query(membersRef, where('kingdom_id', '==', kingdomId));
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const loadedMembers = snapshot.docs.map(doc => doc.data() as KingdomMember);
+      const loadedMembers = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as KingdomMember);
       
-      // Fetch user details for each member
-      for (const member of loadedMembers) {
-        const userDoc = await kingdomService.getKingdomMembers(kingdomId);
-        const found = userDoc.find(u => u.user_id === member.user_id);
-        if (found) {
-          member.user_name = found.user_name;
-          member.user_email = found.user_email;
+      // Fetch user details for all members in parallel
+      const membersWithDetails = await Promise.all(loadedMembers.map(async (member) => {
+        const userDoc = await getDoc(doc(db, 'users', member.user_id));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          return {
+            ...member,
+            user_name: userData.name || userData.displayName || 'Herói',
+            user_email: userData.email
+          };
         }
-      }
+        return member;
+      }));
       
-      setMembers(loadedMembers);
+      setMembers(membersWithDetails);
       setLoading(false);
     });
 

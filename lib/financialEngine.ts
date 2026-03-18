@@ -171,11 +171,12 @@ export const FACERO_LABELS: Record<string, string> = {
 };
 
 export function calculateInvestmentPower(assets: any[]) {
-  const totalValue = assets.reduce((acc, curr) => acc + curr.value, 0);
+  if (!Array.isArray(assets)) return { totalValue: 0, aggregated: [], tickerDetails: [] };
+  const totalValue = assets.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
   
   const aggregated = Object.keys(FACERO_TARGETS).map(key => {
     const typeAssets = assets.filter(a => a.faceroType === key);
-    const value = typeAssets.reduce((acc, curr) => acc + curr.value, 0);
+    const value = typeAssets.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
     const targetPercent = FACERO_TARGETS[key];
     const currentPercent = totalValue > 0 ? value / totalValue : 0;
     
@@ -189,9 +190,39 @@ export function calculateInvestmentPower(assets: any[]) {
     };
   });
 
+  // Group by ticker for average cost
+  const tickerGroups: Record<string, { totalValue: number, totalQuantity: number, type: string, faceroType: string }> = {};
+  
+  if (Array.isArray(assets)) {
+    assets.forEach(asset => {
+      if (!asset) return;
+      const ticker = asset.ticker || asset.name || 'OUTROS';
+      if (!tickerGroups[ticker]) {
+        tickerGroups[ticker] = { 
+          totalValue: 0, 
+          totalQuantity: 0, 
+          type: asset.type || 'other', 
+          faceroType: asset.faceroType || 'O' 
+        };
+      }
+      tickerGroups[ticker].totalValue += Number(asset.value || 0);
+      tickerGroups[ticker].totalQuantity += Number(asset.quantity || 0);
+    });
+  }
+
+  const tickerDetails = Object.entries(tickerGroups).map(([ticker, data]) => ({
+    ticker,
+    totalValue: data.totalValue,
+    totalQuantity: data.totalQuantity,
+    averageCost: data.totalQuantity > 0 ? data.totalValue / data.totalQuantity : 0,
+    type: data.type,
+    faceroType: data.faceroType
+  }));
+
   return {
     totalValue,
-    aggregated
+    aggregated,
+    tickerDetails
   };
 }
 
@@ -202,9 +233,20 @@ export function calculateUserBalance(transactions: TransactionEntity[]): number 
   return income - expense - investment;
 }
 
+export function parseDate(date: any): Date {
+  if (date instanceof Date) return date;
+  if (date && typeof date === 'object' && 'seconds' in date) {
+    return new Date(date.seconds * 1000);
+  }
+  if (typeof date === 'string') {
+    return new Date(date);
+  }
+  return new Date();
+}
+
 export function calculateMonthlySummary(transactions: TransactionEntity[], month: number, year: number) {
   const monthlyTransactions = transactions.filter(t => {
-    const date = t.date instanceof Date ? t.date : new Date(t.date);
+    const date = parseDate(t.date);
     return date.getMonth() + 1 === month && date.getFullYear() === year;
   });
 

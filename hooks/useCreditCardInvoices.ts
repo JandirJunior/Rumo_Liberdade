@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import { db, auth } from '@/firebase';
-import { collection, onSnapshot, query, orderBy, setDoc, doc, where, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, setDoc, doc, where, deleteDoc, runTransaction } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { CreditCardInvoice } from '@/lib/types';
 import { useKingdom } from './useKingdom';
+import { getCollectionByKingdom } from '@/lib/firebaseUtils';
+import { canCreateTransaction, canEditTransaction, canDeleteTransaction } from '@/lib/permissionEngine';
+import { logActivity } from '@/lib/auditLogger';
 
 export function useCreditCardInvoices() {
   const [invoices, setInvoices] = useState<CreditCardInvoice[]>([]);
   const [loading, setLoading] = useState(true);
-  const { kingdom, loading: kingdomLoading } = useKingdom();
+  const { kingdom, role, loading: kingdomLoading } = useKingdom();
 
   useEffect(() => {
     if (kingdomLoading) return;
@@ -20,8 +23,10 @@ export function useCreditCardInvoices() {
       return;
     }
 
-    const invoicesRef = collection(db, 'credit_card_invoices');
-    const invoicesQuery = query(invoicesRef, where('kingdom_id', '==', kingdom.id), orderBy('dueDate', 'asc'));
+    const invoicesQuery = query(
+      getCollectionByKingdom('credit_card_invoices', kingdom.id),
+      orderBy('dueDate', 'asc')
+    );
 
     const unsubscribeInvoices = onSnapshot(invoicesQuery, (snapshot) => {
       if (!snapshot.empty) {
@@ -55,7 +60,11 @@ export function useCreditCardInvoices() {
   }, [kingdom, kingdomLoading]);
 
   const addInvoice = async (invoice: Omit<CreditCardInvoice, 'id' | 'userId' | 'createdAt'>) => {
-    if (!auth.currentUser || !kingdom) return;
+    if (!auth.currentUser || !kingdom || !role) return;
+    if (!canCreateTransaction(role)) {
+      throw new Error('Sem permissão para criar faturas de cartão.');
+    }
+
     const newId = doc(collection(db, 'credit_card_invoices')).id;
     const newInvoice: CreditCardInvoice = {
       ...invoice,
@@ -66,17 +75,49 @@ export function useCreditCardInvoices() {
       created_by: auth.currentUser.uid
     };
     await setDoc(doc(db, 'credit_card_invoices', newId), newInvoice);
+    await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'credit_card_invoice', amount: invoice.totalAmount });
   };
 
   const updateInvoice = async (id: string, invoice: Partial<CreditCardInvoice>) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !kingdom || !role) return;
+    if (!canEditTransaction(role)) {
+      throw new Error('Sem permissão para editar faturas de cartão.');
+    }
+
     await setDoc(doc(db, 'credit_card_invoices', id), invoice, { merge: true });
+    await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'credit_card_invoice', updates: invoice });
+  };
+
+  const payInvoice = async (id: string, paidAt: string) => {
+    if (!auth.currentUser || !kingdom || !role) return;
+    if (!canEditTransaction(role)) {
+      throw new Error('Sem permissão para editar faturas de cartão.');
+    }
+
+    const docRef = doc(db, 'credit_card_invoices', id);
+    await runTransaction(db, async (transaction) => {
+      const docSnap = await transaction.get(docRef);
+      if (!docSnap.exists()) {
+        throw new Error('Fatura não encontrada.');
+      }
+      const data = docSnap.data() as CreditCardInvoice;
+      if (data.status === 'paid') {
+        throw new Error('Esta fatura já foi paga por outro membro.');
+      }
+      transaction.update(docRef, { status: 'paid', paidAt });
+    });
+    await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'credit_card_invoice', status: 'paid' });
   };
 
   const deleteInvoice = async (id: string) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !kingdom || !role) return;
+    if (!canDeleteTransaction(role)) {
+      throw new Error('Sem permissão para deletar faturas de cartão.');
+    }
+
     await deleteDoc(doc(db, 'credit_card_invoices', id));
+    await logActivity(kingdom.id, auth.currentUser.uid, 'DELETE_TRANSACTION', id, { type: 'credit_card_invoice' });
   };
 
-  return { invoices, loading, addInvoice, updateInvoice, deleteInvoice };
+  return { invoices, loading, addInvoice, updateInvoice, payInvoice, deleteInvoice };
 }

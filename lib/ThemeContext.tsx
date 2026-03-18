@@ -64,6 +64,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           await setDoc(userRef, {
             uid: currentUser.uid,
             email: currentUser.email,
+            name: currentUser.displayName || 'Herói',
             archetype: newState.archetype,
             xp: newState.xp,
             stats: newState.stats,

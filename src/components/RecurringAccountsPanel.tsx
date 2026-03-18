@@ -3,21 +3,26 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAccountsPayable } from '@/hooks/useAccountsPayable';
 import { useAccountsReceivable } from '@/hooks/useAccountsReceivable';
 import { useCreditCards } from '@/hooks/useCreditCards';
+import { useCategories } from '@/hooks/useCategories';
 import { formatCurrency, cn } from '@/lib/utils';
-import { Plus, Trash2, Edit2, CreditCard, ArrowUpRight, ArrowDownRight, Calendar } from 'lucide-react';
+import { Plus, Trash2, Edit2, CreditCard, ArrowUpRight, ArrowDownRight, Calendar, Sparkles } from 'lucide-react';
+import { GoogleGenAI, Type } from '@google/genai';
 
 export function RecurringAccountsPanel() {
   const { payables, addPayable, deletePayable } = useAccountsPayable();
   const { receivables, addReceivable, deleteReceivable } = useAccountsReceivable();
   const { creditCards, addCreditCard, deleteCreditCard } = useCreditCards();
+  const { categories } = useCategories();
 
   const [activeTab, setActiveTab] = useState<'payable' | 'receivable' | 'cards'>('payable');
   const [isAdding, setIsAdding] = useState(false);
+  const [isSuggesting, setIsSuggesting] = useState(false);
 
   // Form states
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceRule, setRecurrenceRule] = useState('monthly');
   const [cardLimit, setCardLimit] = useState('');
@@ -28,6 +33,7 @@ export function RecurringAccountsPanel() {
     setDescription('');
     setAmount('');
     setDueDate('');
+    setCategoryId('');
     setIsRecurring(false);
     setRecurrenceRule('monthly');
     setCardLimit('');
@@ -36,14 +42,67 @@ export function RecurringAccountsPanel() {
     setIsAdding(false);
   };
 
+  const handleSuggestCategory = async () => {
+    if (!description) return;
+    setIsSuggesting(true);
+    
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
+      
+      const flowType = activeTab === 'payable' ? 'expense' : activeTab === 'receivable' ? 'income' : 'expense';
+      const filteredCategories = categories.filter(c => c.flow_type === flowType);
+      const categoryList = filteredCategories.map(c => `${c.id}: ${c.name}`).join('\n');
+      
+      const prompt = `
+        Eu tenho um registro financeiro do tipo "${activeTab === 'payable' ? 'Conta a Pagar' : activeTab === 'receivable' ? 'Conta a Receber' : 'Cartão de Crédito'}" com a descrição: "${description}".
+        O valor é: ${amount || cardLimit || 'desconhecido'}.
+        
+        Aqui está a lista de categorias disponíveis no meu sistema para este fluxo (${flowType}):
+        ${categoryList}
+        
+        Com base na descrição, sugira o ID da categoria mais apropriada.
+        Retorne APENAS um JSON com o formato: {"category_id": "ID_AQUI"}
+      `;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              category_id: { type: Type.STRING }
+            },
+            required: ["category_id"]
+          }
+        }
+      });
+
+      const result = JSON.parse(response.text || '{}');
+      if (result.category_id) {
+        setCategoryId(result.category_id);
+      }
+    } catch (error) {
+      console.error("Error suggesting category:", error);
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!categoryId) {
+      alert("Por favor, selecione uma categoria.");
+      return;
+    }
     try {
       if (activeTab === 'payable') {
         await addPayable({
           description,
           amount: parseFloat(amount),
           dueDate,
+          category_id: categoryId,
           status: 'pending',
           isRecurring,
           recurrenceRule: isRecurring ? recurrenceRule : undefined,
@@ -53,6 +112,7 @@ export function RecurringAccountsPanel() {
           description,
           amount: parseFloat(amount),
           dueDate,
+          category_id: categoryId,
           status: 'pending',
           isRecurring,
           recurrenceRule: isRecurring ? recurrenceRule : undefined,
@@ -63,6 +123,7 @@ export function RecurringAccountsPanel() {
           limit: parseFloat(cardLimit),
           closingDay: parseInt(closingDay),
           dueDay: parseInt(dueDay),
+          category_id: categoryId,
         });
       }
       resetForm();
@@ -70,6 +131,17 @@ export function RecurringAccountsPanel() {
       console.error("Error adding item:", error);
     }
   };
+
+  // Group categories by rpg_group
+  const flowType = activeTab === 'payable' ? 'expense' : activeTab === 'receivable' ? 'income' : 'expense';
+  const filteredCategories = categories.filter(c => c.flow_type === flowType);
+  const groupedCategories = filteredCategories.reduce((acc, cat) => {
+    if (!acc[cat.rpg_group]) {
+      acc[cat.rpg_group] = [];
+    }
+    acc[cat.rpg_group].push(cat);
+    return acc;
+  }, {} as Record<string, typeof categories>);
 
   return (
     <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-6">
@@ -133,9 +205,23 @@ export function RecurringAccountsPanel() {
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  {activeTab === 'cards' ? 'Nome do Cartão' : 'Descrição'}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    {activeTab === 'cards' ? 'Nome do Cartão' : 'Descrição'}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleSuggestCategory}
+                    disabled={!description || isSuggesting}
+                    className={cn(
+                      "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 px-2 py-1 rounded-lg transition-all",
+                      (!description || isSuggesting) ? "text-gray-400 bg-gray-50 cursor-not-allowed" : "text-purple-600 bg-purple-50 hover:bg-purple-100"
+                    )}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {isSuggesting ? '...' : 'Sugerir'}
+                  </button>
+                </div>
                 <input
                   type="text"
                   required
@@ -144,6 +230,25 @@ export function RecurringAccountsPanel() {
                   className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   placeholder={activeTab === 'cards' ? 'Ex: Nubank' : 'Ex: Aluguel'}
                 />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Categoria RPG</label>
+                <select
+                  required
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                >
+                  <option value="" disabled>Selecione...</option>
+                  {Object.entries(groupedCategories).map(([groupName, cats]) => (
+                    <optgroup key={groupName} label={groupName}>
+                      {cats.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
               </div>
 
               {activeTab !== 'cards' && (
