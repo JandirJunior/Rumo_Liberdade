@@ -12,6 +12,7 @@ export interface UserEntity {
   mentor_selected?: string;
   level: number;
   xp: number;
+  title?: string;
   created_at: Date;
   avatarUrl?: string;
 }
@@ -28,6 +29,8 @@ export interface CategoryEntity {
   color: string;
   rpg_theme_name: string;
   created_at: Date;
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 export type AccountType = 'checking' | 'credit_card' | 'wallet' | 'digital_account';
@@ -39,6 +42,8 @@ export interface AccountEntity {
   type: AccountType;
   current_balance: number;
   created_at: Date;
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 export type TransactionType = 'income' | 'expense' | 'transfer' | 'investment';
@@ -54,6 +59,8 @@ export interface TransactionEntity {
   description: string;
   date: Date;
   created_at: Date;
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 export interface BudgetEntity {
@@ -64,6 +71,8 @@ export interface BudgetEntity {
   budget_amount: number;
   month: number;
   year: number;
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 export type InvestmentType = 'stock' | 'fii' | 'crypto' | 'etf' | 'fixed_income';
@@ -78,6 +87,8 @@ export interface InvestmentEntity {
   invested_value: number;
   current_value: number;
   earnings: number;
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 // ==========================================
@@ -141,6 +152,133 @@ export function calculateTotalEarnings(investments: InvestmentEntity[]): number 
 // FUNÇÕES DE ACESSO A DADOS (Firestore)
 // ==========================================
 
+export const FACERO_TARGETS: Record<string, number> = {
+  'F': 0.40, // 40% Fundo Imobiliário
+  'A': 0.30, // 30% Ações
+  'C': 0.05, // 5% Cripto
+  'E': 0.10, // 10% Exterior / ETFs
+  'R': 0.10, // 10% Renda Fixa
+  'O': 0.05, // 5% Outros
+};
+
+export const FACERO_LABELS: Record<string, string> = {
+  'F': 'Fundo Imobiliário',
+  'A': 'Ações',
+  'C': 'Cripto',
+  'E': 'Exterior / ETFs',
+  'R': 'Renda Fixa',
+  'O': 'Outros',
+};
+
+export function calculateInvestmentPower(assets: any[]) {
+  if (!Array.isArray(assets)) return { totalValue: 0, aggregated: [], tickerDetails: [] };
+  const totalValue = assets.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
+  
+  const aggregated = Object.keys(FACERO_TARGETS).map(key => {
+    const typeAssets = assets.filter(a => a.faceroType === key);
+    const value = typeAssets.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
+    const targetPercent = FACERO_TARGETS[key];
+    const currentPercent = totalValue > 0 ? value / totalValue : 0;
+    
+    return {
+      faceroType: key as 'F' | 'A' | 'C' | 'E' | 'R' | 'O',
+      name: FACERO_LABELS[key],
+      value,
+      targetPercent,
+      currentPercent,
+      deficit: targetPercent - currentPercent > 0 ? targetPercent - currentPercent : 0
+    };
+  });
+
+  // Group by ticker for average cost
+  const tickerGroups: Record<string, { totalValue: number, totalQuantity: number, type: string, faceroType: string }> = {};
+  
+  if (Array.isArray(assets)) {
+    assets.forEach(asset => {
+      if (!asset) return;
+      const ticker = asset.ticker || asset.name || 'OUTROS';
+      if (!tickerGroups[ticker]) {
+        tickerGroups[ticker] = { 
+          totalValue: 0, 
+          totalQuantity: 0, 
+          type: asset.type || 'other', 
+          faceroType: asset.faceroType || 'O' 
+        };
+      }
+      tickerGroups[ticker].totalValue += Number(asset.value || 0);
+      tickerGroups[ticker].totalQuantity += Number(asset.quantity || 0);
+    });
+  }
+
+  const tickerDetails = Object.entries(tickerGroups).map(([ticker, data]) => ({
+    ticker,
+    totalValue: data.totalValue,
+    totalQuantity: data.totalQuantity,
+    averageCost: data.totalQuantity > 0 ? data.totalValue / data.totalQuantity : 0,
+    type: data.type,
+    faceroType: data.faceroType
+  }));
+
+  return {
+    totalValue,
+    aggregated,
+    tickerDetails
+  };
+}
+
+export function calculateUserBalance(transactions: TransactionEntity[]): number {
+  const income = transactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const expense = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const investment = transactions.filter(t => t.type === 'investment').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  return income - expense - investment;
+}
+
+export function parseDate(date: any): Date {
+  if (date instanceof Date) return date;
+  if (date && typeof date === 'object' && 'seconds' in date) {
+    return new Date(date.seconds * 1000);
+  }
+  if (typeof date === 'string') {
+    return new Date(date);
+  }
+  return new Date();
+}
+
+export function calculateMonthlySummary(transactions: TransactionEntity[], month: number, year: number) {
+  const monthlyTransactions = transactions.filter(t => {
+    const date = parseDate(t.date);
+    return date.getMonth() + 1 === month && date.getFullYear() === year;
+  });
+
+  const income = monthlyTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const expense = monthlyTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+  const investment = monthlyTransactions.filter(t => t.type === 'investment').reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+
+  return { income, expense, investment };
+}
+
+export function calculateNetWorth(transactions: TransactionEntity[], investments: any[]): number {
+  const balance = calculateUserBalance(transactions);
+  const totalInvested = investments.reduce((acc, curr) => {
+    const val = Number(curr.current_value ?? curr.value ?? 0);
+    return acc + val;
+  }, 0);
+  return Number(balance || 0) + totalInvested;
+}
+
+export function calculateBudgetProgress(planned: number, actual: number) {
+  const percentage = planned > 0 ? (actual / planned) * 100 : 0;
+  return {
+    planned,
+    actual,
+    percentage
+  };
+}
+
+export function calculatePlayerPower(netWorth: number, totalInvested: number, budgetControlScore: number, consistencyScore: number): number {
+  return (netWorth * 0.4) + (totalInvested * 0.3) + (budgetControlScore * 0.2) + (consistencyScore * 0.1);
+}
+
 export const financialEngine = {
   // Cálculos
   calculateTotalBalance,
@@ -149,6 +287,12 @@ export const financialEngine = {
   calculateTotalWealth,
   calculateEarnings,
   calculateTotalEarnings,
+  calculateInvestmentPower,
+  calculateUserBalance,
+  calculateMonthlySummary,
+  calculateNetWorth,
+  calculateBudgetProgress,
+  calculatePlayerPower,
 
   // Buscas
   async getUserAccounts(userId: string): Promise<AccountEntity[]> {

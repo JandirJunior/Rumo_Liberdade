@@ -55,11 +55,11 @@
           "type": "string",
           "description": "The unique identifier for the transaction."
         },
-        "userId": {
+        "user_id": {
           "type": "string",
           "description": "The ID of the user who owns the transaction."
         },
-        "title": {
+        "description": {
           "type": "string",
           "description": "The title or description of the transaction."
         },
@@ -72,26 +72,30 @@
           "format": "date",
           "description": "The date of the transaction."
         },
-        "category": {
-          "type": "string",
-          "description": "The category of the transaction."
-        },
         "category_id": {
           "type": "string",
           "description": "The ID of the category."
         },
         "type": {
           "type": "string",
-          "enum": ["income", "expense"],
+          "enum": ["income", "expense", "investment", "transfer"],
           "description": "The type of the transaction."
         },
-        "createdAt": {
+        "kingdom_id": {
+          "type": "string",
+          "description": "The ID of the kingdom."
+        },
+        "created_by": {
+          "type": "string",
+          "description": "The ID of the user who created the transaction."
+        },
+        "created_at": {
           "type": "string",
           "format": "date-time",
           "description": "The date and time the transaction was created."
         }
       },
-      "required": ["id", "userId", "title", "amount", "date", "type", "createdAt"]
+      "required": ["id", "user_id", "description", "amount", "date", "type", "category_id", "kingdom_id", "created_by", "created_at"]
     },
     "Achievement": {
       "title": "Achievement",
@@ -158,12 +162,13 @@
         "id": { "type": "string" },
         "user_id": { "type": "string" },
         "category_id": { "type": "string" },
-        "category": { "type": "string" },
         "budget_amount": { "type": "number" },
         "month": { "type": "number" },
-        "year": { "type": "number" }
+        "year": { "type": "number" },
+        "kingdom_id": { "type": "string" },
+        "created_by": { "type": "string" }
       },
-      "required": ["id", "user_id", "category_id", "budget_amount", "month", "year"]
+      "required": ["id", "user_id", "category_id", "budget_amount", "month", "year", "kingdom_id", "created_by"]
     },
     "Investment": {
       "title": "Investment",
@@ -181,6 +186,91 @@
         "earnings": { "type": "number" }
       },
       "required": ["id", "user_id", "type", "ticker", "quantity", "average_price", "invested_value", "current_value", "earnings"]
+    },
+    "AccountPayable": {
+      "title": "AccountPayable",
+      "description": "Represents an account payable (bill).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "category_id": { "type": "string" },
+        "due_date": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["pending", "paid", "overdue", "cancelled"] },
+        "payment_method": { "type": "string" },
+        "credit_card_id": { "type": "string" },
+        "installments": { "type": "number" },
+        "current_installment": { "type": "number" },
+        "is_recurring": { "type": "boolean" },
+        "recurrence_rule": { "type": "string" },
+        "next_recurrence_date": { "type": "string", "format": "date" },
+        "kingdom_id": { "type": "string" },
+        "created_by": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "paid_at": { "type": "string", "format": "date-time" },
+        "transaction_id": { "type": "string" }
+      },
+      "required": ["id", "user_id", "description", "amount", "category_id", "due_date", "status", "kingdom_id", "created_by", "created_at"]
+    },
+    "AccountReceivable": {
+      "title": "AccountReceivable",
+      "description": "Represents an account receivable.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "category_id": { "type": "string" },
+        "due_date": { "type": "string", "format": "date" },
+        "payer": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "received", "defaulted", "cancelled"] },
+        "is_recurring": { "type": "boolean" },
+        "recurrence_rule": { "type": "string" },
+        "next_recurrence_date": { "type": "string", "format": "date" },
+        "kingdom_id": { "type": "string" },
+        "created_by": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "received_at": { "type": "string", "format": "date-time" },
+        "transaction_id": { "type": "string" }
+      },
+      "required": ["id", "user_id", "description", "amount", "category_id", "due_date", "status", "kingdom_id", "created_by", "created_at"]
+    },
+    "CreditCard": {
+      "title": "CreditCard",
+      "description": "Represents a credit card.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "limit": { "type": "number" },
+        "closingDay": { "type": "number" },
+        "dueDay": { "type": "number" }
+      },
+      "required": ["id", "userId", "name", "limit", "closingDay", "dueDay"]
+    },
+    "CreditCardInvoice": {
+      "title": "CreditCardInvoice",
+      "description": "Represents a credit card invoice.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "cardId": { "type": "string" },
+        "userId": { "type": "string" },
+        "month": { "type": "number" },
+        "year": { "type": "number" },
+        "closingDate": { "type": "string", "format": "date" },
+        "dueDate": { "type": "string", "format": "date" },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["open", "closed", "paid", "overdue"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "paidAt": { "type": "string", "format": "date-time" },
+        "transactionId": { "type": "string" }
+      },
+      "required": ["id", "cardId", "userId", "month", "year", "closingDate", "dueDate", "totalAmount", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -208,5 +298,21 @@
       "schema": { "$ref": "#/entities/Investment" },
       "description": "Stores investments."
     },
+    "accounts_payable/{payableId}": {
+      "schema": { "$ref": "#/entities/AccountPayable" },
+      "description": "Stores accounts payable (bills)."
+    },
+    "accounts_receivable/{receivableId}": {
+      "schema": { "$ref": "#/entities/AccountReceivable" },
+      "description": "Stores accounts receivable."
+    },
+    "credit_cards/{cardId}": {
+      "schema": { "$ref": "#/entities/CreditCard" },
+      "description": "Stores credit cards."
+    },
+    "credit_card_invoices/{invoiceId}": {
+      "schema": { "$ref": "#/entities/CreditCardInvoice" },
+      "description": "Stores credit card invoices."
+    }
   }
 }

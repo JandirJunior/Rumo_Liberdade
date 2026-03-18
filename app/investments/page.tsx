@@ -1,35 +1,45 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { BottomNav } from '@/components/BottomNav';
 import { Header } from '@/components/Header';
 import { MOCK_ASSETS } from '@/lib/data';
 import { formatCurrency, cn } from '@/lib/utils';
-import { Info, TrendingUp, AlertCircle, Sparkles, Zap, Shield, Swords, Compass, Wand2, Plus } from 'lucide-react';
+import { Info, TrendingUp, AlertCircle, Sparkles, Zap, Shield, Swords, Compass, Wand2, Plus, Upload } from 'lucide-react';
 
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { useReino } from '@/hooks/useReino';
 
 import { Modal } from '@/components/Modal';
+import { ImportModal } from '@/src/components/ImportModal';
+
+import { financialEngine } from '@/lib/financialEngine';
 
 export default function Investments() {
   const { theme } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
   const { assets, loading, addInvestment } = useReino();
-  const totalValue = assets.reduce((acc, curr) => acc + curr.value, 0);
+  
+  const { totalValue, aggregated, tickerDetails } = useMemo(() => 
+    financialEngine.calculateInvestmentPower(assets),
+    [assets]
+  );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [newInvestment, setNewInvestment] = useState({
     type: 'F',
     ticker: '',
-    value: ''
+    value: '',
+    quantity: '',
+    operation_date: new Date().toISOString().split('T')[0]
   });
 
   const handleAddInvestment = async () => {
-    if (!newInvestment.ticker || !newInvestment.value) return;
+    if (!newInvestment.ticker || !newInvestment.value || !newInvestment.quantity) return;
     
     const typeMap: Record<string, string> = {
       'F': 'fii',
@@ -42,12 +52,43 @@ export default function Investments() {
 
     await addInvestment({
       type: typeMap[newInvestment.type],
-      ticker: newInvestment.ticker,
-      value: parseFloat(newInvestment.value)
+      ticker: newInvestment.ticker.toUpperCase(),
+      value: parseFloat(newInvestment.value),
+      quantity: parseFloat(newInvestment.quantity),
+      operation_date: newInvestment.operation_date
     });
     
     setIsModalOpen(false);
-    setNewInvestment({ type: 'F', ticker: '', value: '' });
+    setNewInvestment({ 
+      type: 'F', 
+      ticker: '', 
+      value: '', 
+      quantity: '', 
+      operation_date: new Date().toISOString().split('T')[0] 
+    });
+  };
+
+  const handleImportInvestments = async (data: any[]) => {
+    for (const item of data) {
+      // expected headers: type, ticker, value, quantity, date
+      const typeMap: Record<string, string> = {
+        'fii': 'fii',
+        'acao': 'stock',
+        'stock': 'stock',
+        'crypto': 'crypto',
+        'etf': 'etf',
+        'rf': 'fixed_income',
+        'outro': 'other'
+      };
+
+      await addInvestment({
+        type: typeMap[item.type.toLowerCase()] || 'other',
+        ticker: item.ticker.toUpperCase(),
+        value: parseFloat(item.value),
+        quantity: parseFloat(item.quantity),
+        operation_date: item.date || new Date().toISOString().split('T')[0]
+      });
+    }
   };
 
   // Estado para garantir que o gráfico só seja renderizado no cliente (evita erro de SSR do Recharts)
@@ -57,9 +98,9 @@ export default function Investments() {
     setMounted(true);
   }, []);
 
-  const chartData = assets.map(asset => ({
-    name: asset.type,
-    atual: (asset.value / totalValue) * 100,
+  const chartData = aggregated.map(asset => ({
+    name: asset.name,
+    atual: asset.currentPercent * 100,
     alvo: asset.targetPercent * 100,
     valor: asset.value,
   }));
@@ -102,6 +143,17 @@ export default function Investments() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className={cn("min-h-screen flex items-center justify-center", colors.bg)}>
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-500 font-medium">Carregando Inventário...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("min-h-screen transition-colors duration-500", colors.bg)}>
       <Header />
@@ -110,10 +162,17 @@ export default function Investments() {
         {/* [RESPONSIVIDADE] Título da Seção */}
         <header className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-display font-bold text-gray-900">Caverna</h2>
+            <h2 className="text-2xl font-display font-bold text-gray-900">Inventário</h2>
             <p className="text-sm text-gray-500">Onde seus rendimentos se transformam em poder</p>
           </div>
           <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setIsImportModalOpen(true)}
+              className="px-4 h-10 rounded-xl flex items-center gap-2 bg-white border border-gray-200 text-gray-700 shadow-sm font-bold text-sm transition-transform active:scale-95 hover:bg-gray-50"
+            >
+              <Upload className="w-4 h-4" />
+              <span className="hidden sm:inline">Importar</span>
+            </button>
             <button 
               onClick={() => setIsModalOpen(true)}
               className={cn("px-4 h-10 rounded-xl flex items-center gap-2 text-white shadow-sm font-bold text-sm transition-transform active:scale-95", colors.primary)}
@@ -121,11 +180,19 @@ export default function Investments() {
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Investir</span>
             </button>
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
-              <Info className={cn("w-5 h-5", colors.accent)} />
-            </div>
           </div>
         </header>
+
+        {/* ... rest of the component ... */}
+        
+        <ImportModal 
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          onImport={handleImportInvestments}
+          title="Importar Investimentos"
+          template={['type', 'ticker', 'value', 'quantity', 'date']}
+        />
+
 
       {/* [RESPONSIVIDADE] Buffs Section - Scroll horizontal no mobile, flex wrap no desktop */}
       <section className="space-y-4">
@@ -197,20 +264,20 @@ export default function Investments() {
               </div>
               
               <div className="space-y-4">
-                {assets.filter(a => (a.value / totalValue) < a.targetPercent).map((asset, i) => (
+                {aggregated.filter(a => a.deficit > 0).map((asset, i) => (
                   <div key={i} className="flex items-center justify-between bg-white/10 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
                         {getFaceroIcon(asset.faceroType)}
                       </div>
                       <div>
-                        <p className="text-sm font-bold">{asset.type}</p>
+                        <p className="text-sm font-bold">{asset.name}</p>
                         <p className="text-[10px] text-white/60 font-bold uppercase tracking-wider">Déficit de Poder</p>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm font-black text-white">Aportar</p>
-                      <p className="text-[10px] text-white/60">-{((asset.targetPercent - (asset.value / totalValue)) * 100).toFixed(1)}%</p>
+                      <p className="text-[10px] text-white/60">-{((asset.deficit) * 100).toFixed(1)}%</p>
                     </div>
                   </div>
                 ))}
@@ -219,46 +286,35 @@ export default function Investments() {
           </section>
         </div>
 
-        {/* [RESPONSIVIDADE] Coluna Direita (Ocupa 5 de 12 colunas no desktop) */}
+      {/* [RESPONSIVIDADE] Coluna Direita (Ocupa 5 de 12 colunas no desktop) */}
         <div className="lg:col-span-5 space-y-8">
           {/* Asset List with Item Status */}
           <section className="space-y-4">
             <h4 className="text-lg font-display font-bold text-gray-900">Inventário de Ativos</h4>
             {/* [RESPONSIVIDADE] No mobile é 1 coluna, no tablet (sm) divide em 2 colunas, no desktop (lg) volta pra 1 coluna pois já está na coluna direita do grid principal */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-              {assets.map((asset, i) => (
+              {tickerDetails?.map((asset: any, i: number) => (
                 <div key={i} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-emerald-600 shrink-0">
                       {getFaceroIcon(asset.faceroType)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-gray-900 truncate">{asset.type}</p>
-                      <p className="text-xs text-gray-500 truncate">{asset.segment}</p>
+                      <p className="text-sm font-bold text-gray-900 truncate">{asset.ticker}</p>
+                      <p className="text-xs text-gray-500 truncate">Qtd: {asset.totalQuantity.toLocaleString('pt-BR')}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-bold text-gray-900">{formatCurrency(asset.value)}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{((asset.value / totalValue) * 100).toFixed(1)}%</p>
-                    </div>
-                  </div>
-                  
-                  {/* Item Status (P/VP, etc) */}
-                  <div className="flex gap-2 border-t border-gray-50 pt-3 mt-auto">
-                    <div className="flex-1 bg-gray-50 rounded-xl p-2 text-center">
-                      <p className="text-[8px] font-black text-gray-400 uppercase">P/VP</p>
-                      <p className="text-xs font-bold text-emerald-600">0.92</p>
-                    </div>
-                    <div className="flex-1 bg-gray-50 rounded-xl p-2 text-center">
-                      <p className="text-[8px] font-black text-gray-400 uppercase">DY</p>
-                      <p className="text-xs font-bold text-emerald-600">10.5%</p>
-                    </div>
-                    <div className="flex-1 bg-gray-50 rounded-xl p-2 text-center">
-                      <p className="text-[8px] font-black text-gray-400 uppercase">Status</p>
-                      <p className="text-[10px] font-bold text-emerald-500">BARATO</p>
+                      <p className="text-sm font-bold text-gray-900">{formatCurrency(asset.totalValue)}</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Custo Médio: {formatCurrency(asset.averageCost)}</p>
                     </div>
                   </div>
                 </div>
               ))}
+              {(!tickerDetails || tickerDetails.length === 0) && (
+                <div className="text-center py-8 text-gray-500 text-sm">
+                  Nenhum ativo no inventário.
+                </div>
+              )}
             </div>
           </section>
         </div>
@@ -272,7 +328,13 @@ export default function Investments() {
         isOpen={isModalOpen} 
         onClose={() => {
           setIsModalOpen(false);
-          setNewInvestment({ type: 'F', ticker: '', value: '' });
+          setNewInvestment({ 
+            type: 'F', 
+            ticker: '', 
+            value: '', 
+            quantity: '', 
+            operation_date: new Date().toISOString().split('T')[0] 
+          });
         }} 
         title="Novo Investimento"
       >
@@ -304,8 +366,31 @@ export default function Investments() {
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Quantidade</label>
+              <input 
+                type="number"
+                step="0.00000001"
+                placeholder="0.00"
+                value={newInvestment.quantity}
+                onChange={(e) => setNewInvestment({...newInvestment, quantity: e.target.value})}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium text-gray-900"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Data Operação</label>
+              <input 
+                type="date"
+                value={newInvestment.operation_date}
+                onChange={(e) => setNewInvestment({...newInvestment, operation_date: e.target.value})}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium text-gray-900"
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Valor Investido</label>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Valor Total Investido</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">R$</span>
               <input 
@@ -320,10 +405,10 @@ export default function Investments() {
 
           <button 
             onClick={handleAddInvestment}
-            disabled={!newInvestment.ticker || !newInvestment.value}
+            disabled={!newInvestment.ticker || !newInvestment.value || !newInvestment.quantity}
             className={cn(
               "w-full py-4 rounded-xl font-bold text-white shadow-lg transition-transform active:scale-95 mt-4",
-              (!newInvestment.ticker || !newInvestment.value) ? "bg-gray-300 cursor-not-allowed" : colors.primary
+              (!newInvestment.ticker || !newInvestment.value || !newInvestment.quantity) ? "bg-gray-300 cursor-not-allowed" : colors.primary
             )}
           >
             Adicionar Investimento

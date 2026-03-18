@@ -48,18 +48,18 @@ export const MOCK_ASSETS: Asset[] = [
 
 // Estado inicial do jogo (Progresso do Herói)
 export const MOCK_GAME_STATE: UserGameState = {
-  level: 12,
-  xp: 110000,
-  archetype: 'Paladino',
+  level: 1,
+  xp: 0,
+  archetype: 'Aprendiz',
   stats: {
-    F: 8,
-    A: 7,
-    C: 3,
-    E: 4,
-    R: 9,
-    O: 2
+    F: 0,
+    A: 0,
+    C: 0,
+    E: 0,
+    R: 0,
+    O: 0
   },
-  completedQuests: ['Dízimo do Herói']
+  completedQuests: []
 };
 
 // Orçamento mensal (Planejamento vs Realidade)
@@ -81,21 +81,21 @@ export const MOCK_BUDGET: MonthlyBudget = {
 
 // Histórico de transações recentes
 export const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: '1', description: 'Salário Mensal', amount: 6000, type: 'income', category: 'Fixed', date: '2024-03-01', organizationId: 'mock_org' },
-  { id: '2', description: 'MEI Serviços', amount: 6300, type: 'income', category: 'Fixed', date: '2024-03-05', organizationId: 'mock_org' },
-  { id: '3', description: 'Aluguel', amount: 2000, type: 'expense', category: 'Lifestyle', date: '2024-03-02', organizationId: 'mock_org' },
-  { id: '4', description: 'Alimentação', amount: 3000, type: 'expense', category: 'Lifestyle', date: '2024-03-10', organizationId: 'mock_org' },
-  { id: '5', description: 'Financiamento Imob.', amount: 1960, type: 'expense', category: 'Fixed', date: '2024-03-15', organizationId: 'mock_org' },
-  { id: '6', description: 'Aporte FIIs', amount: 2000, type: 'investment', category: 'Investment', date: '2024-03-20', organizationId: 'mock_org' },
+  { id: '1', description: 'Salário Mensal', amount: 6000, type: 'income', category_id: 'salary', date: '2024-03-01', organizationId: 'mock_org' },
+  { id: '2', description: 'MEI Serviços', amount: 6300, type: 'income', category_id: 'freelance', date: '2024-03-05', organizationId: 'mock_org' },
+  { id: '3', description: 'Aluguel', amount: 2000, type: 'expense', category_id: 'rent', date: '2024-03-02', organizationId: 'mock_org' },
+  { id: '4', description: 'Alimentação', amount: 3000, type: 'expense', category_id: 'food', date: '2024-03-10', organizationId: 'mock_org' },
+  { id: '5', description: 'Financiamento Imob.', amount: 1960, type: 'expense', category_id: 'rent', date: '2024-03-15', organizationId: 'mock_org' },
+  { id: '6', description: 'Aporte FIIs', amount: 2000, type: 'investment', category_id: 'investment', date: '2024-03-20', organizationId: 'mock_org' },
 ];
 
 // Mapeamento de imagens personalizadas para cada arquétipo
 export const ARCHETYPE_IMAGES: Record<string, ImageKey> = {
   'Paladino': 'FESTIN',
   'Mago': 'ARCANO',
-  'Dwarf Minerador': 'CACHE',
+  'Dwarf': 'CACHE',
   'Elfo': 'EXODIA',
-  'Ladrão': 'REAVER',
+  'Ladino': 'REAVER',
   'Hobbit': 'ORBIT',
   'Iniciante': 'FESTIN'
 };

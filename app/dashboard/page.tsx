@@ -17,10 +17,13 @@ import { ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis } fro
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { useReino } from '@/hooks/useReino';
+import { useKingdom } from '@/hooks/useKingdom';
 import { useCategories } from '@/hooks/useCategories';
 import { useBudgets } from '@/hooks/useBudgets';
 import { getNextCharacter, STATIC_CHARACTERS } from '@/lib/characters';
-import { BudgetProgressPanel } from '@/src/components/BudgetProgressPanel';
+import { ActiveQuestsBoard } from '@/components/ActiveQuestsBoard';
+import { generateRecurringQuests } from '@/lib/recurringTasks';
+import { financialEngine } from '@/lib/financialEngine';
 
 import { auth } from '@/firebase';
 
@@ -37,6 +40,18 @@ export default function Dashboard() {
 
   const { budgetProgress } = useBudgets(month, year);
 
+  const { kingdom } = useKingdom();
+
+  useEffect(() => {
+    // Generate recurring quests when dashboard loads
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user && kingdom?.id) {
+        generateRecurringQuests(kingdom.id);
+      }
+    });
+    return () => unsubscribe();
+  }, [kingdom?.id]);
+
   const getRpgGroupTotals = (groupName: string) => {
     const groupItems = budgetProgress.filter(b => b.rpg_group === groupName);
     const orcado = groupItems.reduce((acc, curr) => acc + curr.orcado, 0);
@@ -45,24 +60,22 @@ export default function Dashboard() {
   };
 
   const cofreReino = getRpgGroupTotals('💎 Cofre do Reino (Receitas Fixas)');
-  const saquesMissoes = getRpgGroupTotals('⚡ Saques de Misssões (Receitas Variáveis)');
+  const saquesMissoes = getRpgGroupTotals('⚡ Saques de Missões (Receitas Variáveis)');
   const tributosReino = getRpgGroupTotals('🛡️ Tributos do Reino (Despesas Fixas)');
   const aventurasHeroi = getRpgGroupTotals('⚔️ Aventuras do Herói (Despesas Variáveis)');
 
-  // Total investido na Caverna
-  const totalInvested = assets.reduce((acc, curr) => acc + curr.value, 0);
+  // Total investido no Inventário
+  const { totalValue: totalInvested } = financialEngine.calculateInvestmentPower(assets);
   const totalYields = totalInvested * 0.15; // Mock de rendimentos (15%)
   const totalPower = totalInvested + totalYields;
 
   // Cálculos individuais do Herói
   const myAssets = assets.filter(a => a.userId === auth.currentUser?.uid);
-  const myInvested = myAssets.reduce((acc, curr) => acc + curr.value, 0);
-  const myIncome = transactions
-    .filter(t => t.type === 'income' && t.userId === auth.currentUser?.uid)
-    .reduce((acc, curr) => acc + curr.amount, 0);
-  const myExpenses = transactions
-    .filter(t => t.type === 'expense' && t.userId === auth.currentUser?.uid)
-    .reduce((acc, curr) => acc + curr.amount, 0);
+  const { totalValue: myInvested } = financialEngine.calculateInvestmentPower(myAssets);
+  
+  // Use financialEngine for transactions
+  const myTransactions = transactions.filter(t => t.userId === auth.currentUser?.uid);
+  const { income: myIncome, expense: myExpenses } = financialEngine.calculateMonthlySummary(myTransactions as any, month, year);
 
   // Lógica da Próxima Masmorra (a cada R$ 10.000)
   const nextCharacter = getNextCharacter(totalPower) || STATIC_CHARACTERS[STATIC_CHARACTERS.length - 1];
@@ -86,17 +99,10 @@ export default function Dashboard() {
     { subject: 'Festim', A: getFaceroPercent('F'), fullMark: 100 },
     { subject: 'Arcano', A: getFaceroPercent('A'), fullMark: 100 },
     { subject: 'Cache', A: getFaceroPercent('C'), fullMark: 100 },
-    { subject: 'Êxodo', A: getFaceroPercent('E'), fullMark: 100 },
+    { subject: 'Exodia', A: getFaceroPercent('E'), fullMark: 100 },
     { subject: 'Reaver', A: getFaceroPercent('R'), fullMark: 100 },
     { subject: 'Órbit', A: getFaceroPercent('O'), fullMark: 100 },
   ];
-
-  // Lista de Quests (tarefas) financeiras para o usuário com estado local para interatividade
-  const [quests, setQuests] = useState([
-    { id: '1', title: 'O Dízimo do Reino', desc: 'Realizar aporte este mês', xp: 100, done: true },
-    { id: '2', title: 'Arquiteto F.A.C.E.R.O.', desc: 'Aportar em 3 classes', xp: 250, done: false },
-    { id: '3', title: 'Senhorio Real', desc: 'Aportar em Festim (FIIs)', xp: 150, done: false },
-  ]);
 
   // Estado para garantir que o gráfico só seja renderizado no cliente (evita erro de SSR do Recharts)
   const [mounted, setMounted] = useState(false);
@@ -105,19 +111,14 @@ export default function Dashboard() {
     setMounted(true);
   }, []);
 
-  // Função para alternar o estado de conclusão de uma quest
-  const toggleQuest = (id: string) => {
-    setQuests(quests.map(q => q.id === id ? { ...q, done: !q.done } : q));
-  };
-
   // Retorna o ícone correspondente ao arquétipo atual do herói
   const getArchetypeIcon = () => {
     switch(gameState.archetype) {
       case 'Paladino': return <Shield className="w-6 h-6" />;
       case 'Mago': return <Wand2 className="w-6 h-6" />;
-      case 'Dwarf Minerador': return <Pickaxe className="w-6 h-6" />;
+      case 'Dwarf': return <Pickaxe className="w-6 h-6" />;
       case 'Elfo': return <Compass className="w-6 h-6" />;
-      case 'Ladrão': return <VenetianMask className="w-6 h-6" />;
+      case 'Ladino': return <VenetianMask className="w-6 h-6" />;
       case 'Hobbit': return <Home className="w-6 h-6" />;
       default: return <Trophy className="w-6 h-6" />;
     }
@@ -193,108 +194,7 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {/* [RESPONSIVIDADE] Grid de receitas/despesas: 1 coluna no mobile muito pequeno, 2 colunas a partir de sm */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Coluna de Receitas */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="w-4 h-4 text-emerald-300" />
-                      <span className="text-xs font-black text-white/80 uppercase tracking-wider">
-                        Receitas
-                      </span>
-                    </div>
-                    
-                    <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">💎</span>
-                        <span className="text-[10px] font-black text-white/80 uppercase tracking-wider">
-                          Cofre do Reino
-                        </span>
-                      </div>
-                      <p className="text-xs text-white/60 mb-2">Receitas Fixas</p>
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Realizado</p>
-                          <p className="text-lg font-bold text-emerald-300">{formatCurrency(cofreReino.realizado)}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Orçado</p>
-                          <p className="text-sm font-medium text-white/80">{formatCurrency(cofreReino.orcado)}</p>
-                        </div>
-                      </div>
-                    </Link>
-
-                    <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">⚡</span>
-                        <span className="text-[10px] font-black text-white/80 uppercase tracking-wider">
-                          Saques de Missões
-                        </span>
-                      </div>
-                      <p className="text-xs text-white/60 mb-2">Receitas Variáveis</p>
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Realizado</p>
-                          <p className="text-lg font-bold text-emerald-300">{formatCurrency(saquesMissoes.realizado)}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Orçado</p>
-                          <p className="text-sm font-medium text-white/80">{formatCurrency(saquesMissoes.orcado)}</p>
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-
-                  {/* Coluna de Despesas */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingDown className="w-4 h-4 text-red-300" />
-                      <span className="text-xs font-black text-white/80 uppercase tracking-wider">
-                        Despesas
-                      </span>
-                    </div>
-
-                    <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">🛡️</span>
-                        <span className="text-[10px] font-black text-white/80 uppercase tracking-wider">
-                          Tributos do Reino
-                        </span>
-                      </div>
-                      <p className="text-xs text-white/60 mb-2">Despesas Fixas</p>
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Realizado</p>
-                          <p className="text-lg font-bold text-red-300">{formatCurrency(tributosReino.realizado)}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Orçado</p>
-                          <p className="text-sm font-medium text-white/80">{formatCurrency(tributosReino.orcado)}</p>
-                        </div>
-                      </div>
-                    </Link>
-
-                    <Link href="/transactions" className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors cursor-pointer block">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">⚔️</span>
-                        <span className="text-[10px] font-black text-white/80 uppercase tracking-wider">
-                          Aventuras do Herói
-                        </span>
-                      </div>
-                      <p className="text-xs text-white/60 mb-2">Despesas Variáveis</p>
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Realizado</p>
-                          <p className="text-lg font-bold text-red-300">{formatCurrency(aventurasHeroi.realizado)}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[9px] text-white/60 uppercase tracking-wider">Orçado</p>
-                          <p className="text-sm font-medium text-white/80">{formatCurrency(aventurasHeroi.orcado)}</p>
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-                </div>
+                {/* [RESPONSIVIDADE] Grid de receitas/despesas removido para a página de Atributos */}
               </div>
             </motion.div>
 
@@ -306,7 +206,7 @@ export default function Dashboard() {
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-bold text-gray-900">Poder dos Investimentos</p>
-                  <p className="text-[10px] text-gray-500 font-medium">Visualizar detalhes na Caverna</p>
+                  <p className="text-[10px] text-gray-500 font-medium">Visualizar detalhes no Inventário</p>
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -325,7 +225,7 @@ export default function Dashboard() {
                 <div className={cn("w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg", colors.primary)}>
                   <Pickaxe className="w-6 h-6" />
                 </div>
-                <span className="text-sm font-bold text-gray-900">Caverna</span>
+                <span className="text-sm font-bold text-gray-900">Inventário</span>
               </Link>
             </section>
 
@@ -371,8 +271,7 @@ export default function Dashboard() {
               </div>
             </section>
 
-            {/* Painel Orçado vs Realizado */}
-            <BudgetProgressPanel month={month} year={year} hideSelectors={true} />
+
           </div>
 
           {/* [RESPONSIVIDADE] Coluna Direita no Desktop (Ocupa 5 de 12 colunas) */}
@@ -403,39 +302,7 @@ export default function Dashboard() {
             </section>
 
             {/* Lista de Quests Ativas */}
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-lg font-display font-bold text-gray-900">Quests Ativas</h4>
-                <span className={cn("text-xs font-bold uppercase tracking-widest", colors.accent)}>3 Disponíveis</span>
-              </div>
-              <div className="space-y-3">
-                {quests.map((q) => (
-                  <button 
-                    key={q.id} 
-                    onClick={() => toggleQuest(q.id)}
-                    className={cn(
-                      "w-full p-4 rounded-2xl border flex items-center gap-4 transition-all text-left active:scale-[0.98]",
-                      q.done ? cn(colors.secondary, colors.border) : "bg-white border-gray-100 hover:border-gray-200"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                      q.done ? cn(colors.primary, "text-white") : "bg-gray-100 text-gray-400"
-                    )}>
-                      {q.done ? <Trophy className="w-5 h-5" /> : <Zap className="w-5 h-5" />}
-                    </div>
-                    <div className="flex-1">
-                      <p className={cn("text-sm font-bold", q.done ? colors.text : "text-gray-900")}>{q.title}</p>
-                      <p className="text-[10px] text-gray-500 font-medium">{q.desc}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className={cn("text-xs font-black", colors.accent)}>+{q.xp} XP</p>
-                      {q.done && <span className={cn("text-[8px] font-black uppercase", colors.accent)}>Concluída</span>}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </section>
+            <ActiveQuestsBoard />
           </div>
 
         </div>

@@ -6,13 +6,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { User, Bell, Search, X, Home, Pickaxe, ScrollText, MessageSquare, BarChart3 } from 'lucide-react';
+import { User, Bell, Search, X, Home, Pickaxe, ScrollText, MessageSquare, BarChart3, Skull } from 'lucide-react';
 import { UserAvatar } from '@/src/components/UserAvatar';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useUser } from '@/hooks/useUser';
 
 export function Header() {
@@ -23,6 +23,9 @@ export function Header() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const { userData } = useUser();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
 
   const triggerToast = (message: string) => {
     setToastMessage(message);
@@ -30,11 +33,21 @@ export function Header() {
     setTimeout(() => setShowToast(false), 3000);
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/transactions?search=${encodeURIComponent(searchQuery)}`);
+      setIsSearchOpen(false);
+      setSearchQuery('');
+    }
+  };
+
   const navItems = [
     { icon: Home, label: 'Reino', href: '/dashboard' },
     { icon: BarChart3, label: 'Atributos', href: '/attributes' },
-    { icon: Pickaxe, label: 'Caverna', href: '/investments' },
+    { icon: Pickaxe, label: 'Inventário', href: '/investments' },
     { icon: ScrollText, label: 'Quests', href: '/transactions' },
+    { icon: Skull, label: 'Masmorra', href: '/masmorra' },
     { icon: MessageSquare, label: 'Mentor', href: '/chat' },
   ];
 
@@ -74,12 +87,38 @@ export function Header() {
         {/* Lado Direito: Ações e Perfil */}
         <div className="flex items-center gap-3">
           {/* Botão de Busca */}
-          <button 
-            onClick={() => triggerToast('Busca em desenvolvimento...')}
-            className="p-2 text-gray-500 hover:bg-gray-50 rounded-full transition-colors"
-          >
-            <Search size={20} />
-          </button>
+          <div className="relative flex items-center">
+            <AnimatePresence>
+              {isSearchOpen && (
+                <motion.form
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: 200, opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  onSubmit={handleSearch}
+                  className="absolute right-10"
+                >
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar transações..."
+                    className="w-full bg-gray-50 border border-gray-200 rounded-full px-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    autoFocus
+                    onBlur={() => {
+                      // Delay to allow click on search button to register
+                      setTimeout(() => setIsSearchOpen(false), 200);
+                    }}
+                  />
+                </motion.form>
+              )}
+            </AnimatePresence>
+            <button 
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              className="p-2 text-gray-500 hover:bg-gray-50 rounded-full transition-colors z-10 bg-white"
+            >
+              <Search size={20} />
+            </button>
+          </div>
           {/* Botão de Notificações com indicador de novidade */}
           <button 
             onClick={() => triggerToast('Nenhuma nova notificação.')}
@@ -102,8 +141,8 @@ export function Header() {
               </div>
               {/* Informações resumidas do Herói */}
               <div className="hidden md:block text-left">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Taverna</p>
-                <p className="text-sm font-bold text-gray-900">{gameState.archetype}</p>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Lvl {userData?.level || 1}</p>
+                <p className="text-sm font-bold text-gray-900">{userData?.title || gameState.archetype}</p>
               </div>
             </motion.div>
           </Link>

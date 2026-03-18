@@ -10,7 +10,7 @@ export const RPG_CATEGORIES_SCHEMA = {
         ]
       },
       "variaveis": {
-        "titulo": "⚡ Saques de Misssões (Receitas Variáveis)",
+        "titulo": "⚡ Saque de Missões (Receitas Variáveis)",
         "subcategorias": [
           { "nome": "Freelances/Bicos", "usuarios": ["MonoUsuario", "MultiUsuario"] },
           { "nome": "Comissões", "usuarios": ["MonoUsuario", "MultiUsuario"] },

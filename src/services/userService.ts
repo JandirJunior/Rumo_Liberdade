@@ -11,6 +11,7 @@ export const userService = {
       name: name || '',
       level: 1,
       xp: 0,
+      title: 'Aprendiz das Moedas',
       created_at: new Date()
     };
 

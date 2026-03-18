@@ -3,130 +3,184 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // ===============================================================
-    // Assumed Data Model (SaaS)
+    // Helper Functions
     // ===============================================================
     
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
     }
-    
-    function getUserOrgId() {
-      return getUserData().organizationId;
+
+    function getKingdomMember(kingdomId) {
+      return get(/databases/$(database)/documents/kingdom_members/$(request.auth.uid + "_" + kingdomId));
     }
-    
-    function getUserRole() {
-      return getUserData().role;
+
+    function isKingdomMember(kingdomId) {
+      return isAuthenticated() && exists(/databases/$(database)/documents/kingdom_members/$(request.auth.uid + "_" + kingdomId));
     }
-    
-    function isOrgMember(orgId) {
-      return isAuthenticated() && getUserOrgId() == orgId;
+
+    function getKingdomRole(kingdomId) {
+      return getKingdomMember(kingdomId).data.role;
     }
-    
-    function hasRole(roles) {
-      return isAuthenticated() && getUserRole() in roles;
+
+    function hasKingdomPermission(kingdomId, roles) {
+      return isKingdomMember(kingdomId) && getKingdomRole(kingdomId) in roles;
     }
-    
-    function isSuperAdmin() {
-      return hasRole(['superadmin']);
+
+    function isAdmin(kingdomId) {
+      return hasKingdomPermission(kingdomId, ['admin']);
+    }
+
+    function isMember(kingdomId) {
+      return hasKingdomPermission(kingdomId, ['admin', 'member']);
+    }
+
+    function isViewer(kingdomId) {
+      return hasKingdomPermission(kingdomId, ['admin', 'member', 'viewer']);
+    }
+
+    // ===============================================================
+    // Validator Helpers
+    // ===============================================================
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidString(field, min, max) {
+      return request.resource.data[field] is string && 
+             request.resource.data[field].size() >= min && 
+             request.resource.data[field].size() <= max;
+    }
+
+    function isValidNumber(field, min) {
+      return request.resource.data[field] is number && 
+             request.resource.data[field] >= min;
     }
 
     // ===============================================================
     // Rules
     // ===============================================================
 
-    match /organizations/{orgId} {
-      // Qualquer usuário da organização pode ler os dados dela, ou superadmin
-      allow read: if isOrgMember(orgId) || isSuperAdmin();
-      // Apenas superadmin pode criar novas organizações via painel (ou via cloud function no onboarding)
-      // Como o onboarding é feito no client-side para o primeiro usuário, permitimos a criação se o usuário estiver autenticado e o orgId for baseado no uid dele
-      allow create: if isAuthenticated() && (isSuperAdmin() || orgId == 'org_' + request.auth.uid);
-      // Apenas admin da organização ou superadmin pode atualizar
-      allow update: if (isOrgMember(orgId) && hasRole(['admin'])) || isSuperAdmin();
-      allow delete: if isSuperAdmin();
-    }
-
+    // Users
     match /users/{userId} {
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAuthenticated() && request.auth.uid == userId;
-      allow delete: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAuthenticated(); // Permite buscar usuários para convites
+      allow create, update: if isOwner(userId);
+      allow delete: if false;
     }
 
-    match /subscriptions/{subId} {
-      allow read: if (isAuthenticated() && resource != null && isOrgMember(resource.data.organizationId)) || isSuperAdmin();
-      allow write: if isSuperAdmin(); // Apenas o sistema/superadmin gerencia assinaturas
+    // Kingdoms
+    match /kingdoms/{kingdomId} {
+      allow read: if isKingdomMember(kingdomId);
+      allow create: if isAuthenticated();
+      allow update: if isAdmin(kingdomId);
+      allow delete: if false;
     }
 
-    match /logs/{logId} {
-      allow read: if (isAuthenticated() && resource != null && isOrgMember(resource.data.organizationId) && hasRole(['admin'])) || isSuperAdmin();
-      allow create: if isAuthenticated() && isOrgMember(request.resource.data.organizationId);
-      allow update, delete: if false; // Logs são imutáveis
+    // Kingdom Members
+    match /kingdom_members/{memberId} {
+      allow read: if isAuthenticated() && (
+        resource.data.user_id == request.auth.uid || 
+        isKingdomMember(resource.data.kingdom_id)
+      );
+      allow create: if isAuthenticated(); // O próprio sistema cria ao criar reino ou aceitar convite
+      allow update: if isAdmin(resource.data.kingdom_id);
+      allow delete: if isAdmin(resource.data.kingdom_id) && resource.data.user_id != request.auth.uid;
     }
 
-    match /settings/{settingId} {
-      allow read: if (isAuthenticated() && resource != null && isOrgMember(resource.data.organizationId)) || isSuperAdmin();
-      allow write: if (isAuthenticated() && isOrgMember(request.resource.data.organizationId) && hasRole(['admin'])) || isSuperAdmin();
+    // Kingdom Invites
+    match /kingdom_invites/{inviteId} {
+      allow read: if isAuthenticated() && (
+        request.auth.token.email == resource.data.email || 
+        isAdmin(resource.data.kingdom_id)
+      );
+      allow create: if isAdmin(request.resource.data.kingdom_id);
+      allow update: if isAuthenticated() && (
+        request.auth.token.email == resource.data.email || 
+        isAdmin(resource.data.kingdom_id)
+      );
+      allow delete: if isAdmin(resource.data.kingdom_id);
     }
 
-    // ===============================================================
-    // Coleções do Aplicativo F.A.C.E.R.O. (Isoladas por Tenant)
-    // ===============================================================
-
-    match /reino_transactions/{transactionId} {
-      allow read: if isAuthenticated() && isOrgMember(resource.data.organizationId);
-      allow create: if isAuthenticated() && isOrgMember(request.resource.data.organizationId) && hasRole(['admin', 'manager', 'user']);
-      allow update: if isAuthenticated() && isOrgMember(resource.data.organizationId) && isOrgMember(request.resource.data.organizationId) && hasRole(['admin', 'manager', 'user']);
-      allow delete: if isAuthenticated() && isOrgMember(resource.data.organizationId) && hasRole(['admin', 'manager', 'user']);
-    }
-
-    match /reino_assets/{assetId} {
-      allow read: if isAuthenticated() && isOrgMember(resource.data.organizationId);
-      allow create: if isAuthenticated() && isOrgMember(request.resource.data.organizationId) && hasRole(['admin', 'manager', 'user']);
-      allow update: if isAuthenticated() && isOrgMember(resource.data.organizationId) && isOrgMember(request.resource.data.organizationId) && hasRole(['admin', 'manager', 'user']);
-      allow delete: if isAuthenticated() && isOrgMember(resource.data.organizationId) && hasRole(['admin', 'manager', 'user']);
-    }
-
-    // ===============================================================
-    // Coleções do Motor Financeiro (Financial Engine)
-    // ===============================================================
-
-    match /categories/{categoryId} {
-      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.user_id == request.auth.uid && request.resource.data.user_id == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-    }
-
-    match /accounts/{accountId} {
-      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.user_id == request.auth.uid && request.resource.data.user_id == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-    }
-
+    // Transactions
     match /transactions/{transactionId} {
-      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.user_id == request.auth.uid && request.resource.data.user_id == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      function isValidTransaction() {
+        return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'type', 'date']) &&
+               isValidNumber('amount', 0) &&
+               isValidString('description', 1, 200) &&
+               request.resource.data.type in ['income', 'expense'];
+      }
+
+      allow read: if isViewer(resource.data.kingdom_id);
+      allow create: if isMember(request.resource.data.kingdom_id) && isValidTransaction();
+      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id) && isValidTransaction();
+      allow delete: if isMember(resource.data.kingdom_id);
     }
 
+    // Accounts Payable
+    match /accounts_payable/{payableId} {
+      function isValidPayable() {
+        return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'due_date', 'status']) &&
+               isValidNumber('amount', 0) &&
+               request.resource.data.status in ['pending', 'paid', 'overdue'];
+      }
+
+      allow read: if isViewer(resource.data.kingdom_id);
+      allow create: if isMember(request.resource.data.kingdom_id) && isValidPayable();
+      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id) && isValidPayable();
+      allow delete: if isMember(resource.data.kingdom_id);
+    }
+
+    // Accounts Receivable
+    match /accounts_receivable/{receivableId} {
+      function isValidReceivable() {
+        return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'due_date', 'status']) &&
+               isValidNumber('amount', 0) &&
+               request.resource.data.status in ['pending', 'received', 'overdue'];
+      }
+
+      allow read: if isViewer(resource.data.kingdom_id);
+      allow create: if isMember(request.resource.data.kingdom_id) && isValidReceivable();
+      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id) && isValidReceivable();
+      allow delete: if isMember(resource.data.kingdom_id);
+    }
+
+    // Budgets
     match /budgets/{budgetId} {
-      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.user_id == request.auth.uid && request.resource.data.user_id == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow read: if isViewer(resource.data.kingdom_id);
+      allow create: if isMember(request.resource.data.kingdom_id);
+      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id);
+      allow delete: if isMember(resource.data.kingdom_id);
     }
 
-    match /investments/{investmentId} {
-      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.user_id == request.auth.uid && request.resource.data.user_id == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+    // Credit Cards
+    match /credit_cards/{cardId} {
+      allow read: if isViewer(resource.data.kingdom_id);
+      allow create: if isMember(request.resource.data.kingdom_id);
+      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id);
+      allow delete: if isMember(resource.data.kingdom_id);
+    }
+
+    // Activity Logs
+    match /activity_logs/{logId} {
+      allow read: if isViewer(resource.data.kingdom_id);
+      allow create: if isAuthenticated() && isKingdomMember(request.resource.data.kingdom_id);
+      allow update, delete: if false;
+    }
+
+    // Categories (Custom per Kingdom)
+    match /categories/{categoryId} {
+      allow read: if isViewer(resource.data.kingdom_id);
+      allow create: if isMember(request.resource.data.kingdom_id);
+      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id);
+      allow delete: if isMember(resource.data.kingdom_id);
     }
   }
 }

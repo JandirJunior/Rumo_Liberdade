@@ -4,24 +4,31 @@ import { collection, onSnapshot, query, where, doc, getDocs, writeBatch, setDoc,
 import { onAuthStateChanged } from 'firebase/auth';
 import { CategoryEntity } from '@/lib/financialEngine';
 import { RPG_CATEGORIES_SCHEMA } from '@/lib/rpgCategories';
+import { useKingdom } from './useKingdom';
+import { getCollectionByKingdom } from '@/lib/firebaseUtils';
+import { canEditCategories } from '@/lib/permissionEngine';
+import { logActivity } from '@/lib/auditLogger';
 
 export function useCategories() {
   const [categories, setCategories] = useState<CategoryEntity[]>([]);
   const [loading, setLoading] = useState(true);
+  const { kingdom, role, loading: kingdomLoading } = useKingdom();
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        setCategories([]);
-        setLoading(false);
-        return;
-      }
+    if (kingdomLoading) return;
 
-      const userId = user.uid;
-      const categoriesRef = collection(db, 'categories');
-      const q = query(categoriesRef, where('user_id', '==', userId));
+    if (!kingdom || !auth.currentUser) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCategories([]);
+      setLoading(false);
+      return;
+    }
 
-      // Check if user has categories, if not, create defaults
+    const userId = auth.currentUser.uid;
+    const q = getCollectionByKingdom('categories', kingdom.id);
+
+    // Check if kingdom has categories, if not, create defaults
+    const checkAndCreateDefaults = async () => {
       const snapshot = await getDocs(q);
       const hasRpgCategories = snapshot.docs.some(doc => doc.data().rpg_group);
       const hasEnoughCategories = snapshot.docs.length >= 20;
@@ -50,7 +57,7 @@ export function useCategories() {
 
           if (schemaPart.titulo === '💎 Cofre do Reino (Receitas Fixas)') {
             icon = 'Castle'; color = 'bg-emerald-500'; rpgThemeName = 'Cofre do Reino';
-          } else if (schemaPart.titulo === '⚡ Saques de Misssões (Receitas Variáveis)') {
+          } else if (schemaPart.titulo === '⚡ Saques de Missões (Receitas Variáveis)') {
             icon = 'Target'; color = 'bg-amber-500'; rpgThemeName = 'Saques de Missões';
           } else if (schemaPart.titulo === '🛡️ Tributos do Reino (Despesas Fixas)') {
             icon = 'Castle'; color = 'bg-indigo-500'; rpgThemeName = 'Tributos do Reino';
@@ -68,7 +75,9 @@ export function useCategories() {
               allowed_profiles: sub.usuarios || ['MonoUsuario', 'MultiUsuario'],
               icon,
               color,
-              rpg_theme_name: rpgThemeName
+              rpg_theme_name: rpgThemeName,
+              kingdom_id: kingdom.id,
+              created_by: userId
             };
             
             batch.set(newDocRef, {
@@ -88,41 +97,57 @@ export function useCategories() {
 
         await batch.commit();
       }
+    };
 
-      // Listen to categories
-      const unsubscribeCategories = onSnapshot(q, (snapshot) => {
-        const loadedCategories = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            ...data,
-            id: doc.id,
-            created_at: data.created_at?.toDate() || new Date()
-          } as CategoryEntity;
-        });
-        setCategories(loadedCategories);
-        setLoading(false);
+    checkAndCreateDefaults();
+
+    // Listen to categories
+    const unsubscribeCategories = onSnapshot(q, (snapshot) => {
+      const loadedCategories = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          ...data,
+          id: doc.id,
+          created_at: data.created_at?.toDate() || new Date()
+        } as CategoryEntity;
       });
-
-      return () => unsubscribeCategories();
+      setCategories(loadedCategories);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching categories:', error);
+      setLoading(false);
     });
 
-    return () => unsubscribeAuth();
-  }, []);
+    return () => {
+      unsubscribeCategories();
+    };
+  }, [kingdom, kingdomLoading]);
 
   const addCategory = async (category: Omit<CategoryEntity, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !kingdom || !role) return;
+    if (!canEditCategories(role)) {
+      throw new Error('Sem permissão para criar categorias.');
+    }
+
     const newId = doc(collection(db, 'categories')).id;
     const newCategory = {
       ...category,
       id: newId,
       user_id: auth.currentUser.uid,
-      created_at: new Date()
+      created_at: new Date(),
+      kingdom_id: kingdom.id,
+      created_by: auth.currentUser.uid
     };
     await setDoc(doc(db, 'categories', newId), newCategory);
+    await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_CATEGORY', newId, { name: category.name });
   };
 
   const updateCategory = async (id: string, category: Partial<CategoryEntity>) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !kingdom || !role) return;
+    if (!canEditCategories(role)) {
+      throw new Error('Sem permissão para editar categorias.');
+    }
+
     await updateDoc(doc(db, 'categories', id), {
       ...category,
       updated_at: new Date()
@@ -130,8 +155,13 @@ export function useCategories() {
   };
 
   const deleteCategory = async (id: string) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !kingdom || !role) return;
+    if (!canEditCategories(role)) {
+      throw new Error('Sem permissão para deletar categorias.');
+    }
+
     await deleteDoc(doc(db, 'categories', id));
+    await logActivity(kingdom.id, auth.currentUser.uid, 'DELETE_CATEGORY', id);
   };
 
   return { categories, loading, addCategory, updateCategory, deleteCategory };

@@ -5,12 +5,14 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Search, Filter, ArrowUpRight, ArrowDownLeft, Wallet, Plus, Sparkles, Edit2, Trash2 } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { Search, Filter, ArrowUpRight, ArrowDownLeft, Wallet, Plus, Sparkles, Edit2, Trash2, Upload } from 'lucide-react';
 import { BottomNav } from '@/components/BottomNav';
 import { Header } from '@/components/Header';
 import { Modal } from '@/components/Modal';
+import { ImportModal } from '@/src/components/ImportModal';
 import { formatCurrency, cn } from '@/lib/utils';
 import { Transaction } from '@/lib/types';
 
@@ -19,16 +21,33 @@ import { THEMES } from '@/lib/themes';
 import { useReino } from '@/hooks/useReino';
 import { useCategories } from '@/hooks/useCategories';
 import { GoogleGenAI, Type } from '@google/genai';
+import { financialEngine } from '@/lib/financialEngine';
 
-export default function Transactions() {
+function TransactionsContent() {
   const { theme, user, gameMode } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
-  const { transactions, addTransaction, updateTransaction, deleteTransaction } = useReino();
-  const { categories } = useCategories();
+  const { transactions, addTransaction, updateTransaction, deleteTransaction, loading: transactionsLoading } = useReino();
+  const { categories, loading: categoriesLoading } = useCategories();
   
+  const today = new Date();
+  const [month, setMonth] = useState(today.getMonth() + 1);
+  const [year, setYear] = useState(today.getFullYear());
+
   const [filter, setFilter] = useState<'all' | 'income' | 'expense' | 'investment'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const search = searchParams.get('search');
+    if (search) {
+      setSearchTerm(search);
+    }
+  }, [searchParams]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
 
@@ -40,10 +59,21 @@ export default function Transactions() {
     category_id: ''
   });
 
+  if (transactionsLoading || categoriesLoading) {
+    return (
+      <div className={cn("min-h-screen flex items-center justify-center", colors.bg)}>
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-500 font-medium">Carregando Quests...</p>
+        </div>
+      </div>
+    );
+  }
+
   const handleEditTransaction = (t: Transaction) => {
     setEditingTransactionId(t.id);
     setNewTransaction({
-      description: t.description || t.title || '',
+      description: t.description || '',
       amount: t.amount.toString(),
       type: t.type,
       category_id: t.category_id || ''
@@ -52,8 +82,15 @@ export default function Transactions() {
   };
 
   const handleDeleteTransaction = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir esta transação?')) {
-      await deleteTransaction(id);
+    setTransactionToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteTransaction = async () => {
+    if (transactionToDelete) {
+      await deleteTransaction(transactionToDelete);
+      setIsDeleteModalOpen(false);
+      setTransactionToDelete(null);
     }
   };
 
@@ -135,10 +172,26 @@ export default function Transactions() {
     }
   };
 
+  const handleImportTransactions = async (data: any[]) => {
+    for (const item of data) {
+      // expected headers: type, amount, description, category_id, date
+      await addTransaction({
+        type: item.type.toLowerCase() as any,
+        amount: parseFloat(item.amount),
+        description: item.description,
+        category_id: item.category_id,
+        date: item.date || new Date().toISOString().split('T')[0]
+      });
+    }
+  };
+
   const filteredTransactions = transactions.filter(t => {
+    const d = new Date(t.date);
+    const matchesMonth = d.getMonth() + 1 === month;
+    const matchesYear = d.getFullYear() === year;
     const matchesFilter = filter === 'all' || t.type === filter;
     const matchesSearch = (t.description || '').toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
+    return matchesMonth && matchesYear && matchesFilter && matchesSearch;
   });
 
   // Group categories by rpg_group for the select dropdown
@@ -155,16 +208,29 @@ export default function Transactions() {
     return acc;
   }, {} as Record<string, typeof categories>);
 
-  const today = new Date();
-  const currentMonthTransactions = transactions.filter(t => {
-    const d = new Date(t.date);
-    return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
-  });
-
-  const totalActualIncome = currentMonthTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
-  const totalActualExpenses = currentMonthTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
+  const { income: totalActualIncome, expense: totalActualExpenses } = financialEngine.calculateMonthlySummary(transactions as any, month, year);
   
   const surplus = totalActualIncome - totalActualExpenses;
+
+  const handlePrevMonth = () => {
+    if (month === 1) {
+      setMonth(12);
+      setYear(y => y - 1);
+    } else {
+      setMonth(m => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (month === 12) {
+      setMonth(1);
+      setYear(y => y + 1);
+    } else {
+      setMonth(m => m + 1);
+    }
+  };
+
+  const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
   return (
     <div className={cn("min-h-screen transition-colors duration-500", colors.bg)}>
@@ -177,11 +243,34 @@ export default function Transactions() {
               <h2 className="text-2xl font-display font-bold text-gray-900">Quests</h2>
               <p className="text-sm text-gray-500">Suas missões e histórico de transações</p>
             </div>
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform active:scale-95", colors.primary)}
-            >
-              <Plus className="w-6 h-6" />
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setIsImportModalOpen(true)}
+                className="px-4 h-10 rounded-xl flex items-center gap-2 bg-white border border-gray-200 text-gray-700 shadow-sm font-bold text-sm transition-transform active:scale-95 hover:bg-gray-50"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="hidden sm:inline">Importar</span>
+              </button>
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform active:scale-95", colors.primary)}
+              >
+                <Plus className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Month/Year Filter */}
+          <div className="flex items-center justify-between bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
+            <button onClick={handlePrevMonth} className="p-2 text-gray-400 hover:text-gray-900 transition-colors">
+              <ArrowDownLeft className="w-5 h-5 rotate-45" />
+            </button>
+            <div className="text-center">
+              <p className="text-sm font-bold text-gray-900">{monthNames[month - 1]}</p>
+              <p className="text-xs text-gray-500">{year}</p>
+            </div>
+            <button onClick={handleNextMonth} className="p-2 text-gray-400 hover:text-gray-900 transition-colors">
+              <ArrowUpRight className="w-5 h-5 rotate-45" />
             </button>
           </div>
         
@@ -193,11 +282,11 @@ export default function Transactions() {
               <Wallet className="w-8 h-8" />
             </div>
             <div>
-              <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1">Saldo para a Caverna</p>
+              <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1">Saldo para o Inventário</p>
               <h3 className="text-3xl font-display font-bold">{formatCurrency(surplus)}</h3>
             </div>
             <p className="text-white/60 text-xs max-w-[200px]">
-              Este é o valor disponível para ser investido na Caverna este mês.
+              Este é o valor disponível para ser investido no Inventário este mês.
             </p>
           </div>
         </section>
@@ -246,7 +335,7 @@ export default function Transactions() {
             filteredTransactions.map((t, i) => {
               const userName = (t as any).userName || 'Herói Desconhecido';
               const categoryObj = categories.find(c => c.id === t.category_id);
-              const categoryName = categoryObj ? categoryObj.name : t.category || 'Sem Categoria';
+              const categoryName = categoryObj ? categoryObj.name : (t as any).category || 'Sem Categoria';
               
               return (
                 <motion.div
@@ -396,8 +485,44 @@ export default function Transactions() {
         </div>
       </Modal>
 
+      <ImportModal 
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImport={handleImportTransactions}
+        title="Importar Transações"
+        template={['type', 'amount', 'description', 'category_id', 'date']}
+      />
+
+      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Excluir Transação">
+        <div className="space-y-6">
+          <p className="text-gray-600 text-sm">Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-700 font-bold transition-all active:scale-95"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmDeleteTransaction}
+              className="flex-1 py-4 rounded-2xl bg-red-500 text-white font-bold transition-all active:scale-95"
+            >
+              Excluir
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       </main>
       <BottomNav />
     </div>
+  );
+}
+
+export default function Transactions() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Carregando...</div>}>
+      <TransactionsContent />
+    </Suspense>
   );
 }

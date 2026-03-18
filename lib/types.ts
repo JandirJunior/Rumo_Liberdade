@@ -6,8 +6,63 @@
 // Tipos de transações financeiras
 export type TransactionType = 'income' | 'expense' | 'investment';
 
-// Categorias de gastos e investimentos
-export type Category = 'Fixed' | 'Lifestyle' | 'Investment' | 'Emergency';
+export type CategoryGroup =
+  | 'cofre'
+  | 'missoes'
+  | 'tributos'
+  | 'aventuras';
+
+export interface Category {
+  id: string;
+  name: string;
+  type: 'income' | 'expense' | 'investment';
+  group: CategoryGroup;
+}
+
+// --- KINGDOM INTERFACES ---
+
+export type KingdomRole = 'admin' | 'member' | 'viewer';
+
+export interface Kingdom {
+  id: string;
+  name: string;
+  owner_id: string;
+  created_at: string;
+  invite_code?: string;
+}
+
+export interface KingdomMember {
+  id: string;
+  kingdom_id: string;
+  user_id: string;
+  role: KingdomRole;
+  joined_at: string;
+  user_name?: string;
+  user_email?: string;
+}
+
+export interface KingdomInvite {
+  id: string;
+  kingdom_id: string;
+  email: string;
+  role: KingdomRole;
+  status: 'pending' | 'accepted' | 'rejected';
+  invited_by: string;
+  created_at: string;
+  kingdom_name?: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  kingdom_id: string;
+  user_id: string;
+  user_name: string;
+  action: string;
+  entity_type: 'transaction' | 'payable' | 'receivable' | 'asset' | 'member' | 'kingdom';
+  entity_id: string;
+  details?: any;
+  created_at: string;
+}
 
 // Interface para uma transação financeira individual
 export interface Transaction {
@@ -15,12 +70,15 @@ export interface Transaction {
   description: string;
   amount: number;
   type: TransactionType;
-  category?: Category | string;
-  category_id?: string;
+  category_id: string;
+  category_name?: string;
+  category_group?: string;
   date: string;
   userId?: string;
   userName?: string;
   organizationId: string; // SaaS: Identificador do tenant
+  kingdom_id?: string;
+  created_by?: string;
 }
 
 // Interface para metas financeiras (Objetivos)
@@ -43,6 +101,12 @@ export interface Asset {
   userId?: string;
   userName?: string;
   organizationId: string; // SaaS: Identificador do tenant
+  kingdom_id?: string;
+  created_by?: string;
+  ticker?: string;
+  quantity?: number;
+  operation_date?: string;
+  average_cost?: number;
 }
 
 // --- SAAS INTERFACES ---
@@ -104,13 +168,13 @@ export interface FaceroStats {
   F: number; // Festim (Renda Passiva)
   A: number; // Arcano (Ações/RV)
   C: number; // Cache (Cripto/Opções)
-  E: number; // Êxodo (Exterior)
+  E: number; // Exodia (Exterior)
   R: number; // Reaver (Renda Fixa)
   O: number; // Órbit (Oportunidades/Caixa)
 }
 
 // Arquétipos (Classes de Herói) disponíveis
-export type Archetype = 'Paladino' | 'Mago' | 'Dwarf Minerador' | 'Elfo' | 'Ladrão' | 'Hobbit' | 'Iniciante';
+export type Archetype = 'Paladino' | 'Mago' | 'Dwarf' | 'Elfo' | 'Ladino' | 'Hobbit' | 'Iniciante';
 
 // Interface para o estado global do jogo do usuário
 export interface UserGameState {
@@ -133,6 +197,84 @@ export interface MonthlyBudget {
   income: BudgetItem[];
   expenses: BudgetItem[];
 }
+
+// --- NOVAS INTERFACES DE CONTAS E CARTÕES ---
+
+export type AccountStatus = 'pending' | 'paid' | 'overdue' | 'cancelled';
+export type ReceivableStatus = 'pending' | 'received' | 'defaulted' | 'cancelled';
+export type InvoiceStatus = 'open' | 'closed' | 'paid' | 'overdue';
+
+export interface AccountPayable {
+  id: string;
+  userId: string;
+  description: string;
+  amount: number;
+  category_id: string;
+  dueDate: string;
+  status: AccountStatus;
+  paymentMethod?: string;
+  creditCardId?: string;
+  installments?: number;
+  currentInstallment?: number;
+  isRecurring?: boolean;
+  recurrenceRule?: string;
+  nextRecurrenceDate?: string;
+  createdAt: string;
+  paidAt?: string;
+  transactionId?: string;
+  kingdom_id?: string;
+  created_by?: string;
+}
+
+export interface AccountReceivable {
+  id: string;
+  userId: string;
+  description: string;
+  amount: number;
+  category_id: string;
+  dueDate: string;
+  payer?: string;
+  status: ReceivableStatus;
+  isRecurring?: boolean;
+  recurrenceRule?: string;
+  nextRecurrenceDate?: string;
+  createdAt: string;
+  receivedAt?: string;
+  transactionId?: string;
+  kingdom_id?: string;
+  created_by?: string;
+}
+
+export interface CreditCard {
+  id: string;
+  userId: string;
+  name: string;
+  limit: number;
+  closingDay: number;
+  dueDay: number;
+  category_id: string;
+  kingdom_id?: string;
+  created_by?: string;
+}
+
+export interface CreditCardInvoice {
+  id: string;
+  cardId: string;
+  userId: string;
+  month: number;
+  year: number;
+  closingDate: string;
+  dueDate: string;
+  totalAmount: number;
+  status: InvoiceStatus;
+  createdAt: string;
+  paidAt?: string;
+  transactionId?: string;
+  kingdom_id?: string;
+  created_by?: string;
+}
+
+// --- FIM NOVAS INTERFACES ---
 
 // Interface para o perfil financeiro detalhado do usuário
 export interface FinancialProfile {

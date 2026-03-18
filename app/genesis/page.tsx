@@ -88,9 +88,9 @@ export default function GenesisQuiz() {
     const mapping: Record<string, Archetype> = {
       F: 'Paladino',
       A: 'Mago',
-      C: 'Dwarf Minerador',
+      C: 'Dwarf',
       E: 'Elfo',
-      R: 'Ladrão',
+      R: 'Ladino',
       O: 'Hobbit'
     };
     return mapping[maxStat[0]] || 'Iniciante';
