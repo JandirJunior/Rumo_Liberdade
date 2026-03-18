@@ -50,7 +50,7 @@ export const MOCK_ASSETS: Asset[] = [
 export const MOCK_GAME_STATE: UserGameState = {
   level: 1,
   xp: 0,
-  archetype: 'Aprendiz',
+  archetype: 'Iniciante',
   stats: {
     F: 0,
     A: 0,
