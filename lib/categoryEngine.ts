@@ -24,7 +24,7 @@ export const CATEGORIES: Record<string, Category> = {
   'shopping': { id: 'shopping', name: 'Compras', type: 'expense', group: 'aventuras' },
   
   // Investimentos
-  'investment': { id: 'investment', name: 'Investimento', type: 'investment', group: 'tributos' },
+  'investment': { id: 'investment', name: 'Investimento', type: 'investment', group: 'investimentos' },
 };
 
 // Fallback mapping for old categories
@@ -99,6 +99,7 @@ export const categoryEngine = {
       case 'missoes': return '⚡ Saque de Missões (Receitas Variáveis)';
       case 'tributos': return '🛡️ Tributos do Reino (Despesas Fixas)';
       case 'aventuras': return '⚔️ Aventuras do Herói (Despesas Variáveis)';
+      case 'investimentos': return '💰 Investimentos';
       default: return 'Outros';
     }
   }

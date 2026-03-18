@@ -26,18 +26,21 @@ export const viewport: Viewport = {
 
 import { ThemeProvider } from '@/lib/ThemeContext';
 import { SpeedDial } from '@/components/SpeedDial';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="bg-gray-100 text-[#1A1A1A] font-sans antialiased" suppressHydrationWarning>
         <ThemeProvider>
-          <div className="min-h-screen flex flex-col">
-            <main className="w-full min-h-screen relative pb-24 bg-white overflow-x-hidden">
-              {children}
-              <SpeedDial />
-            </main>
-          </div>
+          <ErrorBoundary>
+            <div className="min-h-screen flex flex-col">
+              <main className="w-full min-h-screen relative pb-24 bg-white overflow-x-hidden">
+                {children}
+                <SpeedDial />
+              </main>
+            </div>
+          </ErrorBoundary>
         </ThemeProvider>
       </body>
     </html>

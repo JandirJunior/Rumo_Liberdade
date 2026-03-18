@@ -47,7 +47,7 @@ export function Header() {
     { icon: BarChart3, label: 'Atributos', href: '/attributes' },
     { icon: Pickaxe, label: 'Inventário', href: '/investments' },
     { icon: ScrollText, label: 'Quests', href: '/transactions' },
-    { icon: Skull, label: 'Masmorra', href: '/masmorra' },
+    { icon: Skull, label: 'Masmorra', href: '/villains' },
     { icon: MessageSquare, label: 'Mentor', href: '/chat' },
   ];
 

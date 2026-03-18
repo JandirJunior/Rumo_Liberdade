@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
@@ -16,7 +16,7 @@ import { CategoryManagerPanel } from '@/src/components/CategoryManagerPanel';
 import { AnnualChartPanel } from '@/src/components/AnnualChartPanel';
 import { RecurringAccountsPanel } from '@/src/components/RecurringAccountsPanel';
 
-export default function Attributes() {
+function AttributesContent() {
   const { theme } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
   const { transactions } = useReino();
@@ -271,5 +271,13 @@ export default function Attributes() {
       
       <BottomNav />
     </div>
+  );
+}
+
+export default function Attributes() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Carregando...</div>}>
+      <AttributesContent />
+    </Suspense>
   );
 }

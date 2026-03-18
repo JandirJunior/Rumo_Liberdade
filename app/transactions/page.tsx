@@ -42,6 +42,10 @@ function TransactionsContent() {
     if (search) {
       setSearchTerm(search);
     }
+    const openModal = searchParams.get('openModal');
+    if (openModal === 'true') {
+      setIsModalOpen(true);
+    }
   }, [searchParams]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);

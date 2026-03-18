@@ -46,15 +46,20 @@ export async function generateRecurringQuests(kingdomId?: string) {
 
         // Create the new instance
         const newId = doc(collection(db, 'accounts_payable')).id;
-        const newPayable: AccountPayable = {
+        const newPayable: any = {
           ...payable,
           id: newId,
           dueDate: nextDate,
           status: 'pending',
-          paidAt: undefined,
-          nextRecurrenceDate: undefined, // The new instance doesn't have a next recurrence date yet until it's processed
           createdAt: new Date().toISOString()
         };
+        
+        // Remove undefined fields
+        Object.keys(newPayable).forEach(key => {
+          if (newPayable[key] === undefined) {
+            delete newPayable[key];
+          }
+        });
         
         await setDoc(doc(db, 'accounts_payable', newId), newPayable);
         
@@ -93,15 +98,20 @@ export async function generateRecurringQuests(kingdomId?: string) {
         }
 
         const newId = doc(collection(db, 'accounts_receivable')).id;
-        const newReceivable: AccountReceivable = {
+        const newReceivable: any = {
           ...receivable,
           id: newId,
           dueDate: nextDate,
           status: 'pending',
-          receivedAt: undefined,
-          nextRecurrenceDate: undefined,
           createdAt: new Date().toISOString()
         };
+        
+        // Remove undefined fields
+        Object.keys(newReceivable).forEach(key => {
+          if (newReceivable[key] === undefined) {
+            delete newReceivable[key];
+          }
+        });
         
         await setDoc(doc(db, 'accounts_receivable', newId), newReceivable);
         

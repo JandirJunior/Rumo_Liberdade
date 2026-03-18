@@ -10,6 +10,7 @@ export function useUser() {
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      console.log("useUser: auth state changed", user);
       if (!user) {
         setUserData(null);
         setLoading(false);
@@ -18,6 +19,7 @@ export function useUser() {
 
       const userRef = doc(db, 'users', user.uid);
       const unsubscribeDoc = onSnapshot(userRef, (docSnap) => {
+        console.log("useUser: user doc snapshot", docSnap.exists());
         if (docSnap.exists()) {
           setUserData(docSnap.data() as UserEntity);
         }

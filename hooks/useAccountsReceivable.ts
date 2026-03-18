@@ -60,7 +60,10 @@ export function useAccountsReceivable() {
   }, [kingdom, kingdomLoading]);
 
   const addReceivable = async (receivable: Omit<AccountReceivable, 'id' | 'userId' | 'createdAt'>) => {
-    if (!auth.currentUser || !kingdom || !role) return;
+    if (!auth.currentUser) throw new Error('Usuário não autenticado.');
+    if (!kingdom) throw new Error('Reino não encontrado.');
+    if (!role) throw new Error('Papel de usuário não definido.');
+    
     if (!canCreateTransaction(role)) {
       throw new Error('Sem permissão para criar contas a receber.');
     }
@@ -74,6 +77,14 @@ export function useAccountsReceivable() {
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid
     };
+    
+    // Remove undefined fields
+    Object.keys(newReceivable).forEach(key => {
+      if (newReceivable[key as keyof AccountReceivable] === undefined) {
+        delete newReceivable[key as keyof AccountReceivable];
+      }
+    });
+
     await setDoc(doc(db, 'accounts_receivable', newId), newReceivable);
     await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'receivable', amount: receivable.amount });
   };
@@ -84,8 +95,16 @@ export function useAccountsReceivable() {
       throw new Error('Sem permissão para editar contas a receber.');
     }
 
-    await setDoc(doc(db, 'accounts_receivable', id), receivable, { merge: true });
-    await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'receivable', updates: receivable });
+    // Remove undefined fields
+    const sanitizedReceivable = { ...receivable };
+    Object.keys(sanitizedReceivable).forEach(key => {
+      if (sanitizedReceivable[key as keyof AccountReceivable] === undefined) {
+        delete sanitizedReceivable[key as keyof AccountReceivable];
+      }
+    });
+
+    await setDoc(doc(db, 'accounts_receivable', id), sanitizedReceivable, { merge: true });
+    await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'receivable', updates: sanitizedReceivable });
   };
 
   const receiveReceivable = async (id: string, receivedAt: string) => {

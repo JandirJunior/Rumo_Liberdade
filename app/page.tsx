@@ -46,9 +46,11 @@ export default function LoginPage() {
 
       router.push('/dashboard');
     } catch (err: any) {
-      console.error(err);
-      if (err.code === 'auth/popup-closed-by-user') {
+      console.error('Login error:', err);
+      if (err?.code === 'auth/popup-closed-by-user') {
         setError('O login foi cancelado. Por favor, tente novamente.');
+      } else if (err?.code === 'auth/popup-blocked') {
+        setError('O navegador bloqueou o popup de login. Por favor, permita popups.');
       } else {
         setError('Falha ao autenticar. Tente novamente.');
       }

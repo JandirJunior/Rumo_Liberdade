@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAccountsPayable } from '@/hooks/useAccountsPayable';
 import { useAccountsReceivable } from '@/hooks/useAccountsReceivable';
@@ -7,15 +7,24 @@ import { useCategories } from '@/hooks/useCategories';
 import { formatCurrency, cn } from '@/lib/utils';
 import { Plus, Trash2, Edit2, CreditCard, ArrowUpRight, ArrowDownRight, Calendar, Sparkles } from 'lucide-react';
 import { GoogleGenAI, Type } from '@google/genai';
+import { useSearchParams } from 'next/navigation';
 
 export function RecurringAccountsPanel() {
   const { payables, addPayable, deletePayable } = useAccountsPayable();
   const { receivables, addReceivable, deleteReceivable } = useAccountsReceivable();
   const { creditCards, addCreditCard, deleteCreditCard } = useCreditCards();
   const { categories } = useCategories();
+  const searchParams = useSearchParams();
 
   const [activeTab, setActiveTab] = useState<'payable' | 'receivable' | 'cards'>('payable');
   const [isAdding, setIsAdding] = useState(false);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'payable' || tab === 'receivable' || tab === 'cards') {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
   const [isSuggesting, setIsSuggesting] = useState(false);
 
   // Form states
@@ -129,6 +138,7 @@ export function RecurringAccountsPanel() {
       resetForm();
     } catch (error) {
       console.error("Error adding item:", error);
+      alert(error instanceof Error ? error.message : "Erro ao adicionar item.");
     }
   };
 

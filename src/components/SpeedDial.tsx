@@ -1,25 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, ArrowUpRight, ArrowDownRight, CreditCard, Wallet, TrendingUp, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
-import { Modal } from './Modal';
-import { RecurringAccountsPanel } from './RecurringAccountsPanel';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@/hooks/useUser';
 
 export function SpeedDial() {
   const [isOpen, setIsOpen] = useState(false);
   const { theme } = useTheme();
+  const { userData, loading } = useUser();
+  console.log('SpeedDial:', { loading, userData });
+  const router = useRouter();
   const colors = THEMES[theme] || THEMES.default;
 
+  if (loading || !userData) return null;
+
   const actions = [
-    { icon: ArrowUpRight, label: 'A Pagar', color: 'bg-red-500', action: () => console.log('A Pagar') },
-    { icon: ArrowDownRight, label: 'A Receber', color: 'bg-emerald-500', action: () => console.log('A Receber') },
-    { icon: CreditCard, label: 'Cartão', color: 'bg-purple-500', action: () => console.log('Cartão') },
-    { icon: TrendingUp, label: 'Investir', color: 'bg-blue-500', action: () => console.log('Investir') },
-    { icon: Wallet, label: 'Transação', color: 'bg-amber-500', action: () => console.log('Transação') },
+    { icon: ArrowUpRight, label: 'A Pagar', color: 'bg-red-500', action: () => router.push('/attributes?tab=payable') },
+    { icon: ArrowDownRight, label: 'A Receber', color: 'bg-emerald-500', action: () => router.push('/attributes?tab=receivable') },
+    { icon: CreditCard, label: 'Cartão', color: 'bg-purple-500', action: () => router.push('/attributes?tab=cards') },
+    { icon: TrendingUp, label: 'Investir', color: 'bg-blue-500', action: () => router.push('/investments') },
+    { icon: Wallet, label: 'Transação', color: 'bg-amber-500', action: () => router.push('/transactions?openModal=true') },
   ];
 
   return (
@@ -53,7 +58,10 @@ export function SpeedDial() {
       </AnimatePresence>
 
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          console.log('SpeedDial: clicked', !isOpen);
+          setIsOpen(!isOpen);
+        }}
         className={cn(
           "w-14 h-14 rounded-[2rem] flex items-center justify-center text-white shadow-2xl transition-all active:scale-95",
           isOpen ? "bg-gray-900 rotate-45" : colors.primary

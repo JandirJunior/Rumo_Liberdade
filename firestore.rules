@@ -115,7 +115,7 @@ service cloud.firestore {
         return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'type', 'date']) &&
                isValidNumber('amount', 0) &&
                isValidString('description', 1, 200) &&
-               request.resource.data.type in ['income', 'expense'];
+               request.resource.data.type in ['income', 'expense', 'investment'];
       }
 
       allow read: if isViewer(resource.data.kingdom_id);
@@ -127,7 +127,7 @@ service cloud.firestore {
     // Accounts Payable
     match /accounts_payable/{payableId} {
       function isValidPayable() {
-        return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'due_date', 'status']) &&
+        return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'dueDate', 'status']) &&
                isValidNumber('amount', 0) &&
                request.resource.data.status in ['pending', 'paid', 'overdue'];
       }
@@ -141,7 +141,7 @@ service cloud.firestore {
     // Accounts Receivable
     match /accounts_receivable/{receivableId} {
       function isValidReceivable() {
-        return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'due_date', 'status']) &&
+        return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'dueDate', 'status']) &&
                isValidNumber('amount', 0) &&
                request.resource.data.status in ['pending', 'received', 'overdue'];
       }
@@ -162,6 +162,22 @@ service cloud.firestore {
 
     // Credit Cards
     match /credit_cards/{cardId} {
+      allow read: if isViewer(resource.data.kingdom_id);
+      allow create: if isMember(request.resource.data.kingdom_id);
+      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id);
+      allow delete: if isMember(resource.data.kingdom_id);
+    }
+
+    // Credit Card Invoices
+    match /credit_card_invoices/{invoiceId} {
+      allow read: if isViewer(resource.data.kingdom_id);
+      allow create: if isMember(request.resource.data.kingdom_id);
+      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id);
+      allow delete: if isMember(resource.data.kingdom_id);
+    }
+
+    // Investments
+    match /investments/{investmentId} {
       allow read: if isViewer(resource.data.kingdom_id);
       allow create: if isMember(request.resource.data.kingdom_id);
       allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id);

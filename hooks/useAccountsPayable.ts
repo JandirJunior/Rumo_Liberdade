@@ -60,7 +60,10 @@ export function useAccountsPayable() {
   }, [kingdom, kingdomLoading]);
 
   const addPayable = async (payable: Omit<AccountPayable, 'id' | 'userId' | 'createdAt'>) => {
-    if (!auth.currentUser || !kingdom || !role) return;
+    if (!auth.currentUser) throw new Error('Usuário não autenticado.');
+    if (!kingdom) throw new Error('Reino não encontrado.');
+    if (!role) throw new Error('Papel de usuário não definido.');
+    
     if (!canCreateTransaction(role)) {
       throw new Error('Sem permissão para criar contas a pagar.');
     }
@@ -74,6 +77,14 @@ export function useAccountsPayable() {
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid
     };
+    
+    // Remove undefined fields
+    Object.keys(newPayable).forEach(key => {
+      if (newPayable[key as keyof AccountPayable] === undefined) {
+        delete newPayable[key as keyof AccountPayable];
+      }
+    });
+
     await setDoc(doc(db, 'accounts_payable', newId), newPayable);
     await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'payable', amount: payable.amount });
   };
@@ -84,8 +95,16 @@ export function useAccountsPayable() {
       throw new Error('Sem permissão para editar contas a pagar.');
     }
 
-    await setDoc(doc(db, 'accounts_payable', id), payable, { merge: true });
-    await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'payable', updates: payable });
+    // Remove undefined fields
+    const sanitizedPayable = { ...payable };
+    Object.keys(sanitizedPayable).forEach(key => {
+      if (sanitizedPayable[key as keyof AccountPayable] === undefined) {
+        delete sanitizedPayable[key as keyof AccountPayable];
+      }
+    });
+
+    await setDoc(doc(db, 'accounts_payable', id), sanitizedPayable, { merge: true });
+    await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'payable', updates: sanitizedPayable });
   };
 
   const payPayable = async (id: string, paidAt: string) => {

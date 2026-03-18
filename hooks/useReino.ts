@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { db, auth } from '@/firebase';
-import { collection, onSnapshot, query, orderBy, setDoc, doc, where, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, setDoc, doc, where, deleteDoc, writeBatch, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { Asset, Transaction, ActivityLog } from '@/lib/types';
 import { MOCK_ASSETS, MOCK_TRANSACTIONS } from '@/lib/data';
@@ -69,7 +69,16 @@ export function useReino() {
       console.error('Error fetching assets:', error);
     });
 
-    const transactionsQuery = query(getCollectionByKingdom('transactions', kingdom.id), orderBy('created_at', 'desc'));
+    let transactionsQuery;
+    if (role === 'admin') {
+      transactionsQuery = query(getCollectionByKingdom('transactions', kingdom.id), orderBy('created_at', 'desc'));
+    } else {
+      transactionsQuery = query(
+        getCollectionByKingdom('transactions', kingdom.id),
+        where('user_id', '==', auth.currentUser?.uid),
+        orderBy('created_at', 'desc')
+      );
+    }
 
     const unsubscribeTransactions = onSnapshot(transactionsQuery, (snapshot) => {
       if (!snapshot.empty) {
@@ -145,16 +154,20 @@ export function useReino() {
       unsubscribeTransactions();
       unsubscribeLogs();
     };
-  }, [kingdom, kingdomLoading]);
+  }, [kingdom, kingdomLoading, role]);
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'organizationId'>) => {
-    if (!auth.currentUser || !kingdom || !role) return;
+    if (!auth.currentUser) throw new Error('Usuário não autenticado.');
+    if (!kingdom) throw new Error('Reino não encontrado.');
+    if (!role) throw new Error('Papel de usuário não definido.');
     if (!canCreateTransaction(role)) throw new Error('Sem permissão para criar transações');
     
+    console.log("useReino: adding transaction", transaction);
     const newId = doc(collection(db, 'transactions')).id;
     const newTransaction = {
       id: newId,
       user_id: auth.currentUser.uid,
+      userName: auth.currentUser.displayName || auth.currentUser.email || 'Usuário',
       account_id: 'default', // Placeholder
       type: transaction.type,
       category_id: transaction.category_id || '',
@@ -165,7 +178,9 @@ export function useReino() {
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid
     };
+    console.log("useReino: transaction data", newTransaction);
     await setDoc(doc(db, 'transactions', newId), newTransaction);
+    console.log("useReino: transaction saved");
     await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { description: transaction.description, amount: transaction.amount });
     
     // Add XP for registering a transaction (e.g., 10 XP per transaction)
@@ -173,7 +188,9 @@ export function useReino() {
   };
 
   const updateTransaction = async (id: string, transaction: Partial<Omit<Transaction, 'id' | 'organizationId' | 'userId' | 'createdAt'>>) => {
-    if (!auth.currentUser || !kingdom || !role) return;
+    if (!auth.currentUser) throw new Error('Usuário não autenticado.');
+    if (!kingdom) throw new Error('Reino não encontrado.');
+    if (!role) throw new Error('Papel de usuário não definido.');
     if (!canEditTransaction(role)) throw new Error('Sem permissão para editar transações');
     
     const updateData: any = {};
@@ -188,7 +205,9 @@ export function useReino() {
   };
 
   const deleteTransaction = async (id: string) => {
-    if (!auth.currentUser || !kingdom || !role) return;
+    if (!auth.currentUser) throw new Error('Usuário não autenticado.');
+    if (!kingdom) throw new Error('Reino não encontrado.');
+    if (!role) throw new Error('Papel de usuário não definido.');
     if (!canDeleteTransaction(role)) throw new Error('Sem permissão para deletar transações');
     
     await deleteDoc(doc(db, 'transactions', id));
@@ -196,7 +215,9 @@ export function useReino() {
   };
 
   const updateAsset = async (asset: Omit<Asset, 'organizationId'>) => {
-    if (!auth.currentUser || !kingdom || !role) return;
+    if (!auth.currentUser) throw new Error('Usuário não autenticado.');
+    if (!kingdom) throw new Error('Reino não encontrado.');
+    if (!role) throw new Error('Papel de usuário não definido.');
     if (!hasPermission(role, 'EDIT_ASSET')) throw new Error('Sem permissão para editar ativos');
     
     const newId = asset.id || doc(collection(db, 'investments')).id;
@@ -224,7 +245,9 @@ export function useReino() {
     quantity: number, 
     operation_date: string 
   }) => {
-    if (!auth.currentUser || !kingdom || !role) return;
+    if (!auth.currentUser) throw new Error('Usuário não autenticado.');
+    if (!kingdom) throw new Error('Reino não encontrado.');
+    if (!role) throw new Error('Papel de usuário não definido.');
     if (!hasPermission(role, 'CREATE_ASSET')) throw new Error('Sem permissão para criar ativos');
     
     const batch = writeBatch(db);
@@ -251,8 +274,9 @@ export function useReino() {
     const newTransaction = {
       id: newTransactionId,
       user_id: auth.currentUser.uid,
+      userName: auth.currentUser.displayName || auth.currentUser.email || 'Usuário',
       account_id: 'default',
-      type: 'investment',
+      type: 'investment', // Changed to investment
       category_id: 'investment',
       amount: investment.value,
       description: `Aporte em ${investment.ticker} (${investment.quantity} unidades)`,
@@ -271,5 +295,53 @@ export function useReino() {
     await addXP(auth.currentUser.uid, xpGained);
   };
 
-  return { assets, transactions, activityLogs, loading, addTransaction, updateTransaction, deleteTransaction, updateAsset, addInvestment };
+  const sellInvestment = async (investmentId: string, quantity: number, value: number, operation_date: string) => {
+    if (!auth.currentUser) throw new Error('Usuário não autenticado.');
+    if (!kingdom) throw new Error('Reino não encontrado.');
+    if (!role) throw new Error('Papel de usuário não definido.');
+    if (!hasPermission(role, 'CREATE_ASSET')) throw new Error('Sem permissão para vender ativos');
+    
+    const assetRef = doc(db, 'investments', investmentId);
+    const assetSnap = await getDoc(assetRef);
+    
+    if (!assetSnap.exists()) throw new Error('Ativo não encontrado.');
+    
+    const assetData = assetSnap.data();
+    const newQuantity = assetData.quantity - quantity;
+    const newInvestedValue = assetData.invested_value - (assetData.average_price * quantity);
+    
+    const batch = writeBatch(db);
+    
+    if (newQuantity <= 0) {
+      batch.delete(assetRef);
+    } else {
+      batch.update(assetRef, {
+        quantity: newQuantity,
+        invested_value: newInvestedValue,
+        current_value: newInvestedValue // Simplified
+      });
+    }
+    
+    const newTransactionId = doc(collection(db, 'transactions')).id;
+    const newTransaction = {
+      id: newTransactionId,
+      user_id: auth.currentUser.uid,
+      userName: auth.currentUser.displayName || auth.currentUser.email || 'Usuário',
+      account_id: 'default',
+      type: 'investment', // Changed to investment
+      category_id: 'investment',
+      amount: value,
+      description: `Venda de ${assetData.ticker} (${quantity} unidades)`,
+      date: operation_date,
+      created_at: new Date(),
+      kingdom_id: kingdom.id,
+      created_by: auth.currentUser.uid
+    };
+    batch.set(doc(db, 'transactions', newTransactionId), newTransaction);
+    
+    await batch.commit();
+    await logActivity(kingdom.id, auth.currentUser.uid, 'SELL_ASSET', investmentId, { ticker: assetData.ticker, value: value });
+  };
+
+  return { assets, transactions, activityLogs, loading, addTransaction, updateTransaction, deleteTransaction, updateAsset, addInvestment, sellInvestment };
 }

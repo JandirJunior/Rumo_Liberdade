@@ -161,6 +161,18 @@ export default function Tavern() {
             <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md border-4 border-white/40 overflow-hidden relative shadow-2xl shrink-0">
               <Avatar character={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} size={128} />
             </div>
+            <button 
+              onClick={() => {
+                import('firebase/auth').then(({ signOut }) => {
+                  import('@/firebase').then(({ auth }) => {
+                    signOut(auth);
+                  });
+                });
+              }}
+              className="mt-4 px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 transition-colors"
+            >
+              Sair do Sistema
+            </button>
             <div className="flex-1">
               <h3 className="text-3xl md:text-4xl font-display font-bold">{gameState.archetype}</h3>
               <p className="text-white/90 text-sm font-medium mt-1">Nível {gameState.level} • {gameState.xp.toLocaleString()} XP</p>

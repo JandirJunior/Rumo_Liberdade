@@ -10,7 +10,8 @@ export type CategoryGroup =
   | 'cofre'
   | 'missoes'
   | 'tributos'
-  | 'aventuras';
+  | 'aventuras'
+  | 'investimentos';
 
 export interface Category {
   id: string;

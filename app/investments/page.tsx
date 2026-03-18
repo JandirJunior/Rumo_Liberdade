@@ -403,6 +403,13 @@ export default function Investments() {
             </div>
           </div>
 
+          <div>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Preço Médio (Calculado)</label>
+            <div className="px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl font-bold text-gray-900">
+              {newInvestment.quantity && newInvestment.value && parseFloat(newInvestment.quantity) !== 0 ? formatCurrency(parseFloat(newInvestment.value) / parseFloat(newInvestment.quantity)) : formatCurrency(0)}
+            </div>
+          </div>
+
           <button 
             onClick={handleAddInvestment}
             disabled={!newInvestment.ticker || !newInvestment.value || !newInvestment.quantity}
