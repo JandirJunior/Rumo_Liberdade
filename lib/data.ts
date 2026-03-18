@@ -81,12 +81,12 @@ export const MOCK_BUDGET: MonthlyBudget = {
 
 // Histórico de transações recentes
 export const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: '1', description: 'Salário Mensal', amount: 6000, type: 'income', category_id: 'Fixed', date: '2024-03-01', organizationId: 'mock_org' },
-  { id: '2', description: 'MEI Serviços', amount: 6300, type: 'income', category_id: 'Fixed', date: '2024-03-05', organizationId: 'mock_org' },
-  { id: '3', description: 'Aluguel', amount: 2000, type: 'expense', category_id: 'Lifestyle', date: '2024-03-02', organizationId: 'mock_org' },
-  { id: '4', description: 'Alimentação', amount: 3000, type: 'expense', category_id: 'Lifestyle', date: '2024-03-10', organizationId: 'mock_org' },
-  { id: '5', description: 'Financiamento Imob.', amount: 1960, type: 'expense', category_id: 'Fixed', date: '2024-03-15', organizationId: 'mock_org' },
-  { id: '6', description: 'Aporte FIIs', amount: 2000, type: 'investment', category_id: 'Investment', date: '2024-03-20', organizationId: 'mock_org' },
+  { id: '1', description: 'Salário Mensal', amount: 6000, type: 'income', category_id: 'salary', date: '2024-03-01', organizationId: 'mock_org' },
+  { id: '2', description: 'MEI Serviços', amount: 6300, type: 'income', category_id: 'freelance', date: '2024-03-05', organizationId: 'mock_org' },
+  { id: '3', description: 'Aluguel', amount: 2000, type: 'expense', category_id: 'rent', date: '2024-03-02', organizationId: 'mock_org' },
+  { id: '4', description: 'Alimentação', amount: 3000, type: 'expense', category_id: 'food', date: '2024-03-10', organizationId: 'mock_org' },
+  { id: '5', description: 'Financiamento Imob.', amount: 1960, type: 'expense', category_id: 'rent', date: '2024-03-15', organizationId: 'mock_org' },
+  { id: '6', description: 'Aporte FIIs', amount: 2000, type: 'investment', category_id: 'investment', date: '2024-03-20', organizationId: 'mock_org' },
 ];
 
 // Mapeamento de imagens personalizadas para cada arquétipo

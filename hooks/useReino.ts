@@ -26,13 +26,9 @@ export function useReino() {
     if (kingdomLoading) return;
 
     if (!kingdom) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAssets([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTransactions([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActivityLogs([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }
@@ -101,7 +97,6 @@ export function useReino() {
             type: data.type,
             title: data.description || 'Transação',
             description: data.description || 'Transação',
-            category: data.category,
             category_id: data.category_id,
             date: dateStr,
             createdAt: createdAtStr,
@@ -254,8 +249,7 @@ export function useReino() {
       user_id: auth.currentUser.uid,
       account_id: 'default',
       type: 'investment',
-      category: 'Investimento',
-      category_id: 'investment_auto',
+      category_id: 'investment',
       amount: investment.value,
       description: `Aporte em ${investment.ticker} (${investment.quantity} unidades)`,
       date: investment.operation_date,

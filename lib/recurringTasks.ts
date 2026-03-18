@@ -58,9 +58,10 @@ export async function generateRecurringQuests(kingdomId?: string) {
         
         await setDoc(doc(db, 'accounts_payable', newId), newPayable);
         
-        // Update the original document to point to the next recurrence date
+        // Update the original document to point to the next recurrence date and disable its recurrence
         await updateDoc(doc(db, 'accounts_payable', document.id), {
-          nextRecurrenceDate: nextDate
+          nextRecurrenceDate: nextDate,
+          isRecurring: false // The new instance will handle the next recurrence
         });
       }
     }
@@ -105,7 +106,8 @@ export async function generateRecurringQuests(kingdomId?: string) {
         await setDoc(doc(db, 'accounts_receivable', newId), newReceivable);
         
         await updateDoc(doc(db, 'accounts_receivable', document.id), {
-          nextRecurrenceDate: nextDate
+          nextRecurrenceDate: nextDate,
+          isRecurring: false // The new instance will handle the next recurrence
         });
       }
     }

@@ -64,9 +64,10 @@ export const kingdomService = {
   },
 
   async addMember(kingdomId: string, userId: string, role: KingdomRole): Promise<KingdomMember> {
-    const memberRef = doc(collection(db, 'kingdom_members'));
+    const memberId = `${userId}_${kingdomId}`;
+    const memberRef = doc(db, 'kingdom_members', memberId);
     const newMember: KingdomMember = {
-      id: memberRef.id,
+      id: memberId,
       kingdom_id: kingdomId,
       user_id: userId,
       role,

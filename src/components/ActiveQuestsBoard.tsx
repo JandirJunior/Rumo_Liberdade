@@ -64,6 +64,7 @@ export function ActiveQuestsBoard() {
    .slice(0, 10);
 
   const handleCompleteQuest = async (quest: QuestItem) => {
+    if (isCompleting || quest.status === 'completed') return;
     setIsCompleting(quest.id);
     try {
       const now = new Date().toISOString();
