@@ -26,9 +26,13 @@ export function useReino() {
     if (kingdomLoading) return;
 
     if (!kingdom) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAssets([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTransactions([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActivityLogs([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }

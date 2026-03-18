@@ -23,26 +23,26 @@ export function hasPermission(role: KingdomRole | undefined | null, action: keyo
   return PERMISSIONS[action].includes(role);
 }
 
-export function canCreateTransaction(role: string) {
+export function canCreateTransaction(role: KingdomRole | undefined | null) {
   return role === 'admin' || role === 'member';
 }
 
-export function canManageUsers(role: string) {
+export function canManageUsers(role: KingdomRole | undefined | null) {
   return role === 'admin';
 }
 
-export function canEditCategories(role: string) {
+export function canEditCategories(role: KingdomRole | undefined | null) {
   return role === 'admin';
 }
 
-export function canDeleteTransaction(role: string) {
+export function canDeleteTransaction(role: KingdomRole | undefined | null) {
   return role === 'admin';
 }
 
-export function canEditTransaction(role: string) {
+export function canEditTransaction(role: KingdomRole | undefined | null) {
   return role === 'admin' || role === 'member';
 }
 
-export function canEditKingdom(role: string) {
+export function canEditKingdom(role: KingdomRole | undefined | null) {
   return role === 'admin';
 }
