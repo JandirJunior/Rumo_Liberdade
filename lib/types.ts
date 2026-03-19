@@ -4,31 +4,34 @@
  */
 
 // Tipos de transações financeiras
-export type TransactionType = 'income' | 'expense' | 'investment';
+export type TransactionType = "income" | "expense" | "investment";
 
-export type CategoryGroup =
-  | 'cofre'
-  | 'missoes'
-  | 'tributos'
-  | 'aventuras'
-  | 'investimentos';
+export interface CategoryGroup {
+  id: string;
+  name: string;
+  type: "income" | "expense" | "investment";
+  nature: "fixed" | "variable";
+}
 
 export interface Category {
   id: string;
+  kingdom_id: string;
   name: string;
-  type: 'income' | 'expense' | 'investment';
-  group: CategoryGroup;
+  group_id: string;
+  created_at: string;
+  is_active: boolean;
 }
 
 // --- KINGDOM INTERFACES ---
 
-export type KingdomRole = 'admin' | 'member' | 'viewer';
+export type KingdomRole = "admin" | "member" | "viewer";
 
 export interface Kingdom {
   id: string;
   name: string;
   owner_id: string;
   created_at: string;
+  updated_at?: string;
   invite_code?: string;
 }
 
@@ -37,6 +40,7 @@ export interface KingdomMember {
   kingdom_id: string;
   user_id: string;
   role: KingdomRole;
+  created_at?: string;
   joined_at: string;
   user_name?: string;
   user_email?: string;
@@ -47,7 +51,7 @@ export interface KingdomInvite {
   kingdom_id: string;
   email: string;
   role: KingdomRole;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: "pending" | "accepted" | "rejected";
   invited_by: string;
   created_at: string;
   kingdom_name?: string;
@@ -57,28 +61,42 @@ export interface ActivityLog {
   id: string;
   kingdom_id: string;
   user_id: string;
-  user_name: string;
   action: string;
-  entity_type: 'transaction' | 'payable' | 'receivable' | 'asset' | 'member' | 'kingdom';
+  entity: string;
   entity_id: string;
-  details?: any;
   created_at: string;
+  // Legacy fields
+  user_name?: string;
+  entity_type?:
+    | "transaction"
+    | "payable"
+    | "receivable"
+    | "asset"
+    | "member"
+    | "kingdom";
+  details?: any;
 }
 
 // Interface para uma transação financeira individual
 export interface Transaction {
   id: string;
-  description: string;
+  kingdom_id?: string;
+  user_id?: string;
+  type: "income" | "expense" | "investment";
   amount: number;
-  type: TransactionType;
+  description: string;
   category_id: string;
+  investment_category_id?: string;
+  date: string;
+  created_at?: string;
+  status?: "concluído" | "pendente";
+  source?: "manual" | "importação" | "investimento";
+  // Legacy fields
   category_name?: string;
   category_group?: string;
-  date: string;
   userId?: string;
   userName?: string;
-  organizationId: string; // SaaS: Identificador do tenant
-  kingdom_id?: string;
+  organizationId?: string;
   created_by?: string;
 }
 
@@ -94,52 +112,63 @@ export interface Goal {
 // Interface para ativos de investimento
 export interface Asset {
   id: string;
+  kingdom_id?: string;
+  user_id?: string;
+  ticker?: string;
   type: string;
-  segment: string;
-  value: number;
-  targetPercent: number;
-  faceroType: 'F' | 'A' | 'C' | 'E' | 'R' | 'O'; // Mapeamento para o atributo F.A.C.E.R.O.
+  quantity?: number;
+  price?: number;
+  total?: number;
+  investment_category_id?: string; // FACERO
+  date?: string;
+  created_at?: string;
+  // Keep legacy fields for backward compatibility during transition
+  segment?: string;
+  value?: number;
+  targetPercent?: number;
+  faceroType?: "F" | "A" | "C" | "E" | "R" | "O";
   userId?: string;
   userName?: string;
-  organizationId: string; // SaaS: Identificador do tenant
-  kingdom_id?: string;
+  organizationId?: string;
   created_by?: string;
-  ticker?: string;
-  quantity?: number;
   operation_date?: string;
   average_cost?: number;
 }
 
 // --- SAAS INTERFACES ---
 
-export type Role = 'superadmin' | 'admin' | 'manager' | 'user' | 'viewer';
+export type Role = "superadmin" | "admin" | "manager" | "user" | "viewer";
 
 export interface Organization {
   orgId: string;
   name: string;
-  plan: 'basic' | 'pro' | 'business' | 'enterprise';
+  plan: "basic" | "pro" | "business" | "enterprise";
   maxUsers: number;
   createdAt: string;
-  status: 'active' | 'inactive' | 'suspended';
+  status: "active" | "inactive" | "suspended";
 }
 
 export interface AppUser {
-  userId: string;
-  organizationId: string;
-  role: Role;
+  id: string;
+  nome: string;
   email: string;
+  created_at: string;
+  // Legacy fields
+  userId?: string;
+  organizationId?: string;
+  role?: Role;
   name?: string;
   avatarUrl?: string;
-  createdAt: string;
-  status: 'active' | 'inactive';
+  createdAt?: string;
+  status?: "active" | "inactive";
 }
 
 export interface Subscription {
   subscriptionId: string;
   organizationId: string;
-  plan: 'basic' | 'pro' | 'business' | 'enterprise';
-  billingCycle: 'monthly' | 'yearly';
-  status: 'active' | 'trial' | 'past_due' | 'cancelled';
+  plan: "basic" | "pro" | "business" | "enterprise";
+  billingCycle: "monthly" | "yearly";
+  status: "active" | "trial" | "past_due" | "cancelled";
   nextBillingDate: string;
 }
 
@@ -155,10 +184,10 @@ export interface Log {
 export interface Character {
   id: number;
   name: string;
-  type: 'villain' | 'boss';
+  type: "villain" | "boss";
   requiredInvestment: number;
   image: string;
-  difficulty: 'easy' | 'medium' | 'hard' | 'epic' | 'legendary';
+  difficulty: "easy" | "medium" | "hard" | "epic" | "legendary";
   reward: string;
 }
 
@@ -175,7 +204,14 @@ export interface FaceroStats {
 }
 
 // Arquétipos (Classes de Herói) disponíveis
-export type Archetype = 'Paladino' | 'Mago' | 'Dwarf' | 'Elfo' | 'Ladino' | 'Hobbit' | 'Iniciante';
+export type Archetype =
+  | "Paladino"
+  | "Mago"
+  | "Dwarf"
+  | "Elfo"
+  | "Ladino"
+  | "Hobbit"
+  | "Iniciante";
 
 // Interface para o estado global do jogo do usuário
 export interface UserGameState {
@@ -201,81 +237,148 @@ export interface MonthlyBudget {
 
 // --- NOVAS INTERFACES DE CONTAS E CARTÕES ---
 
-export type AccountStatus = 'pending' | 'paid' | 'overdue' | 'cancelled';
-export type ReceivableStatus = 'pending' | 'received' | 'defaulted' | 'cancelled';
-export type InvoiceStatus = 'open' | 'closed' | 'paid' | 'overdue';
+export type AccountStatus = "pending" | "paid" | "overdue" | "cancelled";
+export type ReceivableStatus =
+  | "pending"
+  | "received"
+  | "defaulted"
+  | "cancelled";
+export type InvoiceStatus = "open" | "closed" | "paid" | "overdue";
 
 export interface AccountPayable {
   id: string;
-  userId: string;
+  kingdom_id?: string;
+  type?: "payable" | "receivable";
   description: string;
   amount: number;
   category_id: string;
-  dueDate: string;
-  status: AccountStatus;
+  due_date?: string;
+  status?: "pendente" | "pago" | "atrasado";
+  isRecurring?: boolean;
+  recurrenceRule?: string;
+  nextRecurrenceDate?: string;
+  // Keep legacy fields for backward compatibility
+  userId?: string;
   paymentMethod?: string;
   creditCardId?: string;
   installments?: number;
   currentInstallment?: number;
-  isRecurring?: boolean;
-  recurrenceRule?: string;
-  nextRecurrenceDate?: string;
-  createdAt: string;
+  createdAt?: string;
   paidAt?: string;
   transactionId?: string;
-  kingdom_id?: string;
   created_by?: string;
+  dueDate?: string; // Legacy
 }
 
 export interface AccountReceivable {
   id: string;
-  userId: string;
+  kingdom_id?: string;
+  type?: "payable" | "receivable";
   description: string;
   amount: number;
   category_id: string;
-  dueDate: string;
-  payer?: string;
-  status: ReceivableStatus;
+  due_date?: string;
+  status?: "pendente" | "recebido" | "atrasado" | "inadimplente";
   isRecurring?: boolean;
   recurrenceRule?: string;
   nextRecurrenceDate?: string;
-  createdAt: string;
+  // Keep legacy fields for backward compatibility
+  userId?: string;
+  payer?: string;
+  createdAt?: string;
   receivedAt?: string;
   transactionId?: string;
-  kingdom_id?: string;
   created_by?: string;
+  dueDate?: string; // Legacy
 }
 
 export interface CreditCard {
   id: string;
-  userId: string;
+  kingdom_id: string;
   name: string;
-  limit: number;
-  closingDay: number;
-  dueDay: number;
-  category_id: string;
-  kingdom_id?: string;
+  closing_day: number;
+  due_day: number;
+  created_at: string;
+  // Legacy fields
+  userId?: string;
+  limit?: number;
+  category_id?: string;
   created_by?: string;
 }
 
 export interface CreditCardInvoice {
   id: string;
-  cardId: string;
-  userId: string;
-  month: number;
-  year: number;
-  closingDate: string;
-  dueDate: string;
-  totalAmount: number;
-  status: InvoiceStatus;
-  createdAt: string;
+  kingdom_id: string;
+  card_id: string;
+  month: string; // YYYY-MM
+  total_amount: number;
+  status: "open" | "paid" | "overdue";
+  // Legacy fields
+  userId?: string;
+  year?: number;
+  closingDate?: string;
+  dueDate?: string;
+  createdAt?: string;
   paidAt?: string;
   transactionId?: string;
-  kingdom_id?: string;
   created_by?: string;
 }
 
 // --- FIM NOVAS INTERFACES ---
+
+export interface Budget {
+  id: string;
+  kingdom_id: string;
+  category_id: string;
+  quantidade: number;
+  mês: string; // YYYY-MM
+  // Legacy fields
+  amount?: number;
+  month?: string;
+}
+
+export interface InvestmentCategory {
+  id: string;
+  name: string;
+}
+
+export interface InvestmentProvent {
+  id: string;
+  kingdom_id: string;
+  ticker: string;
+  quantity: number;
+  price: number;
+  dy: number;
+  yoc: number;
+  date: string;
+}
+
+export interface Mentor {
+  id: string;
+  name: string;
+  facero_id: string;
+  theme_id: string;
+  character_class: string;
+  race: string;
+  strategy: string;
+}
+
+export interface Theme {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface Villain {
+  id: string;
+  name: string;
+  related_group_id?: string;
+  related_facero_id?: string;
+  theme_id: string;
+  difficulty: number;
+  target_value: number;
+  created_at: string;
+}
 
 // Interface para o perfil financeiro detalhado do usuário
 export interface FinancialProfile {

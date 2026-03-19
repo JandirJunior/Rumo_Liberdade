@@ -1,5 +1,31 @@
 {
   "entities": {
+    "Kingdom": {
+      "title": "Kingdom",
+      "description": "Represents a kingdom (tenant) in the system.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "owner_id": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "owner_id", "created_at"]
+    },
+    "KingdomMember": {
+      "title": "KingdomMember",
+      "description": "Represents a member of a kingdom.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "kingdom_id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "membro", "visualizador"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "kingdom_id", "user_id", "role", "created_at"]
+    },
     "User": {
       "title": "User",
       "description": "Represents a user in the system.",
@@ -76,10 +102,24 @@
           "type": "string",
           "description": "The ID of the category."
         },
+        "investment_category_id": {
+          "type": "string",
+          "description": "The ID of the investment category, if applicable."
+        },
         "type": {
           "type": "string",
           "enum": ["income", "expense", "investment", "transfer"],
           "description": "The type of the transaction."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["concluído", "pendente"],
+          "description": "The status of the transaction."
+        },
+        "source": {
+          "type": "string",
+          "enum": ["manual", "importação", "investimento"],
+          "description": "The source of the transaction."
         },
         "kingdom_id": {
           "type": "string",
@@ -274,6 +314,14 @@
     }
   },
   "firestore": {
+    "kingdoms/{kingdomId}": {
+      "schema": { "$ref": "#/entities/Kingdom" },
+      "description": "Stores kingdoms."
+    },
+    "kingdom_members/{memberId}": {
+      "schema": { "$ref": "#/entities/KingdomMember" },
+      "description": "Stores kingdom members."
+    },
     "users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profiles."

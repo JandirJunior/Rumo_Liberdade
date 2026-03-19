@@ -29,15 +29,15 @@ export function BudgetProgressPanel({
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState<string>('');
 
-  const handleEdit = (categoryId: string, currentAmount: number) => {
-    setEditingCategory(categoryId);
+  const handleEdit = (category_id: string, currentAmount: number) => {
+    setEditingCategory(category_id);
     setEditAmount(currentAmount.toString());
   };
 
-  const handleSave = async (categoryId: string) => {
+  const handleSave = async (category_id: string) => {
     const amount = parseFloat(editAmount);
     if (!isNaN(amount) && amount >= 0) {
-      await saveBudget(categoryId, amount);
+      await saveBudget(category_id, amount);
     }
     setEditingCategory(null);
   };
@@ -190,7 +190,7 @@ export function BudgetProgressPanel({
                         </div>
                       </div>
 
-                      <div className="text-right">
+                      <div className="text-right flex flex-col items-end gap-1">
                         {isEditing ? (
                           <div className="flex items-center gap-2">
                             <input 
@@ -209,7 +209,7 @@ export function BudgetProgressPanel({
                           </div>
                         ) : (
                           <div 
-                            className="cursor-pointer group"
+                            className="cursor-pointer group text-right"
                             onClick={() => handleEdit(item.category_id, item.orcado)}
                           >
                             <p className="text-sm font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">
@@ -220,6 +220,10 @@ export function BudgetProgressPanel({
                             </p>
                           </div>
                         )}
+                        <div className="flex items-center gap-1 mt-1 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
+                          <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Previsto:</span>
+                          <span className="text-[10px] font-bold text-gray-600">{formatCurrency(item.previsto)}</span>
+                        </div>
                       </div>
                     </div>
 

@@ -11,6 +11,7 @@ import { UserGameState } from './types';
 import { auth, db } from '@/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from './firebaseUtils';
 
 // Definição da interface do contexto
 interface ThemeContextType {
@@ -102,7 +103,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setTheme(data.theme || ARCHETYPE_THEME_MAP[data.archetype] || 'default');
       }
     }, (error) => {
-      console.error('Error fetching user data:', error);
+      handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
     });
     return () => unsubscribe();
   }, [user]);

@@ -52,12 +52,12 @@ export const MOCK_GAME_STATE: UserGameState = {
   xp: 0,
   archetype: 'Iniciante',
   stats: {
-    F: 0,
-    A: 0,
-    C: 0,
-    E: 0,
-    R: 0,
-    O: 0
+    F: 1,
+    A: 2,
+    C: 3,
+    E: 4,
+    R: 5,
+    O: 6
   },
   completedQuests: []
 };

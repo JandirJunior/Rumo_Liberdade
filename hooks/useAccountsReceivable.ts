@@ -4,7 +4,7 @@ import { collection, onSnapshot, query, orderBy, setDoc, doc, where, deleteDoc, 
 import { onAuthStateChanged } from 'firebase/auth';
 import { AccountReceivable } from '@/lib/types';
 import { useKingdom } from './useKingdom';
-import { getCollectionByKingdom } from '@/lib/firebaseUtils';
+import { getCollectionByKingdom, handleFirestoreError, OperationType } from '@/lib/firebaseUtils';
 import { canCreateTransaction, canEditTransaction, canDeleteTransaction } from '@/lib/permissionEngine';
 import { logActivity } from '@/lib/auditLogger';
 
@@ -38,8 +38,9 @@ export function useAccountsReceivable() {
         // Auto-update defaulted status on client side for display
         const today = new Date().toISOString().split('T')[0];
         const updatedReceivables = loadedReceivables.map(r => {
-          if (r.status === 'pending' && r.dueDate < today) {
-            return { ...r, status: 'defaulted' as const };
+          const dueDate = r.due_date || r.dueDate || '';
+          if (r.status === 'pendente' && dueDate && dueDate < today) {
+            return { ...r, status: 'inadimplente' as const };
           }
           return r;
         });
@@ -50,7 +51,7 @@ export function useAccountsReceivable() {
       }
       setLoading(false);
     }, (error) => {
-      console.error('Error fetching accounts receivable:', error);
+      handleFirestoreError(error, OperationType.GET, `accounts_receivable (kingdom: ${kingdom.id})`);
       setLoading(false);
     });
 
@@ -120,10 +121,10 @@ export function useAccountsReceivable() {
         throw new Error('Conta a receber não encontrada.');
       }
       const data = docSnap.data() as AccountReceivable;
-      if (data.status === 'received') {
+      if (data.status === 'recebido') {
         throw new Error('Esta conta já foi recebida por outro membro.');
       }
-      transaction.update(docRef, { status: 'received', receivedAt });
+      transaction.update(docRef, { status: 'recebido', receivedAt });
     });
     await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'receivable', status: 'received' });
   };

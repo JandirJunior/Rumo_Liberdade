@@ -12,8 +12,8 @@ interface QuestItem {
   type: 'payable' | 'receivable' | 'invoice';
   title: string;
   amount: number;
-  dueDate: string;
-  status: string;
+  dueDate?: string;
+  status?: string;
   originalData: any;
 }
 
@@ -23,45 +23,52 @@ export function ActiveQuestsBoard() {
   const { invoices, payInvoice } = useCreditCardInvoices();
   const { addTransaction } = useReino();
 
+  const [activeTab, setActiveTab] = useState<'all' | 'payable' | 'receivable' | 'invoice'>('all');
   const [isCompleting, setIsCompleting] = useState<string | null>(null);
 
   // Combine and sort all active quests
-  const activeQuests: QuestItem[] = [
+  const allQuests: QuestItem[] = [
     ...payables
-      .filter(p => p.status === 'pending' || p.status === 'overdue')
+      .filter(p => p.status === 'pendente' || p.status === 'atrasado')
       .map(p => ({
         id: `p_${p.id}`,
         type: 'payable' as const,
         title: p.description,
         amount: p.amount,
         dueDate: p.dueDate,
-        status: p.status,
+        status: p.status || 'pendente',
         originalData: p
       })),
     ...receivables
-      .filter(r => r.status === 'pending' || r.status === 'defaulted')
+      .filter(r => r.status === 'pendente' || r.status === 'inadimplente')
       .map(r => ({
         id: `r_${r.id}`,
         type: 'receivable' as const,
         title: r.description,
         amount: r.amount,
         dueDate: r.dueDate,
-        status: r.status,
+        status: r.status || 'pendente',
         originalData: r
       })),
     ...invoices
-      .filter(i => i.status === 'open' || i.status === 'overdue')
+      .filter(i => i.status === 'open')
       .map(i => ({
         id: `i_${i.id}`,
         type: 'invoice' as const,
         title: `Fatura Cartão`, // Could be improved if we fetch card name
-        amount: i.totalAmount,
+        amount: i.total_amount,
         dueDate: i.dueDate,
-        status: i.status,
+        status: i.status || 'open',
         originalData: i
       }))
-  ].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-   .slice(0, 10);
+  ].sort((a, b) => {
+    const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0;
+    const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0;
+    return dateA - dateB;
+  });
+
+  const filteredQuests = allQuests.filter(q => activeTab === 'all' || q.type === activeTab);
+  const activeQuests = filteredQuests.slice(0, 10);
 
   const handleCompleteQuest = async (quest: QuestItem) => {
     if (isCompleting || quest.status === 'completed') return;
@@ -75,7 +82,7 @@ export function ActiveQuestsBoard() {
           amount: quest.amount,
           type: 'expense',
           description: quest.title,
-          category_id: quest.originalData.categoryId || '',
+          category_id: quest.originalData.category_id || '',
           date: now
         });
       } else if (quest.type === 'receivable') {
@@ -85,7 +92,7 @@ export function ActiveQuestsBoard() {
           amount: quest.amount,
           type: 'income',
           description: quest.title,
-          category_id: quest.originalData.categoryId || '',
+          category_id: quest.originalData.category_id || '',
           date: now
         });
       } else if (quest.type === 'invoice') {
@@ -107,7 +114,8 @@ export function ActiveQuestsBoard() {
     }
   };
 
-  const getDaysRemaining = (dueDate: string) => {
+  const getDaysRemaining = (dueDate?: string) => {
+    if (!dueDate) return 'Sem data';
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const due = new Date(dueDate);
@@ -135,19 +143,61 @@ export function ActiveQuestsBoard() {
 
   return (
     <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-6">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">⚔️</span>
-          <h3 className="text-xl font-display font-bold text-gray-900">Quests Ativas</h3>
+      <header className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">⚔️</span>
+            <h3 className="text-xl font-display font-bold text-gray-900">Quests Ativas</h3>
+          </div>
+          <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+            {activeTab === 'all' ? 'Top 10' : `${activeQuests.length} filtradas`}
+          </span>
         </div>
-        <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-          Top {activeQuests.length}
-        </span>
+
+        {/* Tabs de Filtro */}
+        <div className="flex bg-gray-100 p-1 rounded-xl overflow-x-auto no-scrollbar">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={cn(
+              "flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
+              activeTab === 'all' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            )}
+          >
+            Todas
+          </button>
+          <button
+            onClick={() => setActiveTab('payable')}
+            className={cn(
+              "flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
+              activeTab === 'payable' ? "bg-white text-red-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            )}
+          >
+            Pagar
+          </button>
+          <button
+            onClick={() => setActiveTab('receivable')}
+            className={cn(
+              "flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
+              activeTab === 'receivable' ? "bg-white text-emerald-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            )}
+          >
+            Receber
+          </button>
+          <button
+            onClick={() => setActiveTab('invoice')}
+            className={cn(
+              "flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
+              activeTab === 'invoice' ? "bg-white text-purple-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            )}
+          >
+            Faturas
+          </button>
+        </div>
       </header>
 
       <div className="space-y-3">
         {activeQuests.map((quest, index) => {
-          const isOverdue = quest.status === 'overdue' || quest.status === 'defaulted';
+          const isOverdue = quest.status === 'atrasado' || quest.status === 'inadimplente';
           const isReceivable = quest.type === 'receivable';
           
           return (

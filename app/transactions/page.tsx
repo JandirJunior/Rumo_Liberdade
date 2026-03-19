@@ -26,7 +26,7 @@ import { financialEngine } from '@/lib/financialEngine';
 function TransactionsContent() {
   const { theme, user, gameMode } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
-  const { transactions, addTransaction, updateTransaction, deleteTransaction, loading: transactionsLoading } = useReino();
+  const { transactions, addTransaction, updateTransaction, deleteTransaction, addInvestment, loading: transactionsLoading } = useReino();
   const { categories, loading: categoriesLoading } = useCategories();
   
   const today = new Date();
@@ -60,7 +60,11 @@ function TransactionsContent() {
     description: '',
     amount: '',
     type: 'expense' as 'income' | 'expense' | 'investment',
-    category_id: ''
+    category_id: '',
+    faceroType: 'F',
+    ticker: '',
+    quantity: '',
+    operation_date: new Date().toISOString().split('T')[0]
   });
 
   if (transactionsLoading || categoriesLoading) {
@@ -80,7 +84,11 @@ function TransactionsContent() {
       description: t.description || '',
       amount: t.amount.toString(),
       type: t.type,
-      category_id: t.category_id || ''
+      category_id: t.category_id || '',
+      faceroType: t.investment_category_id || 'F',
+      ticker: '',
+      quantity: '',
+      operation_date: t.date ? t.date.split('T')[0] : new Date().toISOString().split('T')[0]
     });
     setIsModalOpen(true);
   };
@@ -150,9 +158,31 @@ function TransactionsContent() {
   };
 
   const handleAddTransaction = async () => {
-    if (!newTransaction.description || !newTransaction.amount || !user || !newTransaction.category_id) return;
+    if (!newTransaction.amount || !user) return;
 
-    const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    if (newTransaction.type === 'investment') {
+      if (!newTransaction.ticker || !newTransaction.quantity || !newTransaction.faceroType) return;
+      
+      try {
+        await addInvestment({
+          type: newTransaction.faceroType,
+          ticker: newTransaction.ticker,
+          value: parseFloat(newTransaction.amount),
+          quantity: parseFloat(newTransaction.quantity),
+          operation_date: newTransaction.operation_date
+        });
+        setIsModalOpen(false);
+        setEditingTransactionId(null);
+        setNewTransaction({ description: '', amount: '', type: 'expense', category_id: '', faceroType: 'F', ticker: '', quantity: '', operation_date: new Date().toISOString().split('T')[0] });
+      } catch (error) {
+        console.error("Error saving investment: ", error);
+      }
+      return;
+    }
+
+    if (!newTransaction.description || !newTransaction.category_id) return;
+
+    const dateStr = new Date().toISOString(); // Pass full ISO string to keep time
 
     const transactionData = {
       description: newTransaction.description,
@@ -170,7 +200,7 @@ function TransactionsContent() {
       }
       setIsModalOpen(false);
       setEditingTransactionId(null);
-      setNewTransaction({ description: '', amount: '', type: 'expense', category_id: '' });
+      setNewTransaction({ description: '', amount: '', type: 'expense', category_id: '', faceroType: 'F', ticker: '', quantity: '', operation_date: new Date().toISOString().split('T')[0] });
     } catch (error) {
       console.error("Error saving transaction: ", error);
     }
@@ -205,16 +235,17 @@ function TransactionsContent() {
     (!c.allowed_profiles || c.allowed_profiles.includes(profileType))
   );
   const groupedCategories = categoriesByType.reduce((acc, cat) => {
-    if (!acc[cat.rpg_group]) {
-      acc[cat.rpg_group] = [];
+    const group = cat.rpg_group || 'Outros';
+    if (!acc[group]) {
+      acc[group] = [];
     }
-    acc[cat.rpg_group].push(cat);
+    acc[group].push(cat);
     return acc;
   }, {} as Record<string, typeof categories>);
 
-  const { income: totalActualIncome, expense: totalActualExpenses } = financialEngine.calculateMonthlySummary(transactions as any, month, year);
+  const { income: totalActualIncome, expense: totalActualExpenses, investment: totalActualInvestments } = financialEngine.calculateMonthlySummary(transactions as any, month, year);
   
-  const surplus = totalActualIncome - totalActualExpenses;
+  const surplus = totalActualIncome - totalActualExpenses - totalActualInvestments;
 
   const handlePrevMonth = () => {
     if (month === 1) {
@@ -339,7 +370,11 @@ function TransactionsContent() {
             filteredTransactions.map((t, i) => {
               const userName = (t as any).userName || 'Herói Desconhecido';
               const categoryObj = categories.find(c => c.id === t.category_id);
-              const categoryName = categoryObj ? categoryObj.name : (t as any).category || 'Sem Categoria';
+              let categoryName = categoryObj ? categoryObj.name : 'Sem Categoria';
+              
+              if (t.type === 'investment' && t.category_id === 'investment') {
+                categoryName = 'Aporte em Investimento';
+              }
               
               return (
                 <motion.div
@@ -361,8 +396,8 @@ function TransactionsContent() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 truncate">{t.description}</p>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      {categoryName} • {t.date}
-                      {gameMode === 'reino' && ` • Por: ${userName}`}
+                      {categoryName} • {new Date((t as any).created_at || t.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {` • Por: ${userName}`}
                     </p>
                   </div>
                   
@@ -402,44 +437,11 @@ function TransactionsContent() {
         onClose={() => {
           setIsModalOpen(false);
           setEditingTransactionId(null);
-          setNewTransaction({ description: '', amount: '', type: 'expense', category_id: '' });
+          setNewTransaction({ description: '', amount: '', type: 'expense', category_id: '', faceroType: 'F', ticker: '', quantity: '', operation_date: new Date().toISOString().split('T')[0] });
         }} 
         title={editingTransactionId ? "Editar Transação" : "Nova Transação"}
       >
         <div className="space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block">Descrição</label>
-              <button
-                onClick={handleSuggestCategory}
-                disabled={!newTransaction.description || isSuggesting}
-                className={cn(
-                  "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 px-2 py-1 rounded-lg transition-all",
-                  (!newTransaction.description || isSuggesting) ? "text-gray-400 bg-gray-50 cursor-not-allowed" : "text-purple-600 bg-purple-50 hover:bg-purple-100"
-                )}
-              >
-                <Sparkles className="w-3 h-3" />
-                {isSuggesting ? 'Analisando...' : 'Sugerir Categoria'}
-              </button>
-            </div>
-            <input 
-              type="text"
-              placeholder="Ex: Almoço, Salário, Aporte FII"
-              value={newTransaction.description}
-              onChange={(e) => setNewTransaction({...newTransaction, description: e.target.value})}
-              className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Valor (R$)</label>
-            <input 
-              type="number"
-              placeholder="0,00"
-              value={newTransaction.amount}
-              onChange={(e) => setNewTransaction({...newTransaction, amount: e.target.value})}
-              className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
-            />
-          </div>
           <div>
             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Tipo</label>
             <div className="grid grid-cols-3 gap-2">
@@ -459,29 +461,128 @@ function TransactionsContent() {
               ))}
             </div>
           </div>
-          <div>
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Categoria RPG</label>
-            <select
-              value={newTransaction.category_id}
-              onChange={(e) => setNewTransaction({...newTransaction, category_id: e.target.value})}
-              className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm"
-            >
-              <option value="" disabled>Selecione uma categoria...</option>
-              {Object.entries(groupedCategories).map(([groupName, cats]) => (
-                <optgroup key={groupName} label={groupName}>
-                  {cats.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+
+          {newTransaction.type === 'investment' ? (
+            <>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Categoria F.A.C.E.R.O.</label>
+                <select 
+                  value={newTransaction.faceroType}
+                  onChange={(e) => setNewTransaction({...newTransaction, faceroType: e.target.value})}
+                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm"
+                >
+                  <option value="F">Fundo Imobiliário</option>
+                  <option value="A">Ações</option>
+                  <option value="C">Cripto</option>
+                  <option value="E">Exterior / ETFs</option>
+                  <option value="R">Renda Fixa</option>
+                  <option value="O">Outros investimentos / Oportunidades</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Ativo / Ticker</label>
+                <input 
+                  type="text"
+                  placeholder="Ex: MXRF11, PETR4, BTC"
+                  value={newTransaction.ticker}
+                  onChange={(e) => setNewTransaction({...newTransaction, ticker: e.target.value})}
+                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Quantidade</label>
+                  <input 
+                    type="number"
+                    step="0.00000001"
+                    placeholder="0.00"
+                    value={newTransaction.quantity}
+                    onChange={(e) => setNewTransaction({...newTransaction, quantity: e.target.value})}
+                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Data Operação</label>
+                  <input 
+                    type="date"
+                    value={newTransaction.operation_date}
+                    onChange={(e) => setNewTransaction({...newTransaction, operation_date: e.target.value})}
+                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block">Descrição</label>
+                  <button
+                    onClick={handleSuggestCategory}
+                    disabled={!newTransaction.description || isSuggesting}
+                    className={cn(
+                      "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 px-2 py-1 rounded-lg transition-all",
+                      (!newTransaction.description || isSuggesting) ? "text-gray-400 bg-gray-50 cursor-not-allowed" : "text-purple-600 bg-purple-50 hover:bg-purple-100"
+                    )}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {isSuggesting ? 'Analisando...' : 'Sugerir Categoria'}
+                  </button>
+                </div>
+                <input 
+                  type="text"
+                  placeholder="Ex: Almoço, Salário, Aporte FII"
+                  value={newTransaction.description}
+                  onChange={(e) => setNewTransaction({...newTransaction, description: e.target.value})}
+                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Categoria RPG</label>
+                <select
+                  value={newTransaction.category_id}
+                  onChange={(e) => setNewTransaction({...newTransaction, category_id: e.target.value})}
+                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm"
+                >
+                  <option value="" disabled>Selecione uma categoria...</option>
+                  {Object.entries(groupedCategories).map(([groupName, cats]) => (
+                    <optgroup key={groupName} label={groupName}>
+                      {cats.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </optgroup>
                   ))}
-                </optgroup>
-              ))}
-            </select>
+                </select>
+              </div>
+            </>
+          )}
+
+          <div>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Valor Total (R$)</label>
+            <input 
+              type="number"
+              placeholder="0,00"
+              value={newTransaction.amount}
+              onChange={(e) => setNewTransaction({...newTransaction, amount: e.target.value})}
+              className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+            />
           </div>
+
           <button 
             onClick={handleAddTransaction}
-            disabled={!newTransaction.description || !newTransaction.amount || !newTransaction.category_id}
+            disabled={
+              newTransaction.type === 'investment' 
+                ? (!newTransaction.ticker || !newTransaction.quantity || !newTransaction.amount)
+                : (!newTransaction.description || !newTransaction.amount || !newTransaction.category_id)
+            }
             className={cn(
               "w-full py-4 rounded-2xl text-white font-bold shadow-lg transition-all active:scale-95 mt-4", 
-              (!newTransaction.description || !newTransaction.amount || !newTransaction.category_id) ? "opacity-50 cursor-not-allowed" : colors.primary
+              (newTransaction.type === 'investment' 
+                ? (!newTransaction.ticker || !newTransaction.quantity || !newTransaction.amount)
+                : (!newTransaction.description || !newTransaction.amount || !newTransaction.category_id)) 
+                ? "opacity-50 cursor-not-allowed" : colors.primary
             )}
           >
             Confirmar Transação
@@ -496,6 +597,17 @@ function TransactionsContent() {
         title="Importar Transações"
         template={['type', 'amount', 'description', 'category_id', 'date']}
       />
+      
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none">
+          <div className="bg-white p-4 rounded-xl shadow-xl border border-gray-200 mt-[400px] pointer-events-auto max-w-md">
+            <p className="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Instruções de Importação:</p>
+            <p className="text-[10px] text-gray-500 leading-relaxed">
+              O arquivo deve ser um CSV com os seguintes cabeçalhos: <strong>type</strong> (income/expense), <strong>amount</strong> (valor), <strong>description</strong> (descrição), <strong>category_id</strong> (ID da categoria) e <strong>date</strong> (YYYY-MM-DD).
+            </p>
+          </div>
+        </div>
+      )}
 
       <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Excluir Transação">
         <div className="space-y-6">

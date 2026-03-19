@@ -79,7 +79,9 @@ export function ImportModal({ isOpen, onClose, onImport, title, template }: Impo
           <div className="text-xs text-amber-800 space-y-1">
             <p className="font-bold">Instruções de Importação:</p>
             <p>O arquivo deve ser um CSV com os seguintes cabeçalhos:</p>
-            <code className="bg-white/50 px-1 rounded">{template.join(', ')}</code>
+            <code className="bg-white/50 px-1 rounded block mb-2">{template.join(', ')}</code>
+            <p className="font-bold mt-2">Exemplo de preenchimento:</p>
+            <code className="bg-white/50 px-1 rounded block">expense, 150.50, Compra no mercado, alimentacao, 2023-10-25</code>
           </div>
         </div>
 

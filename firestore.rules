@@ -78,7 +78,7 @@ service cloud.firestore {
 
     // Kingdoms
     match /kingdoms/{kingdomId} {
-      allow read: if isKingdomMember(kingdomId);
+      allow read: if isAuthenticated(); // Permite buscar reinos por código de convite e ver detalhes ao ser convidado
       allow create: if isAuthenticated();
       allow update: if isAdmin(kingdomId);
       allow delete: if false;

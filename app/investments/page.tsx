@@ -21,7 +21,7 @@ import { financialEngine } from '@/lib/financialEngine';
 export default function Investments() {
   const { theme } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
-  const { assets, loading, addInvestment } = useReino();
+  const { assets, loading, addInvestment, addEarning } = useReino();
   
   const { totalValue, aggregated, tickerDetails } = useMemo(() => 
     financialEngine.calculateInvestmentPower(assets),
@@ -29,6 +29,7 @@ export default function Investments() {
   );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEarningModalOpen, setIsEarningModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [newInvestment, setNewInvestment] = useState({
     type: 'F',
@@ -36,6 +37,13 @@ export default function Investments() {
     value: '',
     quantity: '',
     operation_date: new Date().toISOString().split('T')[0]
+  });
+
+  const [newEarning, setNewEarning] = useState({
+    ticker: '',
+    amount: '',
+    type: 'dividend' as 'dividend' | 'jcp' | 'rent' | 'other',
+    date: new Date().toISOString().split('T')[0]
   });
 
   const handleAddInvestment = async () => {
@@ -65,6 +73,25 @@ export default function Investments() {
       value: '', 
       quantity: '', 
       operation_date: new Date().toISOString().split('T')[0] 
+    });
+  };
+
+  const handleAddEarning = async () => {
+    if (!newEarning.ticker || !newEarning.amount) return;
+    
+    await addEarning({
+      ticker: newEarning.ticker.toUpperCase(),
+      amount: parseFloat(newEarning.amount),
+      type: newEarning.type,
+      date: newEarning.date
+    });
+    
+    setIsEarningModalOpen(false);
+    setNewEarning({
+      ticker: '',
+      amount: '',
+      type: 'dividend',
+      date: new Date().toISOString().split('T')[0]
     });
   };
 
@@ -172,6 +199,13 @@ export default function Investments() {
             >
               <Upload className="w-4 h-4" />
               <span className="hidden sm:inline">Importar</span>
+            </button>
+            <button 
+              onClick={() => setIsEarningModalOpen(true)}
+              className="px-4 h-10 rounded-xl flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 shadow-sm font-bold text-sm transition-transform active:scale-95 hover:bg-amber-100"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">Proventos</span>
             </button>
             <button 
               onClick={() => setIsModalOpen(true)}
@@ -284,6 +318,43 @@ export default function Investments() {
               </div>
             </div>
           </section>
+
+          {/* Planning Section */}
+          <section className="bg-white border border-gray-100 rounded-[2rem] p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-6">
+              <Compass className="w-5 h-5 text-indigo-500" />
+              <h4 className="text-lg font-display font-bold text-gray-900">Planejamento de Próximo Aporte</h4>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+                <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-1">Valor Disponível</p>
+                <p className="text-2xl font-display font-bold text-indigo-900">{formatCurrency(totalValue * 0.05)}</p>
+                <p className="text-[10px] text-indigo-500 mt-1 italic">* Sugestão baseada em 5% do patrimônio atual</p>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Distribuição Sugerida (FACERO)</p>
+                {aggregated.map((asset, i) => {
+                  const suggestedAmount = (totalValue * 0.05) * asset.targetPercent;
+                  return (
+                    <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-gray-500 shadow-sm">
+                          {getFaceroIcon(asset.faceroType)}
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">{asset.name}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-gray-900">{formatCurrency(suggestedAmount)}</p>
+                        <p className="text-[10px] text-gray-400">{(asset.targetPercent * 100).toFixed(0)}% do aporte</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
         </div>
 
       {/* [RESPONSIVIDADE] Coluna Direita (Ocupa 5 de 12 colunas no desktop) */}
@@ -322,6 +393,76 @@ export default function Investments() {
       </div>
       </main>
       <BottomNav />
+
+      {/* Modal para Adicionar Proventos */}
+      <Modal 
+        isOpen={isEarningModalOpen} 
+        onClose={() => setIsEarningModalOpen(false)} 
+        title="Registrar Proventos"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Ativo / Ticker</label>
+            <input 
+              type="text"
+              placeholder="Ex: MXRF11, PETR4"
+              value={newEarning.ticker}
+              onChange={(e) => setNewEarning({...newEarning, ticker: e.target.value})}
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all font-medium text-gray-900"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Tipo de Provento</label>
+            <select 
+              value={newEarning.type}
+              onChange={(e) => setNewEarning({...newEarning, type: e.target.value as any})}
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all font-medium text-gray-900"
+            >
+              <option value="dividend">Dividendo</option>
+              <option value="jcp">JCP</option>
+              <option value="rent">Aluguel (FII)</option>
+              <option value="other">Outros</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Valor Recebido</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">R$</span>
+                <input 
+                  type="number"
+                  placeholder="0.00"
+                  value={newEarning.amount}
+                  onChange={(e) => setNewEarning({...newEarning, amount: e.target.value})}
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all font-bold text-gray-900"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Data</label>
+              <input 
+                type="date"
+                value={newEarning.date}
+                onChange={(e) => setNewEarning({...newEarning, date: e.target.value})}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all font-medium text-gray-900"
+              />
+            </div>
+          </div>
+
+          <button 
+            onClick={handleAddEarning}
+            disabled={!newEarning.ticker || !newEarning.amount}
+            className={cn(
+              "w-full py-4 rounded-xl font-bold text-white shadow-lg transition-transform active:scale-95 mt-4",
+              (!newEarning.ticker || !newEarning.amount) ? "bg-gray-300 cursor-not-allowed" : "bg-amber-600"
+            )}
+          >
+            Registrar Provento
+          </button>
+        </div>
+      </Modal>
 
       {/* Modal para Adicionar Investimento */}
       <Modal 

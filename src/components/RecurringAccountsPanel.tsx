@@ -31,7 +31,7 @@ export function RecurringAccountsPanel() {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [categoryId, setCategoryId] = useState('');
+  const [category_id, setCategoryId] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceRule, setRecurrenceRule] = useState('monthly');
   const [cardLimit, setCardLimit] = useState('');
@@ -101,7 +101,7 @@ export function RecurringAccountsPanel() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!categoryId) {
+    if (!category_id) {
       alert("Por favor, selecione uma categoria.");
       return;
     }
@@ -111,8 +111,8 @@ export function RecurringAccountsPanel() {
           description,
           amount: parseFloat(amount),
           dueDate,
-          category_id: categoryId,
-          status: 'pending',
+          category_id: category_id,
+          status: 'pendente',
           isRecurring,
           recurrenceRule: isRecurring ? recurrenceRule : undefined,
         });
@@ -121,8 +121,8 @@ export function RecurringAccountsPanel() {
           description,
           amount: parseFloat(amount),
           dueDate,
-          category_id: categoryId,
-          status: 'pending',
+          category_id: category_id,
+          status: 'pendente',
           isRecurring,
           recurrenceRule: isRecurring ? recurrenceRule : undefined,
         });
@@ -130,9 +130,11 @@ export function RecurringAccountsPanel() {
         await addCreditCard({
           name: description,
           limit: parseFloat(cardLimit),
-          closingDay: parseInt(closingDay),
-          dueDay: parseInt(dueDay),
-          category_id: categoryId,
+          closing_day: parseInt(closingDay),
+          due_day: parseInt(dueDay),
+          category_id: category_id,
+          kingdom_id: 'placeholder',
+          created_at: new Date().toISOString(),
         });
       }
       resetForm();
@@ -146,10 +148,11 @@ export function RecurringAccountsPanel() {
   const flowType = activeTab === 'payable' ? 'expense' : activeTab === 'receivable' ? 'income' : 'expense';
   const filteredCategories = categories.filter(c => c.flow_type === flowType);
   const groupedCategories = filteredCategories.reduce((acc, cat) => {
-    if (!acc[cat.rpg_group]) {
-      acc[cat.rpg_group] = [];
+    const group = cat.rpg_group || 'Outros';
+    if (!acc[group]) {
+      acc[group] = [];
     }
-    acc[cat.rpg_group].push(cat);
+    acc[group].push(cat);
     return acc;
   }, {} as Record<string, typeof categories>);
 
@@ -246,7 +249,7 @@ export function RecurringAccountsPanel() {
                 <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Categoria RPG</label>
                 <select
                   required
-                  value={categoryId}
+                  value={category_id}
                   onChange={(e) => setCategoryId(e.target.value)}
                   className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 >
@@ -390,7 +393,7 @@ export function RecurringAccountsPanel() {
                 <h4 className="text-sm font-bold text-gray-900">{item.description}</h4>
                 <div className="flex items-center gap-2 mt-1">
                   <Calendar className="w-3 h-3 text-gray-400" />
-                  <span className="text-xs text-gray-500">Vence: {new Date(item.dueDate).toLocaleDateString('pt-BR')}</span>
+                  <span className="text-xs text-gray-500">Vence: {item.dueDate ? new Date(item.dueDate).toLocaleDateString('pt-BR') : 'Sem data'}</span>
                   {item.isRecurring && <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full uppercase font-bold">{item.recurrenceRule}</span>}
                 </div>
               </div>
@@ -414,7 +417,7 @@ export function RecurringAccountsPanel() {
                 <h4 className="text-sm font-bold text-gray-900">{item.description}</h4>
                 <div className="flex items-center gap-2 mt-1">
                   <Calendar className="w-3 h-3 text-gray-400" />
-                  <span className="text-xs text-gray-500">Vence: {new Date(item.dueDate).toLocaleDateString('pt-BR')}</span>
+                  <span className="text-xs text-gray-500">Vence: {item.dueDate ? new Date(item.dueDate).toLocaleDateString('pt-BR') : 'Sem data'}</span>
                   {item.isRecurring && <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full uppercase font-bold">{item.recurrenceRule}</span>}
                 </div>
               </div>
@@ -437,14 +440,14 @@ export function RecurringAccountsPanel() {
               <div>
                 <h4 className="text-sm font-bold text-gray-900">{item.name}</h4>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-500">Vence dia {item.dueDay} | Fecha dia {item.closingDay}</span>
+                  <span className="text-xs text-gray-500">Vence dia {item.due_day} | Fecha dia {item.closing_day}</span>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-[10px] text-gray-400 uppercase tracking-wider">Limite</p>
-                <p className="text-sm font-bold text-gray-900">{formatCurrency(item.limit)}</p>
+                <p className="text-sm font-bold text-gray-900">{formatCurrency(item.limit || 0)}</p>
               </div>
               <button onClick={() => deleteCreditCard(item.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
                 <Trash2 className="w-4 h-4" />

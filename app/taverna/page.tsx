@@ -205,7 +205,7 @@ export default function Tavern() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               {['F', 'A', 'C', 'E', 'R', 'O'].map((stat) => {
                 const asset = assets.find(a => a.faceroType === stat);
-                const investedValue = asset ? asset.value : 0;
+                const investedValue = asset?.value || 0;
                 const percent = totalInvested > 0 ? (investedValue / totalInvested) * 100 : 0;
                 const barColor = FACERO_COLORS[stat] || colors.primary;
 

@@ -17,13 +17,17 @@ import { ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis } fro
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { useReino } from '@/hooks/useReino';
-import { useKingdom } from '@/hooks/useKingdom';
+import { KingdomLevelPanel, TotalWealthPanel, QuestProgressPanel, MemberRankingPanel } from '@/src/components/RpgPanels';
+import { useAccountsPayable } from '@/hooks/useAccountsPayable';
+import { useAccountsReceivable } from '@/hooks/useAccountsReceivable';
+import { useCreditCardInvoices } from '@/hooks/useCreditCardInvoices';
+import { useKingdom, useKingdomMembers } from '@/hooks/useKingdom';
 import { useCategories } from '@/hooks/useCategories';
 import { useBudgets } from '@/hooks/useBudgets';
 import { getNextCharacter, STATIC_CHARACTERS } from '@/lib/characters';
 import { ActiveQuestsBoard } from '@/components/ActiveQuestsBoard';
 import { generateRecurringQuests } from '@/lib/recurringTasks';
-import { financialEngine } from '@/lib/financialEngine';
+import { financialEngine, getDominantMentor } from '@/lib/financialEngine';
 
 import { auth } from '@/firebase';
 
@@ -41,6 +45,10 @@ export default function Dashboard() {
   const { budgetProgress } = useBudgets(month, year);
 
   const { kingdom } = useKingdom();
+  const { members } = useKingdomMembers(kingdom?.id);
+  const { payables } = useAccountsPayable();
+  const { receivables } = useAccountsReceivable();
+  const { invoices } = useCreditCardInvoices();
 
   useEffect(() => {
     // Generate recurring quests when dashboard loads
@@ -77,6 +85,8 @@ export default function Dashboard() {
   const myTransactions = transactions.filter(t => t.userId === auth.currentUser?.uid);
   const { income: myIncome, expense: myExpenses } = financialEngine.calculateMonthlySummary(myTransactions as any, month, year);
 
+  const dominantMentor = getDominantMentor(assets);
+
   // Lógica da Próxima Masmorra (a cada R$ 10.000)
   const nextCharacter = getNextCharacter(totalPower) || STATIC_CHARACTERS[STATIC_CHARACTERS.length - 1];
   const currentMasmorraGoal = nextCharacter.requiredInvestment;
@@ -90,7 +100,7 @@ export default function Dashboard() {
   // Função para calcular o percentual de cada atributo F.A.C.E.R.O.
   const getFaceroPercent = (type: string) => {
     const asset = assets.find(a => a.faceroType === type);
-    return totalInvested > 0 ? ((asset ? asset.value : 0) / totalInvested) * 100 : 0;
+    return totalInvested > 0 ? (((asset?.value || 0)) / totalInvested) * 100 : 0;
   };
 
   // Dados para o gráfico de Radar (Hexágono F.A.C.E.R.O.)
@@ -122,6 +132,35 @@ export default function Dashboard() {
       case 'Hobbit': return <Home className="w-6 h-6" />;
       default: return <Trophy className="w-6 h-6" />;
     }
+  };
+
+  // Cálculos para os Painéis RPG
+  const activeQuestsCount = [
+    ...payables.filter(p => p.status === 'pendente' || p.status === 'atrasado'),
+    ...receivables.filter(r => r.status === 'pendente' || r.status === 'atrasado' || r.status === 'inadimplente'),
+    ...invoices.filter(i => i.status === 'open')
+  ].length;
+
+  const completedQuestsCount = [
+    ...payables.filter(p => p.status === 'pago'),
+    ...receivables.filter(r => r.status === 'recebido'),
+    ...invoices.filter(i => i.status === 'paid')
+  ].length;
+
+  const kingdomStats = {
+    level: gameState.level,
+    xp: gameState.xp,
+    nextLevelXp: (gameState.level + 1) * 100,
+    totalWealth: totalInvested,
+    activeQuestsCount,
+    completedQuestsCount,
+    members: members.map(m => ({
+      id: m.user_id,
+      name: m.user_name || 'Herói',
+      role: m.role,
+      wealth: 0, // Poderíamos calcular o patrimônio de cada membro se tivéssemos os dados filtrados por usuário
+      xp: 0 // Precisaríamos do XP de cada usuário
+    }))
   };
 
   return (
@@ -227,6 +266,50 @@ export default function Dashboard() {
                 </div>
                 <span className="text-sm font-bold text-gray-900">Inventário</span>
               </Link>
+            </section>
+
+            {/* Painéis RPG Secundários */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <KingdomLevelPanel stats={kingdomStats} />
+              <TotalWealthPanel total={totalInvested} />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <QuestProgressPanel active={activeQuestsCount} completed={completedQuestsCount} />
+              {gameMode === 'reino' && <MemberRankingPanel members={kingdomStats.members} />}
+            </div>
+
+            {/* Status do Reino e Mentor Dominante */}
+            <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
+                <div className="flex items-center gap-2 mb-4">
+                  <Shield className="w-5 h-5 text-emerald-500" />
+                  <h4 className="text-sm font-bold text-gray-900">Status do Reino</h4>
+                </div>
+                <div>
+                  <p className="text-2xl font-display font-bold text-gray-900">{kingdom?.name || 'Meu Reino'}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {myIncome > myExpenses ? 'Superávit Saudável' : 'Atenção aos Gastos'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
+                <div className="flex items-center gap-2 mb-4">
+                  <Wand2 className="w-5 h-5 text-purple-500" />
+                  <h4 className="text-sm font-bold text-gray-900">Mentor Dominante</h4>
+                </div>
+                <div>
+                  {dominantMentor ? (
+                    <>
+                      <p className="text-2xl font-display font-bold text-gray-900">{dominantMentor.name}</p>
+                      <p className="text-xs text-gray-500 mt-1">{dominantMentor.strategy}</p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-500">Nenhum mentor dominante ainda. Invista para atrair um mentor.</p>
+                  )}
+                </div>
+              </div>
             </section>
 
             {/* Progresso da Próxima Meta (Masmorra) */}

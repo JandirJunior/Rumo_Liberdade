@@ -1,5 +1,6 @@
 import { collection, doc, getDocs, query, where, setDoc, addDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db, auth } from '@/firebase';
+export { type CategoryEntity } from './categoryService';
 
 // ==========================================
 // MODELO DE DADOS (Tipos)
@@ -15,22 +16,6 @@ export interface UserEntity {
   title?: string;
   created_at: Date;
   avatarUrl?: string;
-}
-
-export interface CategoryEntity {
-  id: string;
-  user_id: string;
-  name: string;
-  group_type: 'fixed' | 'variable';
-  flow_type: 'income' | 'expense';
-  rpg_group: string;
-  allowed_profiles: ('MonoUsuario' | 'MultiUsuario')[];
-  icon: string;
-  color: string;
-  rpg_theme_name: string;
-  created_at: Date;
-  kingdom_id?: string;
-  created_by?: string;
 }
 
 export type AccountType = 'checking' | 'credit_card' | 'wallet' | 'digital_account';
@@ -51,16 +36,15 @@ export type TransactionType = 'income' | 'expense' | 'transfer' | 'investment';
 export interface TransactionEntity {
   id: string;
   user_id: string;
-  account_id: string;
+  account_id?: string; // Optional now
   type: TransactionType;
-  category_id: string; // Changed from category to category_id
-  category?: string; // Kept for backward compatibility temporarily
+  category_id: string;
   amount: number;
   description: string;
   date: Date;
   created_at: Date;
-  kingdom_id?: string;
-  created_by?: string;
+  kingdom_id: string;
+  created_by: string;
 }
 
 export interface BudgetEntity {
@@ -87,8 +71,11 @@ export interface InvestmentEntity {
   invested_value: number;
   current_value: number;
   earnings: number;
-  kingdom_id?: string;
-  created_by?: string;
+  date: Date;
+  category_facero: string;
+  kingdom_id: string;
+  created_by: string;
+  created_at: Date;
 }
 
 // ==========================================
@@ -169,6 +156,42 @@ export const FACERO_LABELS: Record<string, string> = {
   'R': 'Renda Fixa',
   'O': 'Outros',
 };
+
+export interface Mentor {
+  id: string;
+  name: string;
+  facero_id: string;
+  theme_id: string;
+  character_class: string;
+  race: string;
+  strategy: string;
+}
+
+export const GLOBAL_MENTORS: Record<string, Mentor> = {
+  'F': { id: 'F', name: 'Festim', facero_id: 'F', theme_id: 'golden', character_class: 'Paladino', race: 'Humano', strategy: 'Foco em Fundos Imobiliários e Fundos de papeis e Fiagros viver de Rendimentos (Aluguéis)' },
+  'A': { id: 'A', name: 'Arcano', facero_id: 'A', theme_id: 'navy', character_class: 'Mage', race: 'Humano', strategy: 'Foco em Ações e viver de Dividendos (Cotas de Empresas)' },
+  'C': { id: 'C', name: 'Cache', facero_id: 'C', theme_id: 'brown', character_class: 'Dwarf', race: 'Anão', strategy: 'Foco em Cripto Ativos e Moedas Digitais' },
+  'E': { id: 'E', name: 'Exodia', facero_id: 'E', theme_id: 'lightblue', character_class: 'Elf', race: 'Elfo', strategy: 'Foco em Ações e Fundos e Variação Cambial, investimentos fora do Brasil' },
+  'R': { id: 'R', name: 'Reaver', facero_id: 'R', theme_id: 'darkgray', character_class: 'Ladino', race: 'Humano', strategy: 'Foco em CDBs e também em Previdencia privada VGBL e tesouro selic e tesouro direto' },
+  'O': { id: 'O', name: 'Orbita', facero_id: 'O', theme_id: 'darkred', character_class: 'Hobbit', race: 'Hobbit', strategy: 'Foco em Oportunidade os outros tipos de investimentos não citados acima' },
+};
+
+export function getMentorByInvestment(investment_category_id: string): Mentor | undefined {
+  return GLOBAL_MENTORS[investment_category_id];
+}
+
+export function getDominantMentor(assets: any[]): Mentor | undefined {
+  if (!Array.isArray(assets) || assets.length === 0) return undefined;
+  
+  const aggregated = Object.keys(FACERO_TARGETS).map(key => {
+    const typeAssets = assets.filter(a => a.faceroType === key || a.investment_category_id === key);
+    const value = typeAssets.reduce((acc, curr) => acc + Number(curr.value || curr.current_value || 0), 0);
+    return { key, value };
+  });
+
+  const dominant = aggregated.reduce((prev, current) => (prev.value > current.value) ? prev : current);
+  return dominant.value > 0 ? GLOBAL_MENTORS[dominant.key] : undefined;
+}
 
 export function calculateInvestmentPower(assets: any[]) {
   if (!Array.isArray(assets)) return { totalValue: 0, aggregated: [], tickerDetails: [] };
@@ -275,6 +298,35 @@ export function calculateBudgetProgress(planned: number, actual: number) {
   };
 }
 
+export function calculateCategoryFinancials(
+  categoryId: string,
+  budgets: BudgetEntity[],
+  transactions: TransactionEntity[],
+  payables: any[], // using any[] for now as AccountPayable is not defined here yet
+  month: number,
+  year: number
+) {
+  // Orçado (Budgeted)
+  const budget = budgets.find(b => b.category_id === categoryId && b.month === month && b.year === year);
+  const budgeted = budget ? budget.budget_amount : 0;
+
+  // Realizado (Realized)
+  const realized = transactions
+    .filter(t => t.category_id === categoryId && parseDate(t.date).getMonth() + 1 === month && parseDate(t.date).getFullYear() === year)
+    .reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+
+  // Previsto (Predicted) - from obligations/payables
+  const predicted = payables
+    .filter(p => p.category_id === categoryId && parseDate(p.due_date).getMonth() + 1 === month && parseDate(p.due_date).getFullYear() === year)
+    .reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+
+  return {
+    budgeted,
+    predicted,
+    realized
+  };
+}
+
 export function calculatePlayerPower(netWorth: number, totalInvested: number, budgetControlScore: number, consistencyScore: number): number {
   return (netWorth * 0.4) + (totalInvested * 0.3) + (budgetControlScore * 0.2) + (consistencyScore * 0.1);
 }
@@ -292,6 +344,7 @@ export const financialEngine = {
   calculateMonthlySummary,
   calculateNetWorth,
   calculateBudgetProgress,
+  calculateCategoryFinancials,
   calculatePlayerPower,
 
   // Buscas

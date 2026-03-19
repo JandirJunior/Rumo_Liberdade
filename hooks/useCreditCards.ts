@@ -4,7 +4,7 @@ import { collection, onSnapshot, query, setDoc, doc, where, deleteDoc } from 'fi
 import { onAuthStateChanged } from 'firebase/auth';
 import { CreditCard } from '@/lib/types';
 import { useKingdom } from './useKingdom';
-import { getCollectionByKingdom } from '@/lib/firebaseUtils';
+import { getCollectionByKingdom, handleFirestoreError, OperationType } from '@/lib/firebaseUtils';
 import { canCreateTransaction, canEditTransaction, canDeleteTransaction } from '@/lib/permissionEngine';
 import { logActivity } from '@/lib/auditLogger';
 
@@ -37,7 +37,7 @@ export function useCreditCards() {
       }
       setLoading(false);
     }, (error) => {
-      console.error('Error fetching credit cards:', error);
+      handleFirestoreError(error, OperationType.GET, `credit_cards (kingdom: ${kingdom.id})`);
       setLoading(false);
     });
 

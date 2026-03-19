@@ -4,6 +4,7 @@ import { collection, onSnapshot, query, where, doc, getDoc } from 'firebase/fire
 import { onAuthStateChanged } from 'firebase/auth';
 import { Kingdom, KingdomMember, KingdomInvite, KingdomRole } from '@/lib/types';
 import { kingdomService } from '@/src/services/kingdomService';
+import { handleFirestoreError, OperationType } from '@/lib/firebaseUtils';
 
 export function useKingdom() {
   const [kingdom, setKingdom] = useState<Kingdom | null>(null);
@@ -39,6 +40,8 @@ export function useKingdom() {
               setMemberId(snapshot.docs[0].id);
             }
             setLoading(false);
+          }, (error) => {
+            handleFirestoreError(error, OperationType.GET, 'kingdom_members');
           });
         } else {
           const newKingdom = await kingdomService.createKingdom(`Reino de ${user.displayName || 'Herói'}`, user.uid);
@@ -117,6 +120,8 @@ export function useKingdomMembers(kingdomId: string | undefined) {
       
       setMembers(membersWithDetails);
       setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'kingdom_members');
     });
 
     return () => unsubscribe();
@@ -150,6 +155,8 @@ export function useKingdomInvites(email: string | undefined) {
       
       setInvites(loadedInvites);
       setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'kingdom_invites');
     });
 
     return () => unsubscribe();

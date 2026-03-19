@@ -13,7 +13,6 @@ export function SpeedDial() {
   const [isOpen, setIsOpen] = useState(false);
   const { theme } = useTheme();
   const { userData, loading } = useUser();
-  console.log('SpeedDial:', { loading, userData });
   const router = useRouter();
   const colors = THEMES[theme] || THEMES.default;
 

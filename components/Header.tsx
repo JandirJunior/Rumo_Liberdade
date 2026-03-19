@@ -128,8 +128,8 @@ export function Header() {
             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
           </button>
           
-          {/* Link para a Taberna (Perfil do Herói) */}
-          <Link href="/taverna">
+          {/* Link para a Taverna (Perfil do Herói) */}
+          <Link href="/tavern">
             <motion.div 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

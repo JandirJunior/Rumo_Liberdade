@@ -32,6 +32,7 @@ export async function generateRecurringQuests(kingdomId?: string) {
         // We need to generate the next instance
         
         let nextDate = payable.nextRecurrenceDate || payable.dueDate;
+        if (!nextDate) continue;
         
         // Calculate the next due date based on the rule
         if (payable.recurrenceRule === 'monthly') {
@@ -86,6 +87,7 @@ export async function generateRecurringQuests(kingdomId?: string) {
       
       if (receivable.recurrenceRule && (!receivable.nextRecurrenceDate || receivable.nextRecurrenceDate <= today)) {
         let nextDate = receivable.nextRecurrenceDate || receivable.dueDate;
+        if (!nextDate) continue;
         
         if (receivable.recurrenceRule === 'monthly') {
           nextDate = addMonths(nextDate, 1);

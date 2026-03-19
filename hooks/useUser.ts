@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { auth, db } from '@/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from '@/lib/firebaseUtils';
 import { onAuthStateChanged } from 'firebase/auth';
 import { UserEntity } from '@/lib/financialEngine';
 
@@ -10,7 +11,6 @@ export function useUser() {
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      console.log("useUser: auth state changed", user);
       if (!user) {
         setUserData(null);
         setLoading(false);
@@ -19,13 +19,12 @@ export function useUser() {
 
       const userRef = doc(db, 'users', user.uid);
       const unsubscribeDoc = onSnapshot(userRef, (docSnap) => {
-        console.log("useUser: user doc snapshot", docSnap.exists());
         if (docSnap.exists()) {
           setUserData(docSnap.data() as UserEntity);
         }
         setLoading(false);
       }, (error) => {
-        console.error("Error fetching user data:", error);
+        handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
         setLoading(false);
       });
 

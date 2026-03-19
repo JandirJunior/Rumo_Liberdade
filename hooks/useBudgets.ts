@@ -7,7 +7,7 @@ import { useCategories } from './useCategories';
 import { useTheme } from '@/lib/ThemeContext';
 import { addXP } from '@/lib/gameEngine';
 import { useKingdom } from './useKingdom';
-import { getCollectionByKingdom } from '@/lib/firebaseUtils';
+import { getCollectionByKingdom, handleFirestoreError, OperationType } from '@/lib/firebaseUtils';
 
 export interface BudgetProgress {
   category_id: string;
@@ -19,6 +19,7 @@ export interface BudgetProgress {
   flow_type: 'income' | 'expense';
   orcado: number;
   gasto_real: number;
+  previsto: number;
   progresso: number;
   status: 'controle mantido' | 'orçamento excedido';
   xp_reward: number;
@@ -28,6 +29,9 @@ export interface BudgetProgress {
 export function useBudgets(month: number, year: number) {
   const [budgets, setBudgets] = useState<BudgetEntity[]>([]);
   const [transactions, setTransactions] = useState<TransactionEntity[]>([]);
+  const [payables, setPayables] = useState<any[]>([]);
+  const [receivables, setReceivables] = useState<any[]>([]);
+  const [creditCards, setCreditCards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { categories, loading: categoriesLoading } = useCategories();
   const { gameMode } = useTheme();
@@ -48,10 +52,13 @@ export function useBudgets(month: number, year: number) {
 
     // Fetch Budgets (Global, not per month/year)
     const budgetsQuery = getCollectionByKingdom('budgets', kingdom.id);
+    const transactionsQuery = getCollectionByKingdom('transactions', kingdom.id);
+    const payablesQuery = getCollectionByKingdom('accounts_payable', kingdom.id);
+    const receivablesQuery = getCollectionByKingdom('accounts_receivable', kingdom.id);
+    const creditCardsQuery = getCollectionByKingdom('credit_card_invoices', kingdom.id);
 
     const unsubscribeBudgets = onSnapshot(budgetsQuery, (snapshot) => {
       const loadedBudgets = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as BudgetEntity));
-      // If there are multiple budgets for the same category (from previous version), take the first one
       const uniqueBudgets = loadedBudgets.reduce((acc, curr) => {
         if (!acc.find(b => b.category_id === curr.category_id)) {
           acc.push(curr);
@@ -59,10 +66,9 @@ export function useBudgets(month: number, year: number) {
         return acc;
       }, [] as BudgetEntity[]);
       setBudgets(uniqueBudgets);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'budgets');
     });
-
-    // Fetch Transactions for the specific month
-    const transactionsQuery = getCollectionByKingdom('transactions', kingdom.id);
 
     const unsubscribeTransactions = onSnapshot(transactionsQuery, (snapshot) => {
       const loadedTransactions = snapshot.docs.map(doc => {
@@ -93,12 +99,38 @@ export function useBudgets(month: number, year: number) {
         } as TransactionEntity;
       });
       setTransactions(loadedTransactions);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'transactions');
+    });
+
+    const unsubscribePayables = onSnapshot(payablesQuery, (snapshot) => {
+      const loaded = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      setPayables(loaded);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'accounts_payable');
+    });
+
+    const unsubscribeReceivables = onSnapshot(receivablesQuery, (snapshot) => {
+      const loaded = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      setReceivables(loaded);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'accounts_receivable');
+    });
+
+    const unsubscribeCreditCards = onSnapshot(creditCardsQuery, (snapshot) => {
+      const loaded = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      setCreditCards(loaded);
       setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'credit_card_invoices');
     });
 
     return () => {
       unsubscribeBudgets();
       unsubscribeTransactions();
+      unsubscribePayables();
+      unsubscribeReceivables();
+      unsubscribeCreditCards();
     };
   }, [month, year, kingdom, kingdomLoading]);
 
@@ -129,7 +161,13 @@ export function useBudgets(month: number, year: number) {
   const profileType = gameMode === 'reino' ? 'MultiUsuario' : 'MonoUsuario';
   const filteredCategories = categories.filter(c => 
     (!c.allowed_profiles || c.allowed_profiles.includes(profileType))
-  );
+  ).reduce((acc, curr) => {
+    // Deduplicate by name and rpg_group
+    if (!acc.find(c => c.name === curr.name && c.rpg_group === curr.rpg_group)) {
+      acc.push(curr);
+    }
+    return acc;
+  }, [] as CategoryEntity[]);
   
   const budgetProgress: BudgetProgress[] = filteredCategories.map(cat => {
     const budget = budgets.find(b => b.category_id === cat.id);
@@ -140,11 +178,52 @@ export function useBudgets(month: number, year: number) {
       .filter(t => {
         const d = new Date(t.date);
         return t.type === cat.flow_type && 
-               (t.category_id === cat.id || t.category === cat.name) && 
+               (t.category_id === cat.id) && 
                d.getMonth() + 1 === month && 
                d.getFullYear() === year;
       })
       .reduce((sum, t) => sum + t.amount, 0);
+
+    // Calculate Previsto (Predicted)
+    let previsto = 0;
+    if (cat.flow_type === 'expense') {
+      // From payables
+      const payablesAmount = payables
+        .filter(p => {
+          const d = p.dueDate ? new Date(p.dueDate) : (p.due_date ? (typeof p.due_date.toDate === 'function' ? p.due_date.toDate() : new Date(p.due_date)) : null);
+          return d && p.category_id === cat.id && 
+                 d.getMonth() + 1 === month && 
+                 d.getFullYear() === year &&
+                 p.status !== 'paid';
+        })
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      
+      // From credit cards
+      const creditCardAmount = creditCards
+        .filter(cc => {
+          const d = cc.dueDate ? new Date(cc.dueDate) : (cc.due_date ? (typeof cc.due_date.toDate === 'function' ? cc.due_date.toDate() : new Date(cc.due_date)) : null);
+          return d && cat.name.toLowerCase().includes('cartão') && 
+                 d.getMonth() + 1 === month && 
+                 d.getFullYear() === year &&
+                 cc.status !== 'paid';
+        })
+        .reduce((sum, cc) => sum + Number(cc.total_amount || 0), 0);
+
+      previsto = payablesAmount + creditCardAmount + gasto_real;
+    } else {
+      // From receivables
+      const receivablesAmount = receivables
+        .filter(r => {
+          const d = r.dueDate ? new Date(r.dueDate) : (r.due_date ? (typeof r.due_date.toDate === 'function' ? r.due_date.toDate() : new Date(r.due_date)) : null);
+          return d && r.category_id === cat.id && 
+                 d.getMonth() + 1 === month && 
+                 d.getFullYear() === year &&
+                 r.status !== 'received';
+        })
+        .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      
+      previsto = receivablesAmount + gasto_real;
+    }
 
     let progresso = 0;
     let status: 'controle mantido' | 'orçamento excedido' = 'controle mantido';
@@ -153,25 +232,21 @@ export function useBudgets(month: number, year: number) {
       progresso = orcado > 0 ? Math.min(100, (gasto_real / orcado) * 100) : (gasto_real > 0 ? 100 : 0);
       status = gasto_real > orcado ? 'orçamento excedido' : 'controle mantido';
     } else {
-      // For income, progress is how much of the expected income we've received
       progresso = orcado > 0 ? Math.min(100, (gasto_real / orcado) * 100) : (gasto_real > 0 ? 100 : 0);
-      status = gasto_real < orcado ? 'orçamento excedido' : 'controle mantido'; // Reusing the type, but conceptually it means "below target" if exceeded is bad. Let's keep the type but maybe adjust the UI. Actually, if income is below target, it's bad. If above, it's good.
-      // Let's just use the same logic for now, or add a new status.
-      // The type is 'controle mantido' | 'orçamento excedido'.
-      // For income: if real < orcado, it's "bad" (excedido? no, "abaixo da meta"). Let's just use 'controle mantido' if real >= orcado.
       status = gasto_real >= orcado ? 'controle mantido' : 'orçamento excedido';
     }
 
     return {
       category_id: cat.id,
       category_name: cat.name,
-      rpg_group: cat.rpg_group,
-      icon: cat.icon,
-      color: cat.color,
-      rpg_theme_name: cat.rpg_theme_name,
-      flow_type: cat.flow_type,
+      rpg_group: cat.rpg_group || 'Outros',
+      icon: cat.icon || 'HelpCircle',
+      color: cat.color || '#94a3b8',
+      rpg_theme_name: cat.rpg_theme_name || 'Geral',
+      flow_type: cat.flow_type || 'expense',
       orcado,
       gasto_real,
+      previsto,
       progresso,
       status,
       xp_reward: 50,

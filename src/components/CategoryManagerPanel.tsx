@@ -114,10 +114,11 @@ export function CategoryManagerPanel() {
   const filteredCategories = categories.filter(c => !c.allowed_profiles || c.allowed_profiles.includes(profileType));
   
   const groupedCategories = filteredCategories.reduce((acc, cat) => {
-    if (!acc[cat.rpg_group]) {
-      acc[cat.rpg_group] = [];
+    const group = cat.rpg_group || 'Outros';
+    if (!acc[group]) {
+      acc[group] = [];
     }
-    acc[cat.rpg_group].push(cat);
+    acc[group].push(cat);
     return acc;
   }, {} as Record<string, CategoryEntity[]>);
 

@@ -33,11 +33,12 @@ function AttributesContent() {
     const groupItems = budgetProgress.filter(b => b.rpg_group === groupName);
     const orcado = groupItems.reduce((acc, curr) => acc + curr.orcado, 0);
     const realizado = groupItems.reduce((acc, curr) => acc + curr.gasto_real, 0);
-    return { orcado, realizado };
+    const previsto = groupItems.reduce((acc, curr) => acc + (curr as any).previsto || 0, 0);
+    return { orcado, realizado, previsto };
   };
 
   const cofreReino = getRpgGroupTotals('💎 Cofre do Reino (Receitas Fixas)');
-  const saquesMissoes = getRpgGroupTotals('⚡ Saques de Missões (Receitas Variáveis)');
+  const saquesMissoes = getRpgGroupTotals('⚡ Saque de Missões (Receitas Variáveis)');
   const tributosReino = getRpgGroupTotals('🛡️ Tributos do Reino (Despesas Fixas)');
   const aventurasHeroi = getRpgGroupTotals('⚔️ Aventuras do Herói (Despesas Variáveis)');
   
@@ -93,6 +94,10 @@ function AttributesContent() {
                   <p className="text-[9px] text-gray-400 uppercase tracking-wider">Realizado</p>
                   <p className="text-lg font-bold text-emerald-600">{formatCurrency(cofreReino.realizado)}</p>
                 </div>
+                <div className="text-center">
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Previsto</p>
+                  <p className="text-sm font-medium text-gray-500">{formatCurrency(cofreReino.previsto)}</p>
+                </div>
                 <div className="text-right">
                   <p className="text-[9px] text-gray-400 uppercase tracking-wider">Orçado</p>
                   <p className="text-sm font-medium text-gray-700">{formatCurrency(cofreReino.orcado)}</p>
@@ -112,6 +117,10 @@ function AttributesContent() {
                 <div>
                   <p className="text-[9px] text-gray-400 uppercase tracking-wider">Realizado</p>
                   <p className="text-lg font-bold text-emerald-600">{formatCurrency(saquesMissoes.realizado)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Previsto</p>
+                  <p className="text-sm font-medium text-gray-500">{formatCurrency(saquesMissoes.previsto)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-[9px] text-gray-400 uppercase tracking-wider">Orçado</p>
@@ -143,6 +152,10 @@ function AttributesContent() {
                   <p className="text-[9px] text-gray-400 uppercase tracking-wider">Realizado</p>
                   <p className="text-lg font-bold text-red-600">{formatCurrency(tributosReino.realizado)}</p>
                 </div>
+                <div className="text-center">
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Previsto</p>
+                  <p className="text-sm font-medium text-gray-500">{formatCurrency(tributosReino.previsto)}</p>
+                </div>
                 <div className="text-right">
                   <p className="text-[9px] text-gray-400 uppercase tracking-wider">Orçado</p>
                   <p className="text-sm font-medium text-gray-700">{formatCurrency(tributosReino.orcado)}</p>
@@ -162,6 +175,10 @@ function AttributesContent() {
                 <div>
                   <p className="text-[9px] text-gray-400 uppercase tracking-wider">Realizado</p>
                   <p className="text-lg font-bold text-red-600">{formatCurrency(aventurasHeroi.realizado)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Previsto</p>
+                  <p className="text-sm font-medium text-gray-500">{formatCurrency(aventurasHeroi.previsto)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-[9px] text-gray-400 uppercase tracking-wider">Orçado</p>

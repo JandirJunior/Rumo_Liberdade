@@ -5,7 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { CategoryEntity } from '@/lib/financialEngine';
 import { RPG_CATEGORIES_SCHEMA } from '@/lib/rpgCategories';
 import { useKingdom } from './useKingdom';
-import { getCollectionByKingdom } from '@/lib/firebaseUtils';
+import { getCollectionByKingdom, handleFirestoreError, OperationType } from '@/lib/firebaseUtils';
 import { canEditCategories } from '@/lib/permissionEngine';
 import { logActivity } from '@/lib/auditLogger';
 
@@ -18,7 +18,6 @@ export function useCategories() {
     if (kingdomLoading) return;
 
     if (!kingdom || !auth.currentUser) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategories([]);
       setLoading(false);
       return;
@@ -27,75 +26,86 @@ export function useCategories() {
     const userId = auth.currentUser.uid;
     const q = getCollectionByKingdom('categories', kingdom.id);
 
+    let isCreatingDefaults = false;
+
     // Check if kingdom has categories, if not, create defaults
     const checkAndCreateDefaults = async () => {
-      const snapshot = await getDocs(q);
-      const hasRpgCategories = snapshot.docs.some(doc => doc.data().rpg_group);
-      const hasEnoughCategories = snapshot.docs.length >= 20;
+      if (isCreatingDefaults) return;
+      isCreatingDefaults = true;
+      try {
+        const snapshot = await getDocs(q);
+        const hasRpgCategories = snapshot.docs.some(doc => doc.data().rpg_group);
+        const hasEnoughCategories = snapshot.docs.length >= 20;
 
-      if (snapshot.empty || !hasRpgCategories || !hasEnoughCategories) {
-        const batch = writeBatch(db);
-        
-        // Delete old categories if they exist
-        if (!snapshot.empty) {
-          snapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
-          });
-        }
-        
-        // Load default categories from JSON schema
-        const profileType = 'MonoUsuario'; // Defaulting to MonoUsuario for now
-        
-        const createCategoriesFromSchema = (
-          flowType: 'income' | 'expense', 
-          groupType: 'fixed' | 'variable', 
-          schemaPart: any
-        ) => {
-          let icon = 'Target';
-          let color = 'bg-gray-500';
-          let rpgThemeName = schemaPart.titulo;
-
-          if (schemaPart.titulo === '💎 Cofre do Reino (Receitas Fixas)') {
-            icon = 'Castle'; color = 'bg-emerald-500'; rpgThemeName = 'Cofre do Reino';
-          } else if (schemaPart.titulo === '⚡ Saques de Missões (Receitas Variáveis)') {
-            icon = 'Target'; color = 'bg-amber-500'; rpgThemeName = 'Saques de Missões';
-          } else if (schemaPart.titulo === '🛡️ Tributos do Reino (Despesas Fixas)') {
-            icon = 'Castle'; color = 'bg-indigo-500'; rpgThemeName = 'Tributos do Reino';
-          } else if (schemaPart.titulo === '⚔️ Aventuras do Herói (Despesas Variáveis)') {
-            icon = 'Compass'; color = 'bg-rose-500'; rpgThemeName = 'Aventuras do Herói';
-          }
-
-          schemaPart.subcategorias.forEach((sub: any) => {
-            const newDocRef = doc(collection(db, 'categories'));
-            const cat: Omit<CategoryEntity, 'id' | 'user_id' | 'created_at'> = {
-              name: sub.nome,
-              flow_type: flowType,
-              group_type: groupType,
-              rpg_group: schemaPart.titulo,
-              allowed_profiles: sub.usuarios || ['MonoUsuario', 'MultiUsuario'],
-              icon,
-              color,
-              rpg_theme_name: rpgThemeName,
-              kingdom_id: kingdom.id,
-              created_by: userId
-            };
-            
-            batch.set(newDocRef, {
-              ...cat,
-              id: newDocRef.id,
-              user_id: userId,
-              created_at: new Date()
+        if (snapshot.empty || !hasRpgCategories || !hasEnoughCategories) {
+          const batch = writeBatch(db);
+          
+          // Delete old categories if they exist
+          if (!snapshot.empty) {
+            snapshot.docs.forEach(doc => {
+              batch.delete(doc.ref);
             });
-          });
-        };
+          }
+          
+          // Load default categories from JSON schema
+          const profileType = 'MonoUsuario'; // Defaulting to MonoUsuario for now
+          
+          const createCategoriesFromSchema = (
+            flowType: 'income' | 'expense', 
+            groupType: 'fixed' | 'variable', 
+            schemaPart: any
+          ) => {
+            let icon = 'Target';
+            let color = 'bg-gray-500';
+            let rpgThemeName = schemaPart.titulo;
 
-        const schema = RPG_CATEGORIES_SCHEMA.financeiroRPG;
-        createCategoriesFromSchema('income', 'fixed', schema.receitas.fixas);
-        createCategoriesFromSchema('income', 'variable', schema.receitas.variaveis);
-        createCategoriesFromSchema('expense', 'fixed', schema.despesas.fixas);
-        createCategoriesFromSchema('expense', 'variable', schema.despesas.variaveis);
+            if (schemaPart.titulo === '💎 Cofre do Reino (Receitas Fixas)') {
+              icon = 'Castle'; color = 'bg-emerald-500'; rpgThemeName = 'Cofre do Reino';
+            } else if (schemaPart.titulo === '⚡ Saque de Missões (Receitas Variáveis)') {
+              icon = 'Target'; color = 'bg-amber-500'; rpgThemeName = 'Saque de Missões';
+            } else if (schemaPart.titulo === '🛡️ Tributos do Reino (Despesas Fixas)') {
+              icon = 'Castle'; color = 'bg-indigo-500'; rpgThemeName = 'Tributos do Reino';
+            } else if (schemaPart.titulo === '⚔️ Aventuras do Herói (Despesas Variáveis)') {
+              icon = 'Compass'; color = 'bg-rose-500'; rpgThemeName = 'Aventuras do Herói';
+            }
 
-        await batch.commit();
+            schemaPart.subcategorias.forEach((sub: any) => {
+              const newDocRef = doc(collection(db, 'categories'));
+              const groupId = `${flowType}_${groupType}`;
+              const cat: Omit<CategoryEntity, 'id' | 'user_id' | 'created_at'> = {
+                name: sub.nome,
+                group_id: groupId,
+                is_active: true,
+                flow_type: flowType,
+                group_type: groupType,
+                rpg_group: schemaPart.titulo,
+                allowed_profiles: sub.usuarios || ['MonoUsuario', 'MultiUsuario'],
+                icon,
+                color,
+                rpg_theme_name: rpgThemeName,
+                kingdom_id: kingdom.id,
+                created_by: userId
+              };
+              
+              batch.set(newDocRef, {
+                ...cat,
+                id: newDocRef.id,
+                user_id: userId,
+                created_at: new Date()
+              });
+            });
+          };
+
+          const schema = RPG_CATEGORIES_SCHEMA.financeiroRPG;
+          createCategoriesFromSchema('income', 'fixed', schema.receitas.fixas);
+          createCategoriesFromSchema('income', 'variable', schema.receitas.variaveis);
+          createCategoriesFromSchema('expense', 'fixed', schema.despesas.fixas);
+          createCategoriesFromSchema('expense', 'variable', schema.despesas.variaveis);
+
+          await batch.commit();
+        }
+      } finally {
+        isCreatingDefaults = false;
       }
     };
 
@@ -114,8 +124,7 @@ export function useCategories() {
       setCategories(loadedCategories);
       setLoading(false);
     }, (error) => {
-      console.error('Error fetching categories:', error);
-      setLoading(false);
+      handleFirestoreError(error, OperationType.GET, 'categories');
     });
 
     return () => {
@@ -132,6 +141,8 @@ export function useCategories() {
     const newId = doc(collection(db, 'categories')).id;
     const newCategory = {
       ...category,
+      group_id: category.group_id || `${category.flow_type}_${category.group_type}`,
+      is_active: category.is_active ?? true,
       id: newId,
       user_id: auth.currentUser.uid,
       created_at: new Date(),

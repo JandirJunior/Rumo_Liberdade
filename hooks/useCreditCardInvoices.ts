@@ -4,7 +4,7 @@ import { collection, onSnapshot, query, orderBy, setDoc, doc, where, deleteDoc, 
 import { onAuthStateChanged } from 'firebase/auth';
 import { CreditCardInvoice } from '@/lib/types';
 import { useKingdom } from './useKingdom';
-import { getCollectionByKingdom } from '@/lib/firebaseUtils';
+import { getCollectionByKingdom, handleFirestoreError, OperationType } from '@/lib/firebaseUtils';
 import { canCreateTransaction, canEditTransaction, canDeleteTransaction } from '@/lib/permissionEngine';
 import { logActivity } from '@/lib/auditLogger';
 
@@ -38,7 +38,7 @@ export function useCreditCardInvoices() {
         // Auto-update overdue status on client side for display
         const today = new Date().toISOString().split('T')[0];
         const updatedInvoices = loadedInvoices.map(i => {
-          if (i.status === 'open' && i.dueDate < today) {
+          if (i.status === 'open' && i.dueDate && i.dueDate < today) {
             return { ...i, status: 'overdue' as const };
           }
           return i;
@@ -50,7 +50,7 @@ export function useCreditCardInvoices() {
       }
       setLoading(false);
     }, (error) => {
-      console.error('Error fetching credit card invoices:', error);
+      handleFirestoreError(error, OperationType.GET, `credit_card_invoices (kingdom: ${kingdom.id})`);
       setLoading(false);
     });
 
@@ -75,7 +75,7 @@ export function useCreditCardInvoices() {
       created_by: auth.currentUser.uid
     };
     await setDoc(doc(db, 'credit_card_invoices', newId), newInvoice);
-    await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'credit_card_invoice', amount: invoice.totalAmount });
+    await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'credit_card_invoice', amount: invoice.total_amount });
   };
 
   const updateInvoice = async (id: string, invoice: Partial<CreditCardInvoice>) => {

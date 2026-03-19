@@ -4,7 +4,7 @@ import { collection, onSnapshot, query, orderBy, setDoc, doc, where, deleteDoc, 
 import { onAuthStateChanged } from 'firebase/auth';
 import { AccountPayable } from '@/lib/types';
 import { useKingdom } from './useKingdom';
-import { getCollectionByKingdom } from '@/lib/firebaseUtils';
+import { getCollectionByKingdom, handleFirestoreError, OperationType } from '@/lib/firebaseUtils';
 import { canCreateTransaction, canEditTransaction, canDeleteTransaction } from '@/lib/permissionEngine';
 import { logActivity } from '@/lib/auditLogger';
 
@@ -38,8 +38,9 @@ export function useAccountsPayable() {
         // Auto-update overdue status on client side for display
         const today = new Date().toISOString().split('T')[0];
         const updatedPayables = loadedPayables.map(p => {
-          if (p.status === 'pending' && p.dueDate < today) {
-            return { ...p, status: 'overdue' as const };
+          const dueDate = p.due_date || p.dueDate || '';
+          if (p.status === 'pendente' && dueDate && dueDate < today) {
+            return { ...p, status: 'atrasado' as const };
           }
           return p;
         });
@@ -50,7 +51,7 @@ export function useAccountsPayable() {
       }
       setLoading(false);
     }, (error) => {
-      console.error('Error fetching accounts payable:', error);
+      handleFirestoreError(error, OperationType.GET, `accounts_payable (kingdom: ${kingdom.id})`);
       setLoading(false);
     });
 
@@ -68,25 +69,43 @@ export function useAccountsPayable() {
       throw new Error('Sem permissão para criar contas a pagar.');
     }
 
-    const newId = doc(collection(db, 'accounts_payable')).id;
-    const newPayable: AccountPayable = {
-      ...payable,
-      id: newId,
-      userId: auth.currentUser.uid,
-      createdAt: new Date().toISOString(),
-      kingdom_id: kingdom.id,
-      created_by: auth.currentUser.uid
-    };
+    const installments = payable.installments && payable.installments > 1 ? payable.installments : 1;
+    const baseAmount = payable.amount / installments;
     
-    // Remove undefined fields
-    Object.keys(newPayable).forEach(key => {
-      if (newPayable[key as keyof AccountPayable] === undefined) {
-        delete newPayable[key as keyof AccountPayable];
-      }
-    });
+    // Create multiple payables if installments > 1
+    for (let i = 0; i < installments; i++) {
+      const newId = doc(collection(db, 'accounts_payable')).id;
+      
+      // Calculate due date for each installment
+      const rawDueDate = payable.due_date || payable.dueDate || new Date().toISOString();
+      let dueDate = new Date(rawDueDate);
+      dueDate.setMonth(dueDate.getMonth() + i);
+      const dueDateStr = dueDate.toISOString().split('T')[0];
 
-    await setDoc(doc(db, 'accounts_payable', newId), newPayable);
-    await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'payable', amount: payable.amount });
+      const newPayable: AccountPayable = {
+        ...payable,
+        id: newId,
+        amount: baseAmount,
+        due_date: dueDateStr,
+        dueDate: dueDateStr,
+        installments: installments,
+        currentInstallment: i + 1,
+        userId: auth.currentUser.uid,
+        createdAt: new Date().toISOString(),
+        kingdom_id: kingdom.id,
+        created_by: auth.currentUser.uid
+      };
+      
+      // Remove undefined fields
+      Object.keys(newPayable).forEach(key => {
+        if (newPayable[key as keyof AccountPayable] === undefined) {
+          delete newPayable[key as keyof AccountPayable];
+        }
+      });
+
+      await setDoc(doc(db, 'accounts_payable', newId), newPayable);
+      await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'payable', amount: baseAmount, installment: `${i+1}/${installments}` });
+    }
   };
 
   const updatePayable = async (id: string, payable: Partial<AccountPayable>) => {
@@ -120,10 +139,10 @@ export function useAccountsPayable() {
         throw new Error('Conta a pagar não encontrada.');
       }
       const data = docSnap.data() as AccountPayable;
-      if (data.status === 'paid') {
+      if (data.status === 'pago') {
         throw new Error('Esta conta já foi paga por outro membro.');
       }
-      transaction.update(docRef, { status: 'paid', paidAt });
+      transaction.update(docRef, { status: 'pago', paidAt });
     });
     await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'payable', status: 'paid' });
   };

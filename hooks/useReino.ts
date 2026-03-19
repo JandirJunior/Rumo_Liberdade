@@ -9,11 +9,12 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { Asset, Transaction, ActivityLog } from '@/lib/types';
 import { MOCK_ASSETS, MOCK_TRANSACTIONS } from '@/lib/data';
 import { addXP, calculateXPFromInvestments } from '@/lib/gameEngine';
-import { categoryEngine } from '@/lib/categoryEngine';
+import { categoryService } from '@/lib/categoryService';
 import { useKingdom } from './useKingdom';
+import { useCategories } from './useCategories';
 import { canCreateTransaction, canEditTransaction, canDeleteTransaction, hasPermission } from '@/lib/permissionEngine';
 import { logActivity } from '@/lib/auditLogger';
-import { getCollectionByKingdom } from '@/lib/firebaseUtils';
+import { getCollectionByKingdom, handleFirestoreError, OperationType } from '@/lib/firebaseUtils';
 
 export function useReino() {
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -21,6 +22,7 @@ export function useReino() {
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const { kingdom, role, loading: kingdomLoading } = useKingdom();
+  const { categories } = useCategories();
 
   useEffect(() => {
     if (kingdomLoading) return;
@@ -28,11 +30,8 @@ export function useReino() {
     if (!kingdom) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setAssets([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTransactions([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActivityLogs([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }
@@ -66,7 +65,7 @@ export function useReino() {
         setAssets([]);
       }
     }, (error) => {
-      console.error('Error fetching assets:', error);
+      handleFirestoreError(error, OperationType.GET, 'investments');
     });
 
     let transactionsQuery;
@@ -106,6 +105,7 @@ export function useReino() {
           const rawTransaction = {
             id: doc.id,
             userId: data.user_id,
+            userName: data.userName,
             amount: data.amount,
             type: data.type,
             title: data.description || 'Transação',
@@ -113,11 +113,12 @@ export function useReino() {
             category_id: data.category_id,
             date: dateStr,
             createdAt: createdAtStr,
+            created_at: createdAtStr,
             kingdom_id: data.kingdom_id,
             created_by: data.created_by
           };
           
-          return categoryEngine.normalizeTransactionCategory(rawTransaction);
+          return categoryService.normalizeTransactionCategory(rawTransaction);
         });
         setTransactions(loadedTransactions);
       } else {
@@ -125,8 +126,7 @@ export function useReino() {
       }
       setLoading(false);
     }, (error) => {
-      console.error('Error fetching transactions:', error);
-      setLoading(false);
+      handleFirestoreError(error, OperationType.GET, 'transactions');
     });
 
     const logsQuery = query(getCollectionByKingdom('activity_logs', kingdom.id), orderBy('created_at', 'desc'));
@@ -146,7 +146,7 @@ export function useReino() {
         setActivityLogs([]);
       }
     }, (error) => {
-      console.error('Error fetching activity logs:', error);
+      handleFirestoreError(error, OperationType.GET, 'activity_logs');
     });
 
     return () => {
@@ -156,27 +156,36 @@ export function useReino() {
     };
   }, [kingdom, kingdomLoading, role]);
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'organizationId'>) => {
+  const addTransaction = async (transaction: Partial<Transaction>) => {
     if (!auth.currentUser) throw new Error('Usuário não autenticado.');
     if (!kingdom) throw new Error('Reino não encontrado.');
     if (!role) throw new Error('Papel de usuário não definido.');
     if (!canCreateTransaction(role)) throw new Error('Sem permissão para criar transações');
     
+    if (!transaction.type) throw new Error('O tipo é obrigatório.');
+    if (transaction.amount === undefined) throw new Error('O valor é obrigatório.');
+    if (!transaction.description) throw new Error('A descrição é obrigatória.');
+    if (!transaction.category_id) throw new Error('A categoria é obrigatória.');
+    if (!transaction.date) throw new Error('A data é obrigatória.');
+    
     console.log("useReino: adding transaction", transaction);
     const newId = doc(collection(db, 'transactions')).id;
     const newTransaction = {
       id: newId,
-      user_id: auth.currentUser.uid,
+      user_id: transaction.userId || auth.currentUser.uid,
       userName: auth.currentUser.displayName || auth.currentUser.email || 'Usuário',
       account_id: 'default', // Placeholder
       type: transaction.type,
-      category_id: transaction.category_id || '',
+      category_id: transaction.category_id,
+      investment_category_id: transaction.investment_category_id || null,
       amount: transaction.amount,
-      description: transaction.description || 'Transação',
-      date: transaction.date ? new Date(transaction.date) : new Date(),
+      description: transaction.description,
+      date: new Date(transaction.date),
       created_at: new Date(),
       kingdom_id: kingdom.id,
-      created_by: auth.currentUser.uid
+      created_by: auth.currentUser.uid,
+      status: transaction.status || 'concluído',
+      source: transaction.source || 'manual'
     };
     console.log("useReino: transaction data", newTransaction);
     await setDoc(doc(db, 'transactions', newId), newTransaction);
@@ -196,9 +205,12 @@ export function useReino() {
     const updateData: any = {};
     if (transaction.type) updateData.type = transaction.type;
     if (transaction.category_id) updateData.category_id = transaction.category_id;
+    if (transaction.investment_category_id !== undefined) updateData.investment_category_id = transaction.investment_category_id;
     if (transaction.amount !== undefined) updateData.amount = transaction.amount;
     if (transaction.description) updateData.description = transaction.description;
     if (transaction.date) updateData.date = new Date(transaction.date);
+    if (transaction.status) updateData.status = transaction.status;
+    if (transaction.source) updateData.source = transaction.source;
     
     await setDoc(doc(db, 'transactions', id), updateData, { merge: true });
     await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { updates: updateData });
@@ -276,14 +288,17 @@ export function useReino() {
       user_id: auth.currentUser.uid,
       userName: auth.currentUser.displayName || auth.currentUser.email || 'Usuário',
       account_id: 'default',
-      type: 'investment', // Changed to investment
+      type: 'investment',
       category_id: 'investment',
+      category: 'Investimento',
       amount: investment.value,
       description: `Aporte em ${investment.ticker} (${investment.quantity} unidades)`,
-      date: investment.operation_date,
+      date: new Date(investment.operation_date),
       created_at: new Date(),
       kingdom_id: kingdom.id,
-      created_by: auth.currentUser.uid
+      created_by: auth.currentUser.uid,
+      status: 'concluído',
+      source: 'investimento'
     };
     batch.set(doc(db, 'transactions', newTransactionId), newTransaction);
 
@@ -328,14 +343,17 @@ export function useReino() {
       user_id: auth.currentUser.uid,
       userName: auth.currentUser.displayName || auth.currentUser.email || 'Usuário',
       account_id: 'default',
-      type: 'investment', // Changed to investment
+      type: 'investment',
       category_id: 'investment',
+      category: 'Investimento',
       amount: value,
       description: `Venda de ${assetData.ticker} (${quantity} unidades)`,
-      date: operation_date,
+      date: new Date(operation_date),
       created_at: new Date(),
       kingdom_id: kingdom.id,
-      created_by: auth.currentUser.uid
+      created_by: auth.currentUser.uid,
+      status: 'concluído',
+      source: 'investimento'
     };
     batch.set(doc(db, 'transactions', newTransactionId), newTransaction);
     
@@ -343,5 +361,46 @@ export function useReino() {
     await logActivity(kingdom.id, auth.currentUser.uid, 'SELL_ASSET', investmentId, { ticker: assetData.ticker, value: value });
   };
 
-  return { assets, transactions, activityLogs, loading, addTransaction, updateTransaction, deleteTransaction, updateAsset, addInvestment, sellInvestment };
+  const addEarning = async (earning: {
+    ticker: string;
+    amount: number;
+    type: 'dividend' | 'jcp' | 'rent' | 'other';
+    date: string;
+  }) => {
+    if (!auth.currentUser) throw new Error('Usuário não autenticado.');
+    if (!kingdom) throw new Error('Reino não encontrado.');
+    if (!role) throw new Error('Papel de usuário não definido.');
+    if (!hasPermission(role, 'CREATE_TRANSACTION')) throw new Error('Sem permissão para registrar proventos');
+
+    const newTransactionId = doc(collection(db, 'transactions')).id;
+    
+    // Find the category for earnings
+    const earningCategory = categories.find(c => c.name.includes('Investimentos (juros/dividendos)'));
+    
+    const newTransaction = {
+      id: newTransactionId,
+      user_id: auth.currentUser.uid,
+      userName: auth.currentUser.displayName || auth.currentUser.email || 'Usuário',
+      account_id: 'default',
+      type: 'income',
+      category_id: earningCategory?.id || 'proventos',
+      category: earningCategory?.name || 'Proventos / Dividendos',
+      amount: earning.amount,
+      description: `Provento de ${earning.ticker.toUpperCase()} (${earning.type})`,
+      date: new Date(earning.date),
+      created_at: new Date(),
+      kingdom_id: kingdom.id,
+      created_by: auth.currentUser.uid,
+      status: 'concluído',
+      source: 'investimento'
+    };
+
+    await setDoc(doc(db, 'transactions', newTransactionId), newTransaction);
+    await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newTransactionId, { ticker: earning.ticker, amount: earning.amount });
+    
+    // Add XP for receiving earnings
+    await addXP(auth.currentUser.uid, 10);
+  };
+
+  return { assets, transactions, activityLogs, loading, addTransaction, updateTransaction, deleteTransaction, updateAsset, addInvestment, sellInvestment, addEarning };
 }
