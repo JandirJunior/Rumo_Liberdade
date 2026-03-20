@@ -1,6 +1,6 @@
 import { doc, getDoc, setDoc, updateDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebase';
-import { Organization } from '../../lib/types';
+import { db } from '@/services/firebase';
+import { Organization } from '@/types';
 import { logService } from './logService';
 
 export const organizationService = {

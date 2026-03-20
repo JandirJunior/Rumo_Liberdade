@@ -1,6 +1,6 @@
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebase';
-import { UserEntity } from '../../lib/financialEngine';
+import { db } from '@/services/firebase';
+import { UserEntity } from '@/types';
 
 export const userService = {
   async createUser(userId: string, email: string, name?: string): Promise<UserEntity> {

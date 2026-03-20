@@ -1,6 +1,6 @@
-import { db, auth } from '@/firebase';
+import { db, auth } from '@/services/firebase';
 import { collection, doc, getDoc, getDocs, query, where, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import { Kingdom, KingdomMember, KingdomInvite, KingdomRole } from '@/lib/types';
+import { Kingdom, KingdomMember, KingdomInvite, KingdomRole } from '@/types';
 import { logActivity } from '@/lib/auditLogger';
 
 export const kingdomService = {

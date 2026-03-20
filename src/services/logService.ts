@@ -1,6 +1,6 @@
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebase';
-import { Log } from '../../lib/types';
+import { db } from '@/services/firebase';
+import { Log } from '@/types';
 
 export const logService = {
   async createLog(organizationId: string, userId: string, action: string, metadata?: any) {
