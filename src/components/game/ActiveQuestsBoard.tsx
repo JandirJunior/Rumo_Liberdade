@@ -131,36 +131,36 @@ export function ActiveQuestsBoard() {
 
   if (activeQuests.length === 0) {
     return (
-      <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm text-center">
-        <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
-          <CheckCircle2 className="w-6 h-6 text-gray-400" />
+      <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 border border-[var(--color-border)] shadow-sm text-center medieval-border">
+        <div className="w-12 h-12 bg-[var(--color-bg-dark)] rounded-full flex items-center justify-center mx-auto mb-3">
+          <CheckCircle2 className="w-6 h-6 text-[var(--color-text-muted)]" />
         </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-1">Todas as Quests Concluídas!</h3>
-        <p className="text-sm text-gray-500">Você não tem obrigações financeiras próximas.</p>
+        <h3 className="text-lg medieval-title font-bold text-[var(--color-text-main)] mb-1">Todas as Quests Concluídas!</h3>
+        <p className="text-sm text-[var(--color-text-muted)]">Você não tem obrigações financeiras próximas.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-6">
+    <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 border border-[var(--color-border)] shadow-sm space-y-6 medieval-border">
       <header className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xl">⚔️</span>
-            <h3 className="text-xl font-display font-bold text-gray-900">Quests Ativas</h3>
+            <h3 className="text-xl medieval-title font-bold text-[var(--color-text-main)]">Quests Ativas</h3>
           </div>
-          <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+          <span className="text-xs font-medium bg-[var(--color-bg-dark)] text-[var(--color-text-muted)] px-2 py-1 rounded-full border border-[var(--color-border)]">
             {activeTab === 'all' ? 'Top 10' : `${activeQuests.length} filtradas`}
           </span>
         </div>
 
         {/* Tabs de Filtro */}
-        <div className="flex bg-gray-100 p-1 rounded-xl overflow-x-auto no-scrollbar">
+        <div className="flex bg-[var(--color-bg-dark)] p-1 rounded-xl overflow-x-auto no-scrollbar border border-[var(--color-border)]">
           <button
             onClick={() => setActiveTab('all')}
             className={cn(
               "flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
-              activeTab === 'all' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              activeTab === 'all' ? "bg-[var(--color-bg-panel)] text-[var(--color-text-main)] shadow-sm border border-[var(--color-border)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
             )}
           >
             Todas
@@ -169,7 +169,7 @@ export function ActiveQuestsBoard() {
             onClick={() => setActiveTab('payable')}
             className={cn(
               "flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
-              activeTab === 'payable' ? "bg-white text-red-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              activeTab === 'payable' ? "bg-[var(--color-bg-panel)] text-red-400 shadow-sm border border-[var(--color-border)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
             )}
           >
             Pagar
@@ -178,7 +178,7 @@ export function ActiveQuestsBoard() {
             onClick={() => setActiveTab('receivable')}
             className={cn(
               "flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
-              activeTab === 'receivable' ? "bg-white text-emerald-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              activeTab === 'receivable' ? "bg-[var(--color-bg-panel)] text-emerald-400 shadow-sm border border-[var(--color-border)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
             )}
           >
             Receber
@@ -187,7 +187,7 @@ export function ActiveQuestsBoard() {
             onClick={() => setActiveTab('invoice')}
             className={cn(
               "flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
-              activeTab === 'invoice' ? "bg-white text-purple-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              activeTab === 'invoice' ? "bg-[var(--color-bg-panel)] text-purple-400 shadow-sm border border-[var(--color-border)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
             )}
           >
             Faturas
@@ -208,15 +208,15 @@ export function ActiveQuestsBoard() {
               transition={{ delay: index * 0.05 }}
               className={cn(
                 "flex items-center justify-between p-4 rounded-2xl border transition-all",
-                isOverdue ? "bg-red-50/50 border-red-100" : "bg-gray-50/50 border-gray-100 hover:border-gray-200"
+                isOverdue ? "bg-red-900/20 border-red-900/50" : "bg-[var(--color-bg-dark)]/50 border-[var(--color-border)] hover:border-[var(--color-primary)]"
               )}
             >
               <div className="flex items-center gap-4">
                 <div className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                  isReceivable ? "bg-emerald-100 text-emerald-600" : 
-                  quest.type === 'invoice' ? "bg-purple-100 text-purple-600" :
-                  "bg-red-100 text-red-600"
+                  "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-[var(--color-border)]",
+                  isReceivable ? "bg-emerald-900/30 text-emerald-400" : 
+                  quest.type === 'invoice' ? "bg-purple-900/30 text-purple-400" :
+                  "bg-red-900/30 text-red-400"
                 )}>
                   {isReceivable ? <ArrowDownRight className="w-5 h-5" /> : 
                    quest.type === 'invoice' ? <CreditCard className="w-5 h-5" /> :
@@ -224,12 +224,12 @@ export function ActiveQuestsBoard() {
                 </div>
                 
                 <div>
-                  <h4 className="text-sm font-bold text-gray-900">{quest.title}</h4>
+                  <h4 className="text-sm font-bold text-[var(--color-text-main)]">{quest.title}</h4>
                   <div className="flex items-center gap-2 mt-1">
-                    <Calendar className={cn("w-3 h-3", isOverdue ? "text-red-500" : "text-gray-400")} />
+                    <Calendar className={cn("w-3 h-3", isOverdue ? "text-red-400" : "text-[var(--color-text-muted)]")} />
                     <span className={cn(
                       "text-xs font-medium",
-                      isOverdue ? "text-red-600" : "text-gray-500"
+                      isOverdue ? "text-red-400" : "text-[var(--color-text-muted)]"
                     )}>
                       {getDaysRemaining(quest.dueDate)}
                     </span>
@@ -241,7 +241,7 @@ export function ActiveQuestsBoard() {
                 <div className="text-right">
                   <p className={cn(
                     "text-sm font-bold",
-                    isReceivable ? "text-emerald-600" : "text-gray-900"
+                    isReceivable ? "text-emerald-400" : "text-[var(--color-text-main)]"
                   )}>
                     {isReceivable ? '+' : '-'}{formatCurrency(quest.amount)}
                   </p>
@@ -251,11 +251,11 @@ export function ActiveQuestsBoard() {
                   onClick={() => handleCompleteQuest(quest)}
                   disabled={isCompleting === quest.id}
                   className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0",
+                    "w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0 border border-[var(--color-border)]",
                     isCompleting === quest.id ? "opacity-50 cursor-not-allowed" : "",
                     isReceivable 
-                      ? "bg-emerald-100 hover:bg-emerald-200 text-emerald-700" 
-                      : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                      ? "bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400" 
+                      : "bg-[var(--color-bg-dark)] hover:bg-[var(--color-border)] text-[var(--color-text-main)]"
                   )}
                 >
                   <CheckCircle2 className="w-5 h-5" />

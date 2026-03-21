@@ -114,22 +114,22 @@ export default function AIChat() {
   };
 
   return (
-    <div className={cn("flex flex-col h-screen transition-colors duration-500", colors.bg)}>
+    <div className="flex flex-col h-screen bg-[var(--color-bg-dark)] text-[var(--color-text-main)] transition-colors duration-500">
       {/* Cabeçalho superior */}
       <Header />
       
       {/* Área de Chat com rolagem */}
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-48 w-full"
+        className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-48 w-full max-w-7xl mx-auto"
       >
         {/* Identificação do Mentor no topo do chat */}
         <div className="flex flex-col items-center justify-center py-4 space-y-2">
-          <div className={cn("w-16 h-16 rounded-full border-2 overflow-hidden relative flex items-center justify-center", colors.border)}>
+          <div className="w-16 h-16 rounded-full border-2 overflow-hidden relative flex items-center justify-center border-[var(--color-border)] medieval-border">
             <Avatar character={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} size={64} />
           </div>
-          <h2 className="text-xl font-display font-bold text-gray-900">{mentorName}</h2>
-          <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">{gameState.archetype}</p>
+          <h2 className="text-xl font-display font-bold text-[var(--color-primary)] medieval-title">{mentorName}</h2>
+          <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-widest font-bold">{gameState.archetype}</p>
         </div>
 
         {/* Lista de Mensagens com animações */}
@@ -144,21 +144,21 @@ export default function AIChat() {
               <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                 {/* Avatar do remetente */}
                 <div className={cn(
-                  "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden relative",
-                  msg.role === 'user' ? "bg-gray-200" : colors.secondary
+                  "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden relative medieval-border",
+                  msg.role === 'user' ? "bg-[var(--color-bg-panel)]" : "bg-[var(--color-bg-panel)]"
                 )}>
                   {msg.role === 'user' ? (
-                    <User className="w-5 h-5 text-gray-600" />
+                    <User className="w-5 h-5 text-[var(--color-text-muted)]" />
                   ) : (
                     <Avatar character={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} size={32} />
                   )}
                 </div>
                 {/* Balão de Mensagem */}
                 <div className={cn(
-                  "p-4 rounded-2xl shadow-sm text-sm leading-relaxed",
+                  "p-4 rounded-2xl shadow-sm text-sm leading-relaxed medieval-border",
                   msg.role === 'user' 
-                    ? cn(colors.primary, "text-white rounded-tr-none") 
-                    : "bg-white text-gray-800 border border-gray-100 rounded-tl-none"
+                    ? "bg-[var(--color-primary)] text-[var(--color-bg-dark)] rounded-tr-none medieval-glow font-medium" 
+                    : "bg-[var(--color-bg-panel)] text-[var(--color-text-main)] rounded-tl-none"
                 )}>
                   {msg.text}
                 </div>
@@ -172,10 +172,10 @@ export default function AIChat() {
               animate={{ opacity: 1 }}
               className="flex justify-start"
             >
-              <div className="bg-white border border-gray-100 p-4 rounded-2xl rounded-tl-none shadow-sm flex gap-2">
-                <span className={cn("w-2 h-2 rounded-full animate-bounce", colors.primary)}></span>
-                <span className={cn("w-2 h-2 rounded-full animate-bounce delay-75", colors.primary)}></span>
-                <span className={cn("w-2 h-2 rounded-full animate-bounce delay-150", colors.primary)}></span>
+              <div className="bg-[var(--color-bg-panel)] p-4 rounded-2xl rounded-tl-none shadow-sm flex gap-2 medieval-border">
+                <span className="w-2 h-2 rounded-full animate-bounce bg-[var(--color-primary)]"></span>
+                <span className="w-2 h-2 rounded-full animate-bounce delay-75 bg-[var(--color-primary)]"></span>
+                <span className="w-2 h-2 rounded-full animate-bounce delay-150 bg-[var(--color-primary)]"></span>
               </div>
             </motion.div>
           )}
@@ -183,22 +183,22 @@ export default function AIChat() {
       </div>
 
       {/* Área de Entrada de Texto fixa na parte inferior */}
-      <div className="fixed bottom-24 md:bottom-4 left-0 right-0 w-full px-4 sm:px-6 lg:px-8 bg-transparent z-40">
-        <div className="bg-white border border-gray-200 rounded-2xl p-2 shadow-xl flex items-center gap-2">
+      <div className="fixed bottom-24 md:bottom-4 left-0 right-0 w-full px-4 sm:px-6 lg:px-8 bg-transparent z-40 max-w-7xl mx-auto">
+        <div className="bg-[var(--color-bg-panel)] rounded-2xl p-2 shadow-xl flex items-center gap-2 medieval-border">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Pergunte algo sobre suas finanças..."
-            className="flex-1 bg-transparent border-none focus:ring-0 text-sm px-3 py-2 outline-none"
+            className="flex-1 bg-transparent border-none focus:ring-0 text-sm px-3 py-2 outline-none text-[var(--color-text-main)] placeholder-[var(--color-text-muted)]"
           />
           <button
             onClick={handleSend}
             disabled={isLoading || !input.trim()}
             className={cn(
-              "w-10 h-10 text-white rounded-xl flex items-center justify-center transition-colors shadow-lg disabled:bg-gray-300",
-              colors.primary, colors.shadow
+              "w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-lg disabled:bg-[var(--color-border)] disabled:text-[var(--color-text-muted)] medieval-border",
+              !isLoading && input.trim() ? "bg-[var(--color-primary)] text-[var(--color-bg-dark)] medieval-glow" : ""
             )}
           >
             <Send className="w-5 h-5" />

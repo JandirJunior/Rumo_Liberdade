@@ -1,19 +1,23 @@
-import { IMAGES } from "@/assets/images";
+import { USER_DEFAULT_AVATAR } from "@/assets/images";
 import Image from "next/image";
 
 type AvatarProps = {
-  character: keyof typeof IMAGES;
+  character?: string;
   size?: number;
 };
 
 export function Avatar({ character, size = 64 }: AvatarProps) {
+  const src = character || USER_DEFAULT_AVATAR;
   return (
-    <div style={{ width: size, height: size, position: 'relative' }}>
+    <div 
+      className="relative rounded-full overflow-hidden bg-[var(--color-bg-dark)] flex-shrink-0 border-2 border-[var(--color-border)] medieval-border"
+      style={{ width: size, height: size }}
+    >
       <Image
-        src={IMAGES[character]}
+        src={src}
         fill
-        className="object-cover rounded-full"
-        alt={character}
+        className="object-cover"
+        alt="Avatar"
         referrerPolicy="no-referrer"
       />
     </div>

@@ -5,11 +5,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { TrendingUp, TrendingDown, Target, ChevronRight, Bell, Trophy, Zap, Shield, Wand2, Pickaxe, Compass, VenetianMask, Home, Sparkles, MessageSquare, User } from 'lucide-react';
-import { BottomNav } from '@/components/layout/BottomNav';
 import { Header } from '@/components/layout/Header';
 import { MOCK_GOALS, MOCK_PROFILE, MOCK_TRANSACTIONS, MOCK_GAME_STATE, MOCK_ASSETS } from '@/lib/data';
 import { formatCurrency, cn } from '@/lib/utils';
@@ -31,11 +31,14 @@ import { getDominantMentor } from '@/services/mentorService';
 
 import { auth } from '@/services/firebase';
 
+import { MainMenuGrid } from '@/components/game/MainMenuGrid';
+
 export default function Dashboard() {
+  const router = useRouter();
   // Acessa o estado global e o tema atual através do contexto
-  const { gameState, theme, gameMode } = useTheme();
+  const { gameState, theme, gameMode, user, loading: authLoading } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
-  const { assets, transactions, loading, kingdom } = useKingdom();
+  const { assets, transactions, loading: kingdomLoading, kingdom } = useKingdom();
   const { categories } = useCategories();
 
   const today = new Date();
@@ -48,6 +51,12 @@ export default function Dashboard() {
   const { payables } = useAccountsPayable();
   const { receivables } = useAccountsReceivable();
   const { invoices } = useCreditCardInvoices();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/logon');
+    }
+  }, [user, authLoading, router]);
 
   useEffect(() => {
     // Generate recurring quests when dashboard loads
@@ -95,8 +104,8 @@ export default function Dashboard() {
   const masmorraProgress = Math.max(0, ((totalPower - currentMasmorraStart) / 10000) * 100);
 
   // Identifica a próxima meta não concluída
-  const nextGoal = MOCK_GOALS.find(g => !g.completed);
-
+  const nextGoal = MOCK_GOALS?.find(g => !g.completed);
+  
   // Função para calcular o percentual de cada atributo F.A.C.E.R.O.
   const getFaceroPercent = (type: string) => {
     const asset = assets.find(a => a.faceroType === type);
@@ -108,10 +117,10 @@ export default function Dashboard() {
   const radarData = [
     { subject: 'Festim', A: getFaceroPercent('F'), fullMark: 100 },
     { subject: 'Arcano', A: getFaceroPercent('A'), fullMark: 100 },
-    { subject: 'Cache', A: getFaceroPercent('C'), fullMark: 100 },
+    { subject: 'Cache',  A: getFaceroPercent('C'), fullMark: 100 },
     { subject: 'Exodia', A: getFaceroPercent('E'), fullMark: 100 },
     { subject: 'Reaver', A: getFaceroPercent('R'), fullMark: 100 },
-    { subject: 'Órbit', A: getFaceroPercent('O'), fullMark: 100 },
+    { subject: 'Órbit',  A: getFaceroPercent('O'), fullMark: 100 },
   ];
 
   // Estado para garantir que o gráfico só seja renderizado no cliente (evita erro de SSR do Recharts)
@@ -164,7 +173,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className={cn("min-h-screen transition-colors duration-500", colors.bg)}>
+    <div className={cn("min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)]")}>
       {/* Cabeçalho superior */}
       <Header />
       
@@ -172,14 +181,14 @@ export default function Dashboard() {
         {/* [RESPONSIVIDADE] Título da Seção com margem inferior ajustada */}
         <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-display font-bold text-gray-900">Reino</h2>
-            <p className="text-sm text-gray-500">Seu centro de comando e progresso</p>
+            <h2 className="text-3xl medieval-title font-bold text-[var(--color-text-main)]">Reino</h2>
+            <p className="text-sm text-[var(--color-text-muted)]">Seu centro de comando e progresso</p>
           </div>
           <div className="flex items-center gap-2">
             <select 
               value={month} 
               onChange={(e) => setMonth(parseInt(e.target.value))}
-              className="text-sm border-gray-200 rounded-xl bg-white text-gray-700 focus:ring-emerald-500 focus:border-emerald-500 p-2 shadow-sm"
+              className="text-sm border-[var(--color-border)] rounded-xl bg-[var(--color-bg-panel)] text-[var(--color-text-main)] focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] p-2 shadow-sm medieval-border"
             >
               {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
                 <option key={m} value={m}>
@@ -190,7 +199,7 @@ export default function Dashboard() {
             <select 
               value={year} 
               onChange={(e) => setYear(parseInt(e.target.value))}
-              className="text-sm border-gray-200 rounded-xl bg-white text-gray-700 focus:ring-emerald-500 focus:border-emerald-500 p-2 shadow-sm"
+              className="text-sm border-[var(--color-border)] rounded-xl bg-[var(--color-bg-panel)] text-[var(--color-text-main)] focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] p-2 shadow-sm medieval-border"
             >
               {[year - 1, year, year + 1].map(y => (
                 <option key={y} value={y}>{y}</option>
@@ -198,6 +207,8 @@ export default function Dashboard() {
             </select>
           </div>
         </header>
+
+        <MainMenuGrid />
 
         {/* [RESPONSIVIDADE] Container principal usando CSS Grid. 
             No mobile (padrão) é 1 coluna (flex-col ou grid-cols-1).
@@ -210,26 +221,26 @@ export default function Dashboard() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className={cn("rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden", colors.primary, colors.shadow)}
+              className={cn("rounded-2xl p-8 text-[var(--color-bg-dark)] shadow-2xl relative overflow-hidden medieval-border bg-[var(--color-primary)]")}
             >
               <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 blur-3xl"></div>
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="w-4 h-4 text-white/60" />
-                  <p className="text-white/80 text-[10px] font-black uppercase tracking-[0.2em]">
+                  <Sparkles className="w-4 h-4 text-[var(--color-bg-dark)]/60" />
+                  <p className="text-[var(--color-bg-dark)]/80 text-[10px] font-black uppercase tracking-[0.2em]">
                     {gameMode === 'reino' ? 'Poder do Reino' : 'Poder de Investimento'}
                   </p>
                 </div>
                 {/* [RESPONSIVIDADE] Texto responsivo: menor em telas muito pequenas, grande em telas normais */}
-                <h3 className="text-3xl sm:text-4xl font-display font-bold mb-8">R$ {totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+                <h3 className="text-3xl sm:text-4xl medieval-title font-bold mb-8">R$ {totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                 
                 {gameMode === 'reino' && (
-                  <div className="mb-8 p-4 bg-white/10 rounded-2xl border border-white/20 backdrop-blur-sm">
+                  <div className="mb-8 p-4 bg-black/10 rounded-2xl border border-black/20 backdrop-blur-sm">
                     <div className="flex items-center gap-2 mb-2">
-                      <User className="w-4 h-4 text-white/60" />
-                      <p className="text-white/80 text-[10px] font-black uppercase tracking-[0.2em]">Seu Poder (Herói)</p>
+                      <User className="w-4 h-4 text-[var(--color-bg-dark)]/60" />
+                      <p className="text-[var(--color-bg-dark)]/80 text-[10px] font-black uppercase tracking-[0.2em]">Seu Poder (Herói)</p>
                     </div>
-                    <h4 className="text-2xl font-display font-bold mb-4">R$ {myInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h4>
+                    <h4 className="text-2xl medieval-title font-bold mb-4">R$ {myInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h4>
                   </div>
                 )}
 
@@ -238,33 +249,33 @@ export default function Dashboard() {
             </motion.div>
 
             {/* Botão Poder dos Investimentos */}
-            <Link href="/investments" className={cn("w-full p-4 rounded-2xl border flex items-center justify-between transition-all hover:scale-[1.02] bg-white border-gray-100 shadow-sm block")}>
+            <Link href="/investments" className={cn("w-full p-4 rounded-2xl flex items-center justify-between transition-all hover:scale-[1.02] bg-[var(--color-bg-panel)] medieval-border shadow-sm block")}>
               <div className="flex items-center gap-3">
-                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm", colors.primary)}>
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-[var(--color-bg-dark)] shadow-sm bg-[var(--color-primary)]")}>
                   <Zap className="w-5 h-5" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-bold text-gray-900">Poder dos Investimentos</p>
-                  <p className="text-[10px] text-gray-500 font-medium">Visualizar detalhes no Inventário</p>
+                  <p className="text-sm font-bold text-[var(--color-text-main)]">Poder dos Investimentos</p>
+                  <p className="text-[10px] text-[var(--color-text-muted)] font-medium">Visualizar detalhes no Inventário</p>
                 </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
+              <ChevronRight className="w-5 h-5 text-[var(--color-text-muted)]" />
             </Link>
 
             {/* Acesso Rápido */}
             {/* [RESPONSIVIDADE] 2 colunas no mobile, 2 colunas no desktop (já que está dentro da coluna esquerda) */}
             <section className="grid grid-cols-2 gap-4">
-              <Link href="/chat" className={cn("p-4 rounded-[2rem] border flex flex-col items-center justify-center gap-3 transition-all hover:scale-105", colors.bg, colors.border)}>
-                <div className={cn("w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg", colors.primary)}>
+              <Link href="/chat" className={cn("p-4 rounded-2xl flex flex-col items-center justify-center gap-3 transition-all hover:scale-105 bg-[var(--color-bg-panel)] medieval-border")}>
+                <div className={cn("w-12 h-12 rounded-full flex items-center justify-center text-[var(--color-bg-dark)] shadow-lg bg-[var(--color-primary)]")}>
                   <MessageSquare className="w-6 h-6" />
                 </div>
-                <span className="text-sm font-bold text-gray-900">Mentor</span>
+                <span className="text-sm font-bold text-[var(--color-text-main)]">Mentor</span>
               </Link>
-              <Link href="/investments" className={cn("p-4 rounded-[2rem] border flex flex-col items-center justify-center gap-3 transition-all hover:scale-105", colors.bg, colors.border)}>
-                <div className={cn("w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg", colors.primary)}>
+              <Link href="/investments" className={cn("p-4 rounded-2xl flex flex-col items-center justify-center gap-3 transition-all hover:scale-105 bg-[var(--color-bg-panel)] medieval-border")}>
+                <div className={cn("w-12 h-12 rounded-full flex items-center justify-center text-[var(--color-bg-dark)] shadow-lg bg-[var(--color-primary)]")}>
                   <Pickaxe className="w-6 h-6" />
                 </div>
-                <span className="text-sm font-bold text-gray-900">Inventário</span>
+                <span className="text-sm font-bold text-[var(--color-text-main)]">Inventário</span>
               </Link>
             </section>
 
@@ -281,32 +292,32 @@ export default function Dashboard() {
 
             {/* Status do Reino e Mentor Dominante */}
             <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
+              <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 medieval-border shadow-sm flex flex-col justify-between">
                 <div className="flex items-center gap-2 mb-4">
                   <Shield className="w-5 h-5 text-emerald-500" />
-                  <h4 className="text-sm font-bold text-gray-900">Status do Reino</h4>
+                  <h4 className="text-sm font-bold text-[var(--color-text-main)]">Status do Reino</h4>
                 </div>
                 <div>
-                  <p className="text-2xl font-display font-bold text-gray-900">{kingdom?.name || 'Meu Reino'}</p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-2xl medieval-title font-bold text-[var(--color-text-main)]">{kingdom?.name || 'Meu Reino'}</p>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
                     {myIncome > myExpenses ? 'Superávit Saudável' : 'Atenção aos Gastos'}
                   </p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
+              <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 medieval-border shadow-sm flex flex-col justify-between">
                 <div className="flex items-center gap-2 mb-4">
                   <Wand2 className="w-5 h-5 text-purple-500" />
-                  <h4 className="text-sm font-bold text-gray-900">Mentor Dominante</h4>
+                  <h4 className="text-sm font-bold text-[var(--color-text-main)]">Mentor Dominante</h4>
                 </div>
                 <div>
                   {dominantMentor ? (
                     <>
-                      <p className="text-2xl font-display font-bold text-gray-900">{dominantMentor.name}</p>
-                      <p className="text-xs text-gray-500 mt-1">{dominantMentor.strategy}</p>
+                      <p className="text-2xl medieval-title font-bold text-[var(--color-text-main)]">{dominantMentor.name}</p>
+                      <p className="text-xs text-[var(--color-text-muted)] mt-1">{dominantMentor.strategy}</p>
                     </>
                   ) : (
-                    <p className="text-sm text-gray-500">Nenhum mentor dominante ainda. Invista para atrair um mentor.</p>
+                    <p className="text-sm text-[var(--color-text-muted)]">Nenhum mentor dominante ainda. Invista para atrair um mentor.</p>
                   )}
                 </div>
               </div>
@@ -314,11 +325,11 @@ export default function Dashboard() {
 
             {/* Progresso da Próxima Meta (Masmorra) */}
             <section className="space-y-4">
-              <h4 className="text-lg font-display font-bold text-gray-900">Próxima Masmorra</h4>
+              <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Próxima Masmorra</h4>
               {/* Fundo em tom pastel claro (bg-slate-50) com texto escuro para contraste */}
-              <div className="bg-[#fdf5e6] rounded-3xl p-6 text-gray-900 relative overflow-hidden shadow-xl border border-[#d2b48c]/30">
+              <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 text-[var(--color-text-main)] relative overflow-hidden shadow-xl medieval-border">
                 {/* Imagem de Fundo do Vilão com opacidade reduzida e blend-mode para ficar clara/pastel */}
-                <div className="absolute inset-0 opacity-60">
+                <div className="absolute inset-0 opacity-30">
                   <Image 
                     src={nextCharacter.image} 
                     alt="Vilão da Masmorra" 
@@ -326,27 +337,27 @@ export default function Dashboard() {
                     className="object-cover"
                     unoptimized
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#fdf5e6] via-[#fdf5e6]/70 to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-bg-panel)] via-[var(--color-bg-panel)]/70 to-transparent"></div>
                 </div>
 
-                <div className="absolute top-0 right-0 w-24 h-24 bg-[#d2b48c]/20 rounded-full -mr-12 -mt-12 blur-2xl"></div>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--color-primary)]/20 rounded-full -mr-12 -mt-12 blur-2xl"></div>
                 <div className="flex items-center gap-4 mb-4 relative z-10">
-                  <div className="w-12 h-12 bg-white/70 rounded-2xl flex items-center justify-center backdrop-blur-md border border-[#d2b48c]/50 shadow-sm shrink-0">
-                    <Target className="w-6 h-6 text-[#8b7355]" />
+                  <div className="w-12 h-12 bg-[var(--color-bg-dark)]/70 rounded-2xl flex items-center justify-center backdrop-blur-md border border-[var(--color-border)] shadow-sm shrink-0">
+                    <Target className="w-6 h-6 text-[var(--color-primary)]" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#5d4037]">Derrotar o {nextCharacter.name}</p>
-                    <p className="text-[10px] text-[#8b7355] font-bold uppercase tracking-widest">Objetivo: R$ {currentMasmorraGoal.toLocaleString('pt-BR')}</p>
+                    <p className="text-sm font-bold text-[var(--color-text-main)]">Derrotar o {nextCharacter.name}</p>
+                    <p className="text-[10px] text-[var(--color-primary)] font-bold uppercase tracking-widest">Objetivo: R$ {currentMasmorraGoal.toLocaleString('pt-BR')}</p>
                   </div>
                 </div>
                 <div className="space-y-2 relative z-10">
-                  <div className="h-2 w-full bg-white/60 rounded-full overflow-hidden backdrop-blur-sm shadow-inner border border-[#D4AF37]/30">
+                  <div className="h-2 w-full bg-[var(--color-bg-dark)]/60 rounded-full overflow-hidden backdrop-blur-sm shadow-inner border border-[var(--color-border)]">
                     <div 
-                      className="h-full bg-[#D4AF37] transition-all duration-1000" 
+                      className="h-full bg-[var(--color-primary)] transition-all duration-1000 medieval-glow" 
                       style={{ width: `${Math.min(100, masmorraProgress)}%` }}
                     ></div>
                   </div>
-                  <div className="flex justify-between text-[9px] font-black text-gray-500 uppercase tracking-widest">
+                  <div className="flex justify-between text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
                     <span>R$ {totalPower.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     <span>R$ {currentMasmorraGoal.toLocaleString('pt-BR')}</span>
                   </div>
@@ -362,21 +373,32 @@ export default function Dashboard() {
             {/* Gráfico de Radar: Hexágono F.A.C.E.R.O. */}
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-lg font-display font-bold text-gray-900">Hexágono F.A.C.E.R.O.</h4>
-                <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Hexágono F.A.C.E.R.O.</h4>
+                <Zap className="w-5 h-5 text-[var(--color-primary)] fill-[var(--color-primary)]" />
               </div>
-              <div className="bg-white border border-gray-100 rounded-[2rem] p-4 shadow-sm h-64 flex items-center justify-center">
+              <div className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-4 shadow-sm h-72 flex items-center justify-center medieval-border relative overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--color-primary)_0%,transparent_70%)] opacity-5"></div>
                 {mounted && (
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                      <PolarGrid stroke="#E5E7EB" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fontWeight: 'bold', fill: '#6B7280' }} />
+                      <PolarGrid stroke="var(--color-border)" strokeDasharray="3 3" />
+                      <PolarAngleAxis 
+                        dataKey="subject" 
+                        tick={{ 
+                          fontSize: 10, 
+                          fontWeight: 'bold', 
+                          fill: 'var(--color-text-muted)',
+                          fontFamily: 'var(--font-sans)'
+                        }} 
+                      />
                       <Radar
                         name="Poder"
                         dataKey="A"
-                        stroke={theme === 'default' ? '#059669' : '#4F46E5'}
-                        fill={theme === 'default' ? '#10B981' : '#6366F1'}
-                        fillOpacity={0.6}
+                        stroke="var(--color-primary)"
+                        fill="var(--color-primary)"
+                        fillOpacity={0.5}
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: 'var(--color-primary)', strokeWidth: 1, stroke: 'var(--color-bg-panel)' }}
                       />
                     </RadarChart>
                   </ResponsiveContainer>
@@ -390,8 +412,6 @@ export default function Dashboard() {
 
         </div>
       </main>
-      {/* Menu de navegação inferior */}
-      <BottomNav />
     </div>
   );
 }

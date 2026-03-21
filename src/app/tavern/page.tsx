@@ -10,7 +10,6 @@ import { useTheme } from '@/lib/ThemeContext';
 import { THEMES, ARCHETYPE_THEME_MAP } from '@/lib/themes';
 import Image from 'next/image';
 import { Avatar } from '@/components/game/Avatar';
-import { BottomNav } from '@/components/layout/BottomNav';
 import { Archetype } from '@/types';
 import { ARCHETYPE_IMAGES } from '@/lib/data';
 import { STATIC_CHARACTERS } from '@/lib/characters';
@@ -25,7 +24,7 @@ import { ImageKey } from '@/assets/images';
 import { financialEngine } from '@/lib/financialEngine';
 
 // Definição das classes disponíveis com seus nomes, descrições, ícones e imagens ilustrativas.
-const ARCHETYPES: { type: Archetype; name: string; desc: string; icon: any; color: string; illustration: ImageKey }[] = [
+const ARCHETYPES: { type: Archetype; name: string; desc: string; icon: any; color: string; illustration: string }[] = [
   { 
     type: 'Paladino', 
     name: 'FESTIM', 
@@ -117,24 +116,24 @@ export default function Tavern() {
   const currentArchetypeData = ARCHETYPES.find(a => a.type === gameState.archetype);
 
   return (
-    <div className={cn("min-h-screen transition-colors duration-500", colors.bg)}>
+    <div className="min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)]">
       <Header />
       
       <main className="w-full px-4 sm:px-6 lg:px-8 py-6 pb-32 space-y-8">
         {/* [RESPONSIVIDADE] Título da Seção */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-display font-bold text-gray-900">A Taberna</h2>
-            <p className="text-sm text-gray-500">Personalize seu herói financeiro</p>
+            <h2 className="text-2xl medieval-title font-bold text-[var(--color-text-main)]">A Taberna</h2>
+            <p className="text-sm text-[var(--color-text-muted)]">Personalize seu herói financeiro</p>
           </div>
           
           {/* Toggle Modo de Jogo */}
-          <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-gray-100 self-start">
+          <div className="flex items-center gap-3 bg-[var(--color-bg-panel)] p-2 rounded-2xl shadow-sm border border-[var(--color-border)] self-start medieval-border">
             <button 
               onClick={() => setGameMode('heroi')}
               className={cn(
-                "px-4 py-2 rounded-xl text-sm font-bold transition-all",
-                gameMode === 'heroi' ? "bg-indigo-100 text-indigo-700" : "text-gray-500 hover:bg-gray-50"
+                "px-4 py-2 rounded-xl text-sm font-bold transition-all medieval-border",
+                gameMode === 'heroi' ? "bg-indigo-900/50 text-indigo-400 border-indigo-500/50" : "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-dark)] border-transparent"
               )}
             >
               Herói (Solo)
@@ -142,8 +141,8 @@ export default function Tavern() {
             <button 
               onClick={() => setGameMode('reino')}
               className={cn(
-                "px-4 py-2 rounded-xl text-sm font-bold transition-all",
-                gameMode === 'reino' ? "bg-amber-100 text-amber-700" : "text-gray-500 hover:bg-gray-50"
+                "px-4 py-2 rounded-xl text-sm font-bold transition-all medieval-border",
+                gameMode === 'reino' ? "bg-amber-900/50 text-amber-400 border-amber-500/50" : "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-dark)] border-transparent"
               )}
             >
               Reino (Multi)
@@ -155,32 +154,32 @@ export default function Tavern() {
           [RESPONSIVIDADE] Character Preview (Perfil do Herói)
           No mobile é uma coluna centralizada. No desktop (md) vira uma linha (row) com a imagem à esquerda e os dados à direita.
         */}
-        <section className={cn("p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden", colors.primary)}>
-          <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 blur-3xl"></div>
+        <section className={cn("p-8 rounded-2xl text-white shadow-xl relative overflow-hidden medieval-border medieval-glow", colors.primary)}>
+          <div className="absolute top-0 right-0 w-48 h-48 bg-black/30 rounded-full -mr-24 -mt-24 blur-3xl"></div>
           <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-6 md:gap-8">
-            <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md border-4 border-white/40 overflow-hidden relative shadow-2xl shrink-0">
+            <div className="w-32 h-32 bg-black/30 rounded-full flex items-center justify-center backdrop-blur-md border-4 border-white/20 overflow-hidden relative shadow-2xl shrink-0">
               <Avatar character={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} size={128} />
             </div>
             <button 
               onClick={() => {
                 window.location.href = '/logoff';
               }}
-              className="mt-4 px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 transition-colors"
+              className="mt-4 px-4 py-2 bg-red-900/50 text-red-500 border border-red-700/50 rounded-xl text-sm font-bold hover:bg-red-900/80 transition-colors medieval-border"
             >
               Sair do Sistema
             </button>
             <div className="flex-1">
-              <h3 className="text-3xl md:text-4xl font-display font-bold">{gameState.archetype}</h3>
+              <h3 className="text-3xl md:text-4xl medieval-title font-bold">{gameState.archetype}</h3>
               <p className="text-white/90 text-sm font-medium mt-1">Nível {gameState.level} • {gameState.xp.toLocaleString()} XP</p>
-              <div className="mt-4 inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-xl backdrop-blur-md border border-white/30">
-                <Sparkles className="w-4 h-4 text-yellow-300" />
+              <div className="mt-4 inline-flex items-center gap-2 bg-black/30 px-4 py-2 rounded-xl backdrop-blur-md border border-white/10 medieval-border">
+                <Sparkles className="w-4 h-4 text-yellow-500" />
                 <span className="text-sm font-bold text-white">Mentor: {currentArchetypeData?.name}</span>
               </div>
               <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-4">
-                <div className="px-4 py-1.5 bg-white/20 rounded-full text-[10px] font-bold uppercase tracking-wider border border-white/30 backdrop-blur-sm">
+                <div className="px-4 py-1.5 bg-black/30 rounded-full text-[10px] font-bold uppercase tracking-wider border border-white/10 backdrop-blur-sm medieval-border">
                   F.A.C.E.R.O: {Object.values(gameState.stats).reduce((a, b) => a + b, 0)} pts
                 </div>
-                <div className="px-4 py-1.5 bg-white/20 rounded-full text-[10px] font-bold uppercase tracking-wider border border-white/30 backdrop-blur-sm">
+                <div className="px-4 py-1.5 bg-black/30 rounded-full text-[10px] font-bold uppercase tracking-wider border border-white/10 backdrop-blur-sm medieval-border">
                   {currentArchetypeData?.desc.split(' ')[0]} {currentArchetypeData?.desc.split(' ')[1]} {currentArchetypeData?.desc.split(' ')[2]}
                 </div>
               </div>
@@ -194,10 +193,10 @@ export default function Tavern() {
         */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-lg font-display font-bold text-gray-900">Portfólio de Skills</h4>
-            <Wand2 className={cn("w-5 h-5", colors.text)} />
+            <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Portfólio de Skills</h4>
+            <Wand2 className="w-5 h-5 text-[var(--color-primary)]" />
           </div>
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+          <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 border border-[var(--color-border)] shadow-sm medieval-border">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               {['F', 'A', 'C', 'E', 'R', 'O'].map((stat) => {
                 const asset = assets.find(a => a.faceroType === stat);
@@ -208,16 +207,16 @@ export default function Tavern() {
                 return (
                   <div key={stat} className="space-y-1">
                     <div className="flex justify-between text-sm">
-                      <span className="font-bold text-gray-700">
+                      <span className="font-bold text-[var(--color-text-main)]">
                         {stat === 'F' ? 'Fundos Imobiliários' : 
                          stat === 'A' ? 'Ações' : 
                          stat === 'C' ? 'Criptomoedas' : 
                          stat === 'E' ? 'Exterior' : 
                          stat === 'R' ? 'Renda Fixa' : 'Outros'}
                       </span>
-                      <span className="font-bold text-gray-900">{percent.toFixed(1)}%</span>
+                      <span className="font-bold text-[var(--color-text-main)]">{percent.toFixed(1)}%</span>
                     </div>
-                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 w-full bg-[var(--color-bg-dark)] rounded-full overflow-hidden border border-[var(--color-border)]">
                       <div 
                         className={cn("h-full rounded-full transition-all duration-1000", barColor)} 
                         style={{ width: `${percent}%` }}
@@ -227,7 +226,7 @@ export default function Tavern() {
                 );
               })}
             </div>
-            <p className="text-xs text-gray-500 mt-4 text-center">
+            <p className="text-xs text-[var(--color-text-muted)] mt-4 text-center">
               A distribuição das suas skills reflete exatamente a alocação dos seus investimentos no Inventário.
             </p>
           </div>
@@ -239,8 +238,8 @@ export default function Tavern() {
         */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-lg font-display font-bold text-gray-900">Mural de Troféus (Masmorras)</h4>
-            <Trophy className={cn("w-5 h-5", colors.text)} />
+            <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Mural de Troféus (Masmorras)</h4>
+            <Trophy className="w-5 h-5 text-[var(--color-primary)]" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
             {STATIC_CHARACTERS.slice(0, 6).map((character) => {
@@ -249,10 +248,10 @@ export default function Tavern() {
                 <div 
                   key={character.id}
                   className={cn(
-                    "flex flex-col items-center justify-center p-4 rounded-3xl border text-center transition-all relative overflow-hidden",
+                    "flex flex-col items-center justify-center p-4 rounded-2xl border text-center transition-all relative overflow-hidden medieval-border",
                     unlocked 
-                      ? cn("bg-white border-2", colors.border, colors.shadow) 
-                      : "bg-gray-50 border-gray-100 opacity-50 grayscale"
+                      ? cn("bg-[var(--color-bg-panel)] border-[var(--color-primary)]", colors.shadow) 
+                      : "bg-[var(--color-bg-dark)] border-[var(--color-border)] opacity-50 grayscale"
                   )}
                 >
                   <div className="absolute inset-0 opacity-10">
@@ -260,15 +259,15 @@ export default function Tavern() {
                   </div>
                   <div className="relative z-10 flex flex-col items-center">
                     <div className="text-3xl mb-2">🏆</div>
-                    <p className="text-[10px] font-bold text-gray-900 uppercase tracking-widest">{character.requiredInvestment / 1000}k</p>
-                    <p className="text-[8px] text-gray-500 truncate w-full">{character.name}</p>
-                    {!unlocked && <Lock className="w-3 h-3 text-gray-400 mt-1" />}
+                    <p className="text-[10px] font-bold text-[var(--color-text-main)] uppercase tracking-widest">{character.requiredInvestment / 1000}k</p>
+                    <p className="text-[8px] text-[var(--color-text-muted)] truncate w-full">{character.name}</p>
+                    {!unlocked && <Lock className="w-3 h-3 text-[var(--color-text-muted)] mt-1" />}
                   </div>
                 </div>
               );
             })}
           </div>
-          <p className="text-xs text-gray-500 text-center">
+          <p className="text-xs text-[var(--color-text-muted)] text-center">
             Mostrando as 6 primeiras masmorras. Derrote monstros acumulando mais poder!
           </p>
         </section>
@@ -278,25 +277,25 @@ export default function Tavern() {
           No mobile: 1 coluna. No tablet (sm): 2 colunas. No desktop (lg): 3 colunas.
         */}
         <section className="space-y-4">
-          <h4 className="text-lg font-display font-bold text-gray-900">Mudar de Classe</h4>
+          <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Mudar de Classe</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {ARCHETYPES.map((arch) => (
               <button
                 key={arch.type}
                 onClick={() => handleArchetypeChange(arch.type)}
                 className={cn(
-                  "p-0 rounded-3xl border text-left transition-all flex flex-col overflow-hidden group relative",
+                  "p-0 rounded-2xl border text-left transition-all flex flex-col overflow-hidden group relative medieval-border",
                   gameState.archetype === arch.type 
-                    ? cn("bg-white border-2", colors.border, colors.shadow)
-                    : "bg-white/50 border-gray-100 hover:bg-white hover:border-gray-200"
+                    ? cn("bg-[var(--color-bg-panel)] border-[var(--color-primary)]", colors.shadow)
+                    : "bg-[var(--color-bg-dark)] border-[var(--color-border)] hover:bg-[var(--color-bg-panel)] hover:border-[var(--color-primary)]"
                 )}
               >
                 {/* Ilustração da Classe */}
-                <div className="h-32 w-full relative bg-gray-900 overflow-hidden flex items-center justify-center">
+                <div className="h-32 w-full relative bg-black overflow-hidden flex items-center justify-center">
                   <Avatar character={arch.illustration} size={256} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                   <div className="absolute bottom-3 left-3 flex flex-col gap-1">
-                    <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-lg backdrop-blur-sm", arch.color)}>
+                    <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-lg backdrop-blur-sm border border-white/10", arch.color)}>
                       <arch.icon className="w-4 h-4" />
                     </div>
                     <div>
@@ -306,13 +305,13 @@ export default function Tavern() {
                 </div>
 
                 {/* Descrição Técnica */}
-                <div className="p-3 bg-white flex-1">
-                  <p className="text-[10px] text-gray-600 leading-relaxed line-clamp-3">{arch.desc}</p>
+                <div className="p-3 bg-[var(--color-bg-panel)] flex-1">
+                  <p className="text-[10px] text-[var(--color-text-muted)] leading-relaxed line-clamp-3">{arch.desc}</p>
                 </div>
 
                 {/* Selo de Selecionado */}
                 {gameState.archetype === arch.type && (
-                  <div className={cn("absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-lg z-20", colors.primary)}>
+                  <div className={cn("absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-lg z-20 border border-white/20", colors.primary)}>
                     <Zap className="w-3 h-3 text-white fill-current" />
                   </div>
                 )}
@@ -327,15 +326,15 @@ export default function Tavern() {
           Mantivemos como lista pois são poucos itens, mas com padding responsivo.
         */}
         <section className="space-y-4">
-          <h4 className="text-lg font-display font-bold text-gray-900">Customização</h4>
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+          <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Customização</h4>
+          <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 border border-[var(--color-border)] shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6 medieval-border">
             <div className="flex items-center justify-between md:flex-col md:items-start md:gap-4">
-              <span className="text-sm font-medium text-gray-700">Notificações de Quest</span>
+              <span className="text-sm font-medium text-[var(--color-text-main)]">Notificações de Quest</span>
               <button 
                 onClick={() => setNotifications(!notifications)}
                 className={cn(
-                  "w-12 h-6 rounded-full relative transition-colors", 
-                  notifications ? colors.primary : "bg-gray-200"
+                  "w-12 h-6 rounded-full relative transition-colors border border-[var(--color-border)]", 
+                  notifications ? colors.primary : "bg-[var(--color-bg-dark)]"
                 )}
               >
                 <div className={cn(
@@ -345,12 +344,12 @@ export default function Tavern() {
               </button>
             </div>
             <div className="flex items-center justify-between md:flex-col md:items-start md:gap-4">
-              <span className="text-sm font-medium text-gray-700">Modo Imersivo (RPG)</span>
+              <span className="text-sm font-medium text-[var(--color-text-main)]">Modo Imersivo (RPG)</span>
               <button 
                 onClick={() => setImmersiveMode(!immersiveMode)}
                 className={cn(
-                  "w-12 h-6 rounded-full relative transition-colors", 
-                  immersiveMode ? colors.primary : "bg-gray-200"
+                  "w-12 h-6 rounded-full relative transition-colors border border-[var(--color-border)]", 
+                  immersiveMode ? colors.primary : "bg-[var(--color-bg-dark)]"
                 )}
               >
                 <div className={cn(
@@ -360,12 +359,12 @@ export default function Tavern() {
               </button>
             </div>
             <div className="flex items-center justify-between md:flex-col md:items-start md:gap-4">
-              <span className="text-sm font-medium text-gray-700">Visibilidade do Ranking</span>
+              <span className="text-sm font-medium text-[var(--color-text-main)]">Visibilidade do Ranking</span>
               <button 
                 onClick={() => setRankingVisible(!rankingVisible)}
                 className={cn(
-                  "w-12 h-6 rounded-full relative transition-colors", 
-                  rankingVisible ? colors.primary : "bg-gray-200"
+                  "w-12 h-6 rounded-full relative transition-colors border border-[var(--color-border)]", 
+                  rankingVisible ? colors.primary : "bg-[var(--color-bg-dark)]"
                 )}
               >
                 <div className={cn(
@@ -380,13 +379,12 @@ export default function Tavern() {
         {/* Gerenciamento do Reino (Aparece apenas quando o modo Reino está ativo) */}
         {gameMode === 'reino' && (
           <section className="space-y-4 mt-8">
-            <h4 className="text-lg font-display font-bold text-gray-900">Gestão do Reino</h4>
+            <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Gestão do Reino</h4>
             <KingdomManager colors={colors} />
           </section>
         )}
 
       </main>
-      <BottomNav />
     </div>
   );
 }

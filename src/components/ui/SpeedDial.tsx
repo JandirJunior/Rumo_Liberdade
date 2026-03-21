@@ -44,10 +44,10 @@ export function SpeedDial() {
                 }}
                 className="flex items-center gap-3 group"
               >
-                <span className="px-3 py-1 bg-white border border-gray-100 rounded-lg text-xs font-bold text-gray-600 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="px-3 py-1 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-lg text-xs font-bold text-[var(--color-text-main)] shadow-sm opacity-0 group-hover:opacity-100 transition-opacity medieval-border">
                   {action.label}
                 </span>
-                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform active:scale-95", action.color)}>
+                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-[var(--color-bg-dark)] shadow-lg transition-transform active:scale-95 medieval-glow", action.color)}>
                   <action.icon className="w-6 h-6" />
                 </div>
               </motion.button>
@@ -62,8 +62,8 @@ export function SpeedDial() {
           setIsOpen(!isOpen);
         }}
         className={cn(
-          "w-14 h-14 rounded-[2rem] flex items-center justify-center text-white shadow-2xl transition-all active:scale-95",
-          isOpen ? "bg-gray-900 rotate-45" : colors.primary
+          "w-14 h-14 rounded-[2rem] flex items-center justify-center text-[var(--color-bg-dark)] shadow-2xl transition-all active:scale-95 medieval-glow",
+          isOpen ? "bg-[var(--color-bg-panel)] text-[var(--color-text-main)] rotate-45 border border-[var(--color-border)]" : "bg-[var(--color-primary)]"
         )}
       >
         {isOpen ? <X className="w-8 h-8 -rotate-45" /> : <Plus className="w-8 h-8" />}

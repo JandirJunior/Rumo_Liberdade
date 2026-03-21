@@ -1,6 +1,17 @@
-// lib/gameEngine.ts
+/**
+ * 🎮 gameEngine.ts
+ *
+ * RESPONSÁVEL:
+ * - Cálculo de XP
+ * - Progressão de nível
+ * - Títulos RPG
+ *
+ * REGRAS:
+ * ❗ Não duplicar lógica de XP fora deste arquivo
+ * ❗ Sempre usar funções centralizadas
+ */
 
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 
 export interface GameState {
@@ -17,22 +28,22 @@ export const TITLES = [
   { level: 50, title: 'Lenda Financeira' }
 ];
 
+/**
+ * 🧠 Calcula nível baseado no XP
+ */
 export function calculatePlayerLevel(xp: number): GameState {
-  // Base formula: Level = sqrt(XP / 100)
-  // Or simpler: each level requires level * 100 XP
-  // Let's use a simple progressive scale
   let level = 1;
   let xpRequired = 100;
-  let currentXp = xp;
+  let remainingXp = xp;
 
-  while (currentXp >= xpRequired) {
-    currentXp -= xpRequired;
+  while (remainingXp >= xpRequired) {
+    remainingXp -= xpRequired;
     level++;
     xpRequired = level * 100;
   }
 
-  // Find the appropriate title
   let title = TITLES[0].title;
+
   for (let i = TITLES.length - 1; i >= 0; i--) {
     if (level >= TITLES[i].level) {
       title = TITLES[i].title;
@@ -40,55 +51,65 @@ export function calculatePlayerLevel(xp: number): GameState {
     }
   }
 
-  return {
-    level,
-    xp,
-    title
-  };
+  return { level, xp, title };
 }
 
+/**
+ * ⚡ Adiciona XP com segurança (TRANSACTION)
+ */
 export async function addXP(userId: string, xpToAdd: number) {
-  if (xpToAdd <= 0) return;
-  
+  if (!userId || xpToAdd <= 0) return;
+
   const userRef = doc(db, 'users', userId);
-  const userSnap = await getDoc(userRef);
-  
-  if (userSnap.exists()) {
-    const userData = userSnap.data();
-    const currentXp = userData.xp || 0;
+
+  await runTransaction(db, async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+
+    if (!userSnap.exists()) {
+      throw new Error('Usuário não encontrado ao adicionar XP');
+    }
+
+    const currentXp = userSnap.data().xp || 0;
     const newXp = currentXp + xpToAdd;
+
     const newState = calculatePlayerLevel(newXp);
-    
-    await updateDoc(userRef, {
+
+    transaction.update(userRef, {
       xp: newXp,
       level: newState.level,
       title: newState.title,
-      lastActivityDate: new Date()
+      lastActivityDate: serverTimestamp()
     });
-  }
+  });
 }
 
+/**
+ * 💰 XP por controle de orçamento
+ */
 export function calculateXPFromBudgetControl(planned: number, actual: number): number {
-  if (planned === 0) return 0;
-  
-  // Se gastou menos ou igual ao planejado, ganha XP
-  if (actual <= planned) {
-    return 50; // Bônus por cumprir o orçamento
-  }
-  
-  // Se gastou mais, ganha menos XP ou zero
+  if (planned <= 0) return 0;
+
+  if (actual <= planned) return 50;
+
   const overspendRatio = (actual - planned) / planned;
-  if (overspendRatio < 0.1) return 25; // Passou um pouco
-  if (overspendRatio < 0.2) return 10; // Passou moderadamente
-  return 0; // Estourou muito o orçamento
+
+  if (overspendRatio < 0.1) return 25;
+  if (overspendRatio < 0.2) return 10;
+
+  return 0;
 }
 
+/**
+ * 📈 XP por investimentos
+ * ✔ PADRONIZADO: 10 XP a cada R$100
+ */
 export function calculateXPFromInvestments(amount: number): number {
-  // Ganha XP proporcional ao valor investido (ex: 1 XP a cada R$ 100)
-  return Math.floor(amount / 100) * 10; // 10 XP a cada R$ 100
+  return Math.floor(amount / 100) * 10;
 }
 
+/**
+ * 🔥 XP por consistência
+ */
 export function calculateXPFromConsistency(daysActive: number): number {
-  // Bônus por dias seguidos usando o app
-  return daysActive * 5;
+  return Math.max(0, daysActive * 5);
 }

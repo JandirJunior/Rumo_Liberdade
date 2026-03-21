@@ -1,6 +1,16 @@
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+/**
+ * 🔧 Utils globais
+ */
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+// merge de classes
+export function cn(...classes: (string | undefined)[]) {
+  return classes.filter(Boolean).join(' ');
+}
+
+// formatador de moeda
+export function formatCurrency(value: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value);
 }

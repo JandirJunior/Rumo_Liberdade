@@ -49,8 +49,8 @@ export function AnnualChartPanel() {
 
   if (chartData.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center bg-gray-50 rounded-2xl border border-gray-100">
-        <p className="text-gray-400 text-sm font-medium">Nenhum dado disponível para o mês atual.</p>
+      <div className="h-64 flex items-center justify-center bg-[var(--color-bg-panel)] rounded-2xl border border-[var(--color-border)] medieval-border">
+        <p className="text-[var(--color-text-muted)] text-sm font-medium">Nenhum dado disponível para o mês atual.</p>
       </div>
     );
   }
@@ -62,27 +62,27 @@ export function AnnualChartPanel() {
           data={chartData}
           margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
         >
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
           <XAxis 
             dataKey="name" 
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 10, fill: '#6b7280' }}
+            tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
             tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 12)}...` : value}
           />
           <YAxis 
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 10, fill: '#6b7280' }}
+            tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
             tickFormatter={(value) => `R$ ${value >= 1000 ? value / 1000 + 'k' : value}`}
           />
           <Tooltip 
             formatter={(value: any) => formatCurrency(Number(value) || 0)}
-            cursor={{ fill: '#f9fafb' }}
-            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+            cursor={{ fill: 'var(--color-bg-dark)' }}
+            contentStyle={{ borderRadius: '16px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-panel)', color: 'var(--color-text-main)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.5)' }}
           />
           <Legend wrapperStyle={{ paddingTop: '20px' }} />
-          <Bar dataKey="Orçado" fill="#e5e7eb" radius={[6, 6, 0, 0]} maxBarSize={32} />
+          <Bar dataKey="Orçado" fill="var(--color-border)" radius={[6, 6, 0, 0]} maxBarSize={32} />
           <Bar dataKey="Realizado" radius={[6, 6, 0, 0]} maxBarSize={32}>
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.flowType === 'income' ? '#10b981' : '#ef4444'} />

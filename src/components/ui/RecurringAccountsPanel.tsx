@@ -157,15 +157,15 @@ export function RecurringAccountsPanel() {
   }, {} as Record<string, typeof categories>);
 
   return (
-    <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-6">
+    <div className="bg-[var(--color-bg-dark)] rounded-3xl p-6 border border-[var(--color-border)] shadow-sm space-y-6 medieval-border">
       <header className="flex items-center justify-between">
         <div>
-          <h3 className="text-xl font-display font-bold text-gray-900">Obrigações e Cartões</h3>
-          <p className="text-sm text-gray-500">Gerencie contas a pagar, a receber e cartões de crédito.</p>
+          <h3 className="text-xl medieval-title font-bold text-[var(--color-text-main)]">Obrigações e Cartões</h3>
+          <p className="text-sm text-[var(--color-text-muted)]">Gerencie contas a pagar, a receber e cartões de crédito.</p>
         </div>
         <button
           onClick={() => setIsAdding(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-600 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-[var(--color-bg-dark)] rounded-xl text-sm font-bold shadow-sm hover:brightness-110 transition-colors medieval-glow"
         >
           <Plus className="w-4 h-4" />
           <span>Adicionar</span>
@@ -173,12 +173,12 @@ export function RecurringAccountsPanel() {
       </header>
 
       {/* Tabs */}
-      <div className="flex gap-2 p-1 bg-gray-100/50 rounded-2xl">
+      <div className="flex gap-2 p-1 bg-[var(--color-bg-panel)] rounded-2xl border border-[var(--color-border)]">
         <button
           onClick={() => setActiveTab('payable')}
           className={cn(
             "flex-1 py-2 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
-            activeTab === 'payable' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            activeTab === 'payable' ? "bg-[var(--color-bg-dark)] text-[var(--color-text-main)] shadow-sm border border-[var(--color-border)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
           )}
         >
           <ArrowUpRight className="w-4 h-4" />
@@ -188,7 +188,7 @@ export function RecurringAccountsPanel() {
           onClick={() => setActiveTab('receivable')}
           className={cn(
             "flex-1 py-2 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
-            activeTab === 'receivable' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            activeTab === 'receivable' ? "bg-[var(--color-bg-dark)] text-[var(--color-text-main)] shadow-sm border border-[var(--color-border)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
           )}
         >
           <ArrowDownRight className="w-4 h-4" />
@@ -198,7 +198,7 @@ export function RecurringAccountsPanel() {
           onClick={() => setActiveTab('cards')}
           className={cn(
             "flex-1 py-2 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
-            activeTab === 'cards' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            activeTab === 'cards' ? "bg-[var(--color-bg-dark)] text-[var(--color-text-main)] shadow-sm border border-[var(--color-border)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
           )}
         >
           <CreditCard className="w-4 h-4" />
@@ -214,12 +214,12 @@ export function RecurringAccountsPanel() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             onSubmit={handleAdd}
-            className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-4 overflow-hidden"
+            className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] space-y-4 overflow-hidden"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
                     {activeTab === 'cards' ? 'Nome do Cartão' : 'Descrição'}
                   </label>
                   <button
@@ -227,8 +227,8 @@ export function RecurringAccountsPanel() {
                     onClick={handleSuggestCategory}
                     disabled={!description || isSuggesting}
                     className={cn(
-                      "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 px-2 py-1 rounded-lg transition-all",
-                      (!description || isSuggesting) ? "text-gray-400 bg-gray-50 cursor-not-allowed" : "text-purple-600 bg-purple-50 hover:bg-purple-100"
+                      "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 px-2 py-1 rounded-lg transition-all border",
+                      (!description || isSuggesting) ? "text-[var(--color-text-muted)] bg-[var(--color-bg-dark)] border-[var(--color-border)] cursor-not-allowed" : "text-[var(--color-accent)] bg-[var(--color-bg-dark)] border-[var(--color-accent)] hover:brightness-110"
                     )}
                   >
                     <Sparkles className="w-3 h-3" />
@@ -240,18 +240,18 @@ export function RecurringAccountsPanel() {
                   required
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
                   placeholder={activeTab === 'cards' ? 'Ex: Nubank' : 'Ex: Aluguel'}
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Categoria RPG</label>
+                <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Categoria RPG</label>
                 <select
                   required
                   value={category_id}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
                 >
                   <option value="" disabled>Selecione...</option>
                   {Object.entries(groupedCategories).map(([groupName, cats]) => (
@@ -266,14 +266,14 @@ export function RecurringAccountsPanel() {
 
               {activeTab !== 'cards' && (
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Valor</label>
+                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Valor</label>
                   <input
                     type="number"
                     required
                     step="0.01"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
                     placeholder="0.00"
                   />
                 </div>
@@ -281,13 +281,13 @@ export function RecurringAccountsPanel() {
 
               {activeTab !== 'cards' && (
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Data de Vencimento</label>
+                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Data de Vencimento</label>
                   <input
                     type="date"
                     required
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
                   />
                 </div>
               )}
@@ -295,19 +295,19 @@ export function RecurringAccountsPanel() {
               {activeTab === 'cards' && (
                 <>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Limite</label>
+                    <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Limite</label>
                     <input
                       type="number"
                       required
                       step="0.01"
                       value={cardLimit}
                       onChange={(e) => setCardLimit(e.target.value)}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
                       placeholder="0.00"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Dia de Fechamento</label>
+                    <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Dia de Fechamento</label>
                     <input
                       type="number"
                       required
@@ -315,12 +315,12 @@ export function RecurringAccountsPanel() {
                       max="31"
                       value={closingDay}
                       onChange={(e) => setClosingDay(e.target.value)}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
                       placeholder="Ex: 5"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Dia de Vencimento</label>
+                    <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Dia de Vencimento</label>
                     <input
                       type="number"
                       required
@@ -328,7 +328,7 @@ export function RecurringAccountsPanel() {
                       max="31"
                       value={dueDay}
                       onChange={(e) => setDueDay(e.target.value)}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
                       placeholder="Ex: 12"
                     />
                   </div>
@@ -342,16 +342,16 @@ export function RecurringAccountsPanel() {
                       type="checkbox"
                       checked={isRecurring}
                       onChange={(e) => setIsRecurring(e.target.checked)}
-                      className="rounded text-emerald-500 focus:ring-emerald-500"
+                      className="rounded text-[var(--color-primary)] focus:ring-[var(--color-primary)] bg-[var(--color-bg-dark)] border-[var(--color-border)]"
                     />
-                    <span className="text-sm font-medium text-gray-700">É recorrente?</span>
+                    <span className="text-sm font-medium text-[var(--color-text-main)]">É recorrente?</span>
                   </label>
                   
                   {isRecurring && (
                     <select
                       value={recurrenceRule}
                       onChange={(e) => setRecurrenceRule(e.target.value)}
-                      className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      className="bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
                     >
                       <option value="monthly">Mensal</option>
                       <option value="weekly">Semanal</option>
@@ -366,13 +366,13 @@ export function RecurringAccountsPanel() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-200 rounded-xl transition-colors"
+                className="px-4 py-2 text-sm font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-dark)] border border-transparent hover:border-[var(--color-border)] rounded-xl transition-colors"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-emerald-500 text-white text-sm font-bold rounded-xl hover:bg-emerald-600 transition-colors"
+                className="px-4 py-2 bg-[var(--color-primary)] text-[var(--color-bg-dark)] text-sm font-bold rounded-xl hover:brightness-110 transition-colors medieval-glow"
               >
                 Salvar
               </button>
@@ -384,23 +384,23 @@ export function RecurringAccountsPanel() {
       {/* Lists */}
       <div className="space-y-3">
         {activeTab === 'payable' && payables.map(item => (
-          <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl border border-gray-100 bg-gray-50/50">
+          <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-panel)] hover:border-[var(--color-primary)] transition-colors">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-red-950/30 text-red-500 border border-red-900/50 flex items-center justify-center">
                 <ArrowUpRight className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-gray-900">{item.description}</h4>
+                <h4 className="text-sm font-bold text-[var(--color-text-main)]">{item.description}</h4>
                 <div className="flex items-center gap-2 mt-1">
-                  <Calendar className="w-3 h-3 text-gray-400" />
-                  <span className="text-xs text-gray-500">Vence: {item.dueDate ? new Date(item.dueDate).toLocaleDateString('pt-BR') : 'Sem data'}</span>
-                  {item.isRecurring && <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full uppercase font-bold">{item.recurrenceRule}</span>}
+                  <Calendar className="w-3 h-3 text-[var(--color-text-muted)]" />
+                  <span className="text-xs text-[var(--color-text-muted)]">Vence: {item.dueDate ? new Date(item.dueDate).toLocaleDateString('pt-BR') : 'Sem data'}</span>
+                  {item.isRecurring && <span className="text-[10px] bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-muted)] px-2 py-0.5 rounded-full uppercase font-bold">{item.recurrenceRule}</span>}
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <p className="text-sm font-bold text-gray-900">{formatCurrency(item.amount)}</p>
-              <button onClick={() => deletePayable(item.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+              <p className="text-sm font-bold text-[var(--color-text-main)]">{formatCurrency(item.amount)}</p>
+              <button onClick={() => deletePayable(item.id)} className="p-2 text-[var(--color-text-muted)] hover:text-red-500 transition-colors">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
@@ -408,23 +408,23 @@ export function RecurringAccountsPanel() {
         ))}
 
         {activeTab === 'receivable' && receivables.map(item => (
-          <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl border border-gray-100 bg-gray-50/50">
+          <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-panel)] hover:border-[var(--color-primary)] transition-colors">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-emerald-950/30 text-emerald-500 border border-emerald-900/50 flex items-center justify-center">
                 <ArrowDownRight className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-gray-900">{item.description}</h4>
+                <h4 className="text-sm font-bold text-[var(--color-text-main)]">{item.description}</h4>
                 <div className="flex items-center gap-2 mt-1">
-                  <Calendar className="w-3 h-3 text-gray-400" />
-                  <span className="text-xs text-gray-500">Vence: {item.dueDate ? new Date(item.dueDate).toLocaleDateString('pt-BR') : 'Sem data'}</span>
-                  {item.isRecurring && <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full uppercase font-bold">{item.recurrenceRule}</span>}
+                  <Calendar className="w-3 h-3 text-[var(--color-text-muted)]" />
+                  <span className="text-xs text-[var(--color-text-muted)]">Vence: {item.dueDate ? new Date(item.dueDate).toLocaleDateString('pt-BR') : 'Sem data'}</span>
+                  {item.isRecurring && <span className="text-[10px] bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-muted)] px-2 py-0.5 rounded-full uppercase font-bold">{item.recurrenceRule}</span>}
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <p className="text-sm font-bold text-emerald-600">+{formatCurrency(item.amount)}</p>
-              <button onClick={() => deleteReceivable(item.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+              <p className="text-sm font-bold text-emerald-500">+{formatCurrency(item.amount)}</p>
+              <button onClick={() => deleteReceivable(item.id)} className="p-2 text-[var(--color-text-muted)] hover:text-red-500 transition-colors">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
@@ -432,24 +432,24 @@ export function RecurringAccountsPanel() {
         ))}
 
         {activeTab === 'cards' && creditCards.map(item => (
-          <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl border border-gray-100 bg-gray-50/50">
+          <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-panel)] hover:border-[var(--color-primary)] transition-colors">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-purple-950/30 text-purple-500 border border-purple-900/50 flex items-center justify-center">
                 <CreditCard className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-gray-900">{item.name}</h4>
+                <h4 className="text-sm font-bold text-[var(--color-text-main)]">{item.name}</h4>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-500">Vence dia {item.due_day} | Fecha dia {item.closing_day}</span>
+                  <span className="text-xs text-[var(--color-text-muted)]">Vence dia {item.due_day} | Fecha dia {item.closing_day}</span>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Limite</p>
-                <p className="text-sm font-bold text-gray-900">{formatCurrency(item.limit || 0)}</p>
+                <p className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">Limite</p>
+                <p className="text-sm font-bold text-[var(--color-text-main)]">{formatCurrency(item.limit || 0)}</p>
               </div>
-              <button onClick={() => deleteCreditCard(item.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+              <button onClick={() => deleteCreditCard(item.id)} className="p-2 text-[var(--color-text-muted)] hover:text-red-500 transition-colors">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
@@ -459,7 +459,7 @@ export function RecurringAccountsPanel() {
         {((activeTab === 'payable' && payables.length === 0) || 
           (activeTab === 'receivable' && receivables.length === 0) || 
           (activeTab === 'cards' && creditCards.length === 0)) && !isAdding && (
-          <div className="text-center py-8 text-gray-500 text-sm">
+          <div className="text-center py-8 text-[var(--color-text-muted)] text-sm">
             Nenhum registro encontrado.
           </div>
         )}

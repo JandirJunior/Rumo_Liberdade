@@ -32,36 +32,36 @@ export default function Villains() {
   }, [transactions, assets, loading]);
 
   return (
-    <div className={cn("min-h-screen transition-colors duration-500", colors.bg)}>
+    <div className="min-h-screen bg-[var(--color-bg-dark)] text-[var(--color-text-main)] transition-colors duration-500 pb-32">
       <Header />
       
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 pb-32">
+      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
         <header className="space-y-2">
           <div className="flex items-center gap-3">
-            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg", colors.primary)}>
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-[var(--color-bg-dark)] shadow-lg bg-[var(--color-primary)] medieval-border medieval-glow">
               <Skull className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-2xl font-display font-bold text-gray-900">Masmorra</h2>
-              <p className="text-sm text-gray-500">Derrote seus inimigos financeiros com disciplina</p>
+              <h2 className="text-2xl font-display font-bold text-[var(--color-primary)] medieval-title">Masmorra</h2>
+              <p className="text-sm text-[var(--color-text-muted)]">Derrote seus inimigos financeiros com disciplina</p>
             </div>
           </div>
         </header>
 
         {/* Player Power Status */}
-        <section className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex items-center justify-between">
+        <section className="bg-[var(--color-bg-panel)] rounded-3xl p-6 shadow-sm medieval-border flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-orange-950/30 rounded-2xl flex items-center justify-center medieval-border">
               <Flame className="w-6 h-6 text-orange-500" />
             </div>
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Poder de Combate</p>
-              <h3 className="text-2xl font-display font-bold text-gray-900">{formatCurrency(playerPower)}</h3>
+              <p className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Poder de Combate</p>
+              <h3 className="text-2xl font-display font-bold text-[var(--color-text-main)]">{formatCurrency(playerPower)}</h3>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs text-gray-500">Dano Automático</p>
-            <p className="text-sm font-bold text-emerald-600">Baseado no seu patrimônio</p>
+            <p className="text-xs text-[var(--color-text-muted)]">Dano Automático</p>
+            <p className="text-sm font-bold text-emerald-500">Baseado no seu patrimônio</p>
           </div>
         </section>
 
@@ -81,64 +81,64 @@ export default function Villains() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className={cn(
-                  "bg-white rounded-[2rem] p-6 shadow-sm border transition-all",
-                  isDefeated ? "border-emerald-200 bg-emerald-50/30" : "border-gray-100"
+                  "bg-[var(--color-bg-panel)] rounded-[2rem] p-6 shadow-sm transition-all medieval-border",
+                  isDefeated ? "border-emerald-900/50 bg-emerald-950/10" : ""
                 )}
               >
                 <div className="flex items-start justify-between mb-6">
                   <div className="flex items-center gap-4">
                     <div className={cn(
-                      "w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
-                      isDefeated ? "bg-emerald-100 text-emerald-600" : "bg-red-50 text-red-500"
+                      "w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-inner medieval-border",
+                      isDefeated ? "bg-emerald-950/30 text-emerald-500" : "bg-red-950/30 text-red-500"
                     )}>
                       {isDefeated ? <Trophy className="w-8 h-8" /> : <Skull className="w-8 h-8" />}
                     </div>
                     <div>
-                      <h4 className="text-xl font-display font-bold text-gray-900">{villain.name}</h4>
-                      <p className="text-sm font-bold text-gray-500">{villain.title}</p>
+                      <h4 className="text-xl font-display font-bold text-[var(--color-text-main)] medieval-title">{villain.name}</h4>
+                      <p className="text-sm font-bold text-[var(--color-text-muted)]">{villain.title}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Recompensa</p>
-                    <p className="text-sm font-bold text-emerald-600">+{villain.rewardXP} XP</p>
+                    <p className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Recompensa</p>
+                    <p className="text-sm font-bold text-emerald-500">+{villain.rewardXP} XP</p>
                   </div>
                 </div>
 
-                <p className="text-sm text-gray-600 mb-6">{villain.description}</p>
+                <p className="text-sm text-[var(--color-text-muted)] mb-6">{villain.description}</p>
 
                 {/* HP Bar */}
                 <div className="space-y-2 mb-6">
                   <div className="flex justify-between text-xs font-bold">
-                    <span className={isDefeated ? "text-emerald-600" : "text-red-500"}>
+                    <span className={isDefeated ? "text-emerald-500" : "text-red-500"}>
                       {isDefeated ? 'Derrotado!' : 'HP do Vilão'}
                     </span>
-                    <span className="text-gray-500">{formatCurrency(currentHp)} / {formatCurrency(villain.hp)}</span>
+                    <span className="text-[var(--color-text-muted)]">{formatCurrency(currentHp)} / {formatCurrency(villain.hp)}</span>
                   </div>
-                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-3 bg-[var(--color-bg-dark)] rounded-full overflow-hidden medieval-border">
                     <motion.div 
                       initial={{ width: '100%' }}
                       animate={{ width: `${hpPercentage}%` }}
                       transition={{ duration: 1, ease: "easeOut" }}
                       className={cn(
                         "h-full rounded-full",
-                        isDefeated ? "bg-emerald-500" : "bg-red-500"
+                        isDefeated ? "bg-emerald-600" : "bg-red-600"
                       )}
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-50">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-[var(--color-border)]">
                   <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                    <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1 flex items-center gap-1">
                       <Sword className="w-3 h-3" /> Fraqueza
                     </p>
-                    <p className="text-sm font-medium text-gray-900">{villain.weakness}</p>
+                    <p className="text-sm font-medium text-[var(--color-text-main)]">{villain.weakness}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                    <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-1 flex items-center gap-1">
                       <Shield className="w-3 h-3" /> Condição de Vitória
                     </p>
-                    <p className="text-sm font-medium text-gray-900">{villain.victoryCondition}</p>
+                    <p className="text-sm font-medium text-[var(--color-text-main)]">{villain.victoryCondition}</p>
                   </div>
                 </div>
               </motion.div>

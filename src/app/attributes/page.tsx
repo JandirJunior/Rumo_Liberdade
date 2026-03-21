@@ -4,7 +4,6 @@ import { useState, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
-import { BottomNav } from '@/components/layout/BottomNav';
 import { formatCurrency, cn } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
@@ -43,26 +42,26 @@ function AttributesContent() {
     .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.gasto_real + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
   
   return (
-    <div className={cn("min-h-screen transition-colors duration-500", colors.bg)}>
+    <div className={cn("min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)]")}>
       <Header />
       
       <main className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 pb-32">
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-display font-bold text-gray-900">Atributos</h2>
-            <p className="text-sm text-gray-500">Orçado vs Realizado</p>
+            <h2 className="text-3xl medieval-title font-bold text-[var(--color-text-main)]">Atributos</h2>
+            <p className="text-sm text-[var(--color-text-muted)]">Orçado vs Realizado</p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsBudgetModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-xl text-sm font-bold text-[var(--color-text-main)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors medieval-border"
             >
               <Target className="w-4 h-4" />
               <span>Planejamento de Orçamento</span>
             </button>
             <button
               onClick={() => setIsCategoryModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-xl text-sm font-bold text-[var(--color-text-main)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors medieval-border"
             >
               <Settings2 className="w-4 h-4" />
               <span>Gerenciar Categorias</span>
@@ -75,56 +74,56 @@ function AttributesContent() {
           {/* Coluna de Receitas */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-emerald-500" />
-              <span className="text-xs font-black text-gray-700 uppercase tracking-wider">
+              <TrendingUp className="w-4 h-4 text-emerald-400" />
+              <span className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-wider">
                 Receitas
               </span>
             </div>
             
-            <Link href="/transactions" className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer block">
+            <Link href="/transactions" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">💎</span>
-                <span className="text-[10px] font-black text-gray-700 uppercase tracking-wider">
+                <span className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-wider">
                   Cofre do Reino
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mb-2">Receitas Fixas</p>
+              <p className="text-xs text-[var(--color-text-muted)] mb-2">Receitas Fixas</p>
               <div className="flex justify-between items-end">
                 <div>
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Realizado</p>
-                  <p className="text-lg font-bold text-emerald-600">{formatCurrency(cofreReino.realizado)}</p>
+                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
+                  <p className="text-lg font-bold text-emerald-400">{formatCurrency(cofreReino.realizado)}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Previsto</p>
-                  <p className="text-sm font-medium text-gray-500">{formatCurrency(cofreReino.previsto)}</p>
+                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Previsto</p>
+                  <p className="text-sm font-medium text-[var(--color-text-muted)]">{formatCurrency(cofreReino.previsto)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Orçado</p>
-                  <p className="text-sm font-medium text-gray-700">{formatCurrency(cofreReino.orcado)}</p>
+                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Orçado</p>
+                  <p className="text-sm font-medium text-[var(--color-text-main)]">{formatCurrency(cofreReino.orcado)}</p>
                 </div>
               </div>
             </Link>
 
-            <Link href="/transactions" className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer block">
+            <Link href="/transactions" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">⚡</span>
-                <span className="text-[10px] font-black text-gray-700 uppercase tracking-wider">
+                <span className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-wider">
                   Saque de Missões
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mb-2">Receitas Variáveis</p>
+              <p className="text-xs text-[var(--color-text-muted)] mb-2">Receitas Variáveis</p>
               <div className="flex justify-between items-end">
                 <div>
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Realizado</p>
-                  <p className="text-lg font-bold text-emerald-600">{formatCurrency(saquesMissoes.realizado)}</p>
+                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
+                  <p className="text-lg font-bold text-emerald-400">{formatCurrency(saquesMissoes.realizado)}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Previsto</p>
-                  <p className="text-sm font-medium text-gray-500">{formatCurrency(saquesMissoes.previsto)}</p>
+                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Previsto</p>
+                  <p className="text-sm font-medium text-[var(--color-text-muted)]">{formatCurrency(saquesMissoes.previsto)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Orçado</p>
-                  <p className="text-sm font-medium text-gray-700">{formatCurrency(saquesMissoes.orcado)}</p>
+                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Orçado</p>
+                  <p className="text-sm font-medium text-[var(--color-text-main)]">{formatCurrency(saquesMissoes.orcado)}</p>
                 </div>
               </div>
             </Link>
@@ -133,56 +132,56 @@ function AttributesContent() {
           {/* Coluna de Despesas */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingDown className="w-4 h-4 text-red-500" />
-              <span className="text-xs font-black text-gray-700 uppercase tracking-wider">
+              <TrendingDown className="w-4 h-4 text-red-400" />
+              <span className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-wider">
                 Despesas
               </span>
             </div>
 
-            <Link href="/transactions" className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer block">
+            <Link href="/transactions" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">🛡️</span>
-                <span className="text-[10px] font-black text-gray-700 uppercase tracking-wider">
+                <span className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-wider">
                   Tributos do Reino
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mb-2">Despesas Fixas</p>
+              <p className="text-xs text-[var(--color-text-muted)] mb-2">Despesas Fixas</p>
               <div className="flex justify-between items-end">
                 <div>
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Realizado</p>
-                  <p className="text-lg font-bold text-red-600">{formatCurrency(tributosReino.realizado)}</p>
+                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
+                  <p className="text-lg font-bold text-red-400">{formatCurrency(tributosReino.realizado)}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Previsto</p>
-                  <p className="text-sm font-medium text-gray-500">{formatCurrency(tributosReino.previsto)}</p>
+                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Previsto</p>
+                  <p className="text-sm font-medium text-[var(--color-text-muted)]">{formatCurrency(tributosReino.previsto)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Orçado</p>
-                  <p className="text-sm font-medium text-gray-700">{formatCurrency(tributosReino.orcado)}</p>
+                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Orçado</p>
+                  <p className="text-sm font-medium text-[var(--color-text-main)]">{formatCurrency(tributosReino.orcado)}</p>
                 </div>
               </div>
             </Link>
 
-            <Link href="/transactions" className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer block">
+            <Link href="/transactions" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">⚔️</span>
-                <span className="text-[10px] font-black text-gray-700 uppercase tracking-wider">
+                <span className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-wider">
                   Aventuras do Herói
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mb-2">Despesas Variáveis</p>
+              <p className="text-xs text-[var(--color-text-muted)] mb-2">Despesas Variáveis</p>
               <div className="flex justify-between items-end">
                 <div>
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Realizado</p>
-                  <p className="text-lg font-bold text-red-600">{formatCurrency(aventurasHeroi.realizado)}</p>
+                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
+                  <p className="text-lg font-bold text-red-400">{formatCurrency(aventurasHeroi.realizado)}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Previsto</p>
-                  <p className="text-sm font-medium text-gray-500">{formatCurrency(aventurasHeroi.previsto)}</p>
+                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Previsto</p>
+                  <p className="text-sm font-medium text-[var(--color-text-muted)]">{formatCurrency(aventurasHeroi.previsto)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wider">Orçado</p>
-                  <p className="text-sm font-medium text-gray-700">{formatCurrency(aventurasHeroi.orcado)}</p>
+                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Orçado</p>
+                  <p className="text-sm font-medium text-[var(--color-text-main)]">{formatCurrency(aventurasHeroi.orcado)}</p>
                 </div>
               </div>
             </Link>
@@ -195,10 +194,10 @@ function AttributesContent() {
         </section>
 
         {/* Annual Chart Section */}
-        <section className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-6">
+        <section className="bg-[var(--color-bg-panel)] rounded-2xl p-6 border border-[var(--color-border)] shadow-sm space-y-6 medieval-border">
           <header>
-            <h3 className="text-xl font-display font-bold text-gray-900">Visão Mensal</h3>
-            <p className="text-sm text-gray-500">Comparativo de Orçamento vs Realizado no mês atual.</p>
+            <h3 className="text-xl medieval-title font-bold text-[var(--color-text-main)]">Visão Mensal</h3>
+            <p className="text-sm text-[var(--color-text-muted)]">Comparativo de Orçamento vs Realizado no mês atual.</p>
           </header>
           <AnnualChartPanel />
         </section>
@@ -219,22 +218,22 @@ function AttributesContent() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsBudgetModalOpen(false)}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-4xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+              className="relative w-full max-w-4xl bg-[var(--color-bg-panel)] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] medieval-border"
             >
-              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between p-6 border-b border-[var(--color-border)]">
                 <div>
-                  <h3 className="text-xl font-display font-bold text-gray-900">Planejamento de Orçamento</h3>
-                  <p className="text-sm text-gray-500">Defina seus limites de gastos e metas de receitas globais.</p>
+                  <h3 className="text-xl medieval-title font-bold text-[var(--color-text-main)]">Planejamento de Orçamento</h3>
+                  <p className="text-sm text-[var(--color-text-muted)]">Defina seus limites de gastos e metas de receitas globais.</p>
                 </div>
                 <button
                   onClick={() => setIsBudgetModalOpen(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-dark)] rounded-full transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -257,22 +256,22 @@ function AttributesContent() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsCategoryModalOpen(false)}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+              className="relative w-full max-w-2xl bg-[var(--color-bg-panel)] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] medieval-border"
             >
-              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between p-6 border-b border-[var(--color-border)]">
                 <div>
-                  <h3 className="text-xl font-display font-bold text-gray-900">Gerenciar Categorias</h3>
-                  <p className="text-sm text-gray-500">Crie ou edite suas subcategorias RPG</p>
+                  <h3 className="text-xl medieval-title font-bold text-[var(--color-text-main)]">Gerenciar Categorias</h3>
+                  <p className="text-sm text-[var(--color-text-muted)]">Crie ou edite suas subcategorias RPG</p>
                 </div>
                 <button
                   onClick={() => setIsCategoryModalOpen(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-dark)] rounded-full transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -285,8 +284,6 @@ function AttributesContent() {
           </div>
         )}
       </AnimatePresence>
-      
-      <BottomNav />
     </div>
   );
 }

@@ -112,7 +112,7 @@ export default function GenesisQuiz() {
   };
 
   return (
-    <div className="min-h-screen bg-emerald-950 text-white p-8 flex flex-col items-center justify-center overflow-y-auto">
+    <div className="min-h-screen bg-[var(--color-bg-dark)] text-[var(--color-text-main)] p-8 flex flex-col items-center justify-center overflow-y-auto">
       <AnimatePresence mode="wait">
         {!finished ? (
           /* Interface das Perguntas */
@@ -126,12 +126,12 @@ export default function GenesisQuiz() {
             {/* Barra de Progresso */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-emerald-400 text-xs font-bold uppercase tracking-widest">Prova {step + 1} de 5</span>
-                <Sparkles className="w-5 h-5 text-emerald-400" />
+                <span className="text-[var(--color-primary)] text-xs font-bold uppercase tracking-widest">Prova {step + 1} de 5</span>
+                <Sparkles className="w-5 h-5 text-[var(--color-primary)]" />
               </div>
-              <div className="h-1 w-full bg-emerald-900 rounded-full overflow-hidden">
+              <div className="h-1 w-full bg-[var(--color-bg-panel)] rounded-full overflow-hidden medieval-border">
                 <motion.div 
-                  className="h-full bg-emerald-400"
+                  className="h-full bg-[var(--color-primary)] medieval-glow"
                   initial={{ width: 0 }}
                   animate={{ width: `${((step + 1) / 5) * 100}%` }}
                 />
@@ -139,7 +139,7 @@ export default function GenesisQuiz() {
             </div>
 
             {/* Texto da Pergunta */}
-            <h2 className="text-2xl font-display font-bold leading-tight">
+            <h2 className="text-2xl font-display font-bold leading-tight medieval-title text-[var(--color-text-main)]">
               {QUESTIONS[step].text}
             </h2>
 
@@ -149,10 +149,10 @@ export default function GenesisQuiz() {
                 <button
                   key={i}
                   onClick={() => handleAnswer(opt.points)}
-                  className="w-full p-6 bg-emerald-900/50 border border-emerald-800 rounded-2xl text-left hover:bg-emerald-800 transition-all group flex items-center justify-between"
+                  className="w-full p-6 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl text-left hover:bg-[var(--color-border)] transition-all group flex items-center justify-between medieval-border"
                 >
-                  <span className="font-medium">{opt.text}</span>
-                  <ChevronRight className="w-5 h-5 text-emerald-600 group-hover:text-emerald-400 transition-colors" />
+                  <span className="font-medium text-[var(--color-text-main)]">{opt.text}</span>
+                  <ChevronRight className="w-5 h-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors" />
                 </button>
               ))}
             </div>
@@ -167,7 +167,7 @@ export default function GenesisQuiz() {
           >
             {/* Avatar do Arquétipo Conquistado */}
             <div className="relative inline-block">
-              <div className="w-32 h-32 bg-emerald-500 rounded-3xl rotate-12 flex items-center justify-center shadow-2xl shadow-emerald-500/20 overflow-hidden relative">
+              <div className="w-32 h-32 bg-[var(--color-bg-panel)] rounded-3xl rotate-12 flex items-center justify-center shadow-2xl overflow-hidden relative medieval-border">
                 <div className="-rotate-12 w-full h-full flex items-center justify-center">
                   <Avatar character={ARCHETYPE_IMAGES[archetype] || ARCHETYPE_IMAGES['Iniciante']} size={128} />
                 </div>
@@ -175,17 +175,17 @@ export default function GenesisQuiz() {
               <motion.div 
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ repeat: Infinity, duration: 2 }}
-                className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center"
+                className="absolute -top-2 -right-2 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center medieval-border medieval-glow"
               >
-                <Sparkles className="w-5 h-5 text-emerald-900" />
+                <Sparkles className="w-5 h-5 text-[var(--color-bg-dark)]" />
               </motion.div>
             </div>
 
             {/* Título e Descrição do Resultado */}
             <div className="space-y-2">
-              <p className="text-emerald-400 font-bold uppercase tracking-[0.2em] text-sm">Gênese Concluída</p>
-              <h1 className="text-4xl font-display font-bold">Você é um {archetype}!</h1>
-              <p className="text-emerald-200/60 text-sm px-8">
+              <p className="text-[var(--color-primary)] font-bold uppercase tracking-[0.2em] text-sm">Gênese Concluída</p>
+              <h1 className="text-4xl font-display font-bold medieval-title text-[var(--color-text-main)]">Você é um {archetype}!</h1>
+              <p className="text-[var(--color-text-muted)] text-sm px-8">
                 Sua jornada no universo F.A.C.E.R.O. começa agora. Seus atributos iniciais foram forjados.
               </p>
             </div>
@@ -193,9 +193,9 @@ export default function GenesisQuiz() {
             {/* Resumo dos Atributos F.A.C.E.R.O. */}
             <div className="grid grid-cols-3 gap-4">
               {Object.entries(stats).map(([key, val]) => (
-                <div key={key} className="bg-emerald-900/40 p-3 rounded-xl border border-emerald-800">
-                  <p className="text-[10px] font-bold text-emerald-500 uppercase">{key}</p>
-                  <p className="text-lg font-bold">{val}</p>
+                <div key={key} className="bg-[var(--color-bg-panel)] p-3 rounded-xl medieval-border">
+                  <p className="text-[10px] font-bold text-[var(--color-primary)] uppercase">{key}</p>
+                  <p className="text-lg font-bold text-[var(--color-text-main)]">{val}</p>
                 </div>
               ))}
             </div>
@@ -203,7 +203,7 @@ export default function GenesisQuiz() {
             {/* Botão para entrar no dashboard */}
             <button
               onClick={finalize}
-              className="w-full py-5 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-bold rounded-2xl shadow-xl shadow-emerald-500/20 transition-all active:scale-95"
+              className="w-full py-5 bg-[var(--color-primary)] hover:brightness-110 text-[var(--color-bg-dark)] font-bold rounded-2xl shadow-xl transition-all active:scale-95 medieval-border medieval-glow"
             >
               Iniciar Jornada
             </button>

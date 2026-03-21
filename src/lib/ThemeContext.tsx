@@ -5,7 +5,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { ThemeType, THEMES, ARCHETYPE_THEME_MAP } from './themes';
+import { ThemeType, THEMES, ARCHETYPE_THEME_MAP, applyTheme } from './themes';
 import { MOCK_GAME_STATE } from './data';
 import { UserGameState } from '@/types';
 import { auth, db } from '@/services/firebase';
@@ -107,6 +107,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     });
     return () => unsubscribe();
   }, [user]);
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   // Sync gameState changes back to Firestore
   const updateGameState = async (newState: UserGameState) => {

@@ -74,14 +74,14 @@ export function ImportModal({ isOpen, onClose, onImport, title, template }: Impo
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
       <div className="space-y-6">
-        <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3">
+        <div className="bg-amber-900/20 border border-amber-900/50 rounded-2xl p-4 flex gap-3 medieval-border">
           <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
-          <div className="text-xs text-amber-800 space-y-1">
-            <p className="font-bold">Instruções de Importação:</p>
+          <div className="text-xs text-amber-200/80 space-y-1">
+            <p className="font-bold text-amber-400">Instruções de Importação:</p>
             <p>O arquivo deve ser um CSV com os seguintes cabeçalhos:</p>
-            <code className="bg-white/50 px-1 rounded block mb-2">{template.join(', ')}</code>
-            <p className="font-bold mt-2">Exemplo de preenchimento:</p>
-            <code className="bg-white/50 px-1 rounded block">expense, 150.50, Compra no mercado, alimentacao, 2023-10-25</code>
+            <code className="bg-[var(--color-bg-dark)] px-1 rounded block mb-2 border border-[var(--color-border)]">{template.join(', ')}</code>
+            <p className="font-bold mt-2 text-amber-400">Exemplo de preenchimento:</p>
+            <code className="bg-[var(--color-bg-dark)] px-1 rounded block border border-[var(--color-border)]">expense, 150.50, Compra no mercado, alimentacao, 2023-10-25</code>
           </div>
         </div>
 
@@ -89,8 +89,8 @@ export function ImportModal({ isOpen, onClose, onImport, title, template }: Impo
           <div className="space-y-4">
             <div 
               className={cn(
-                "border-2 border-dashed rounded-[2rem] p-8 text-center transition-all cursor-pointer",
-                file ? "border-emerald-500 bg-emerald-50" : "border-gray-200 hover:border-emerald-400 hover:bg-gray-50"
+                "border-2 border-dashed rounded-[2rem] p-8 text-center transition-all cursor-pointer medieval-border",
+                file ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10" : "border-[var(--color-border)] hover:border-[var(--color-primary)] hover:bg-[var(--color-bg-dark)]"
               )}
               onClick={() => document.getElementById('file-upload')?.click()}
             >
@@ -103,21 +103,21 @@ export function ImportModal({ isOpen, onClose, onImport, title, template }: Impo
               />
               {file ? (
                 <div className="space-y-2">
-                  <FileText className="w-12 h-12 text-emerald-500 mx-auto" />
-                  <p className="text-sm font-bold text-gray-900">{file.name}</p>
-                  <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                  <FileText className="w-12 h-12 text-[var(--color-primary)] mx-auto" />
+                  <p className="text-sm font-bold text-[var(--color-text-main)]">{file.name}</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">{(file.size / 1024).toFixed(1)} KB</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <Upload className="w-12 h-12 text-gray-300 mx-auto" />
-                  <p className="text-sm font-bold text-gray-900">Clique para selecionar ou arraste o arquivo</p>
-                  <p className="text-xs text-gray-500">Apenas arquivos .csv são suportados</p>
+                  <Upload className="w-12 h-12 text-[var(--color-text-muted)] mx-auto" />
+                  <p className="text-sm font-bold text-[var(--color-text-main)]">Clique para selecionar ou arraste o arquivo</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">Apenas arquivos .csv são suportados</p>
                 </div>
               )}
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 text-red-500 bg-red-50 p-3 rounded-xl text-xs font-bold">
+              <div className="flex items-center gap-2 text-red-400 bg-red-900/20 border border-red-900/50 p-3 rounded-xl text-xs font-bold medieval-border">
                 <AlertCircle className="w-4 h-4" />
                 {error}
               </div>
@@ -127,8 +127,8 @@ export function ImportModal({ isOpen, onClose, onImport, title, template }: Impo
               onClick={processCSV}
               disabled={!file || loading}
               className={cn(
-                "w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2",
-                !file || loading ? "bg-gray-300 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 active:scale-95"
+                "w-full py-4 rounded-xl font-bold text-[var(--color-bg-dark)] shadow-lg transition-all flex items-center justify-center gap-2 medieval-glow",
+                !file || loading ? "bg-[var(--color-border)] text-[var(--color-text-muted)] cursor-not-allowed" : "bg-[var(--color-primary)] hover:brightness-110 active:scale-95"
               )}
             >
               {loading ? (
@@ -147,11 +147,11 @@ export function ImportModal({ isOpen, onClose, onImport, title, template }: Impo
             animate={{ opacity: 1, scale: 1 }}
             className="text-center py-12 space-y-4"
           >
-            <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+            <div className="w-20 h-20 bg-[var(--color-primary)]/20 text-[var(--color-primary)] rounded-full flex items-center justify-center mx-auto border border-[var(--color-primary)]/50 medieval-glow">
               <CheckCircle2 className="w-12 h-12" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900">Importação Concluída!</h3>
-            <p className="text-sm text-gray-500">Seus dados foram forjados com sucesso no reino.</p>
+            <h3 className="text-xl font-bold text-[var(--color-text-main)] medieval-title">Importação Concluída!</h3>
+            <p className="text-sm text-[var(--color-text-muted)]">Seus dados foram forjados com sucesso no reino.</p>
           </motion.div>
         )}
       </div>

@@ -18,7 +18,7 @@ export function ActivityFeed({ logs, colors }: ActivityFeedProps) {
     if (action.includes('JOINED')) return <LogIn className="w-4 h-4 text-emerald-500" />;
     if (action.includes('LEFT')) return <LogOut className="w-4 h-4 text-red-500" />;
     if (action.includes('ROLE')) return <Shield className="w-4 h-4 text-amber-500" />;
-    return <Activity className="w-4 h-4 text-gray-500" />;
+    return <Activity className="w-4 h-4 text-[var(--color-text-muted)]" />;
   };
 
   const getMessage = (log: ActivityLog) => {
@@ -54,7 +54,7 @@ export function ActivityFeed({ logs, colors }: ActivityFeedProps) {
 
   if (!logs || logs.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500 text-sm">
+      <div className="text-center py-8 text-[var(--color-text-muted)] text-sm">
         Nenhuma atividade recente no Reino.
       </div>
     );
@@ -63,13 +63,13 @@ export function ActivityFeed({ logs, colors }: ActivityFeedProps) {
   return (
     <div className="space-y-4">
       {logs.slice(0, 10).map((log) => (
-        <div key={log.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-          <div className="mt-0.5 p-2 bg-white rounded-full border border-gray-100 shadow-sm">
+        <div key={log.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-[var(--color-bg-dark)] transition-colors border border-transparent hover:border-[var(--color-border)]">
+          <div className="mt-0.5 p-2 bg-[var(--color-bg-panel)] rounded-full border border-[var(--color-border)] shadow-sm medieval-border">
             {getIcon(log.action)}
           </div>
           <div className="flex-1">
-            <p className="text-sm text-gray-900">{getMessage(log)}</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-sm text-[var(--color-text-main)]">{getMessage(log)}</p>
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">
               {formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: ptBR })}
             </p>
           </div>

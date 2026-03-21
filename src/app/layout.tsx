@@ -1,5 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
+import { ThemeProvider } from '@/lib/ThemeContext';
+import { SpeedDial } from '@/components/ui/SpeedDial';
+import { ErrorBoundary } from '@/components/layout/ErrorBoundary';
+import { AmbientEngine } from '@/components/game/AmbientEngine';
+import { AmbientBackground } from '@/components/game/AmbientBackground';
+import { Sidebar } from '@/components/layout/Sidebar';
 import './globals.css';
 
 const inter = Inter({
@@ -24,18 +30,27 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-import { ThemeProvider } from '@/lib/ThemeContext';
-import { SpeedDial } from '@/components/ui/SpeedDial';
-import { ErrorBoundary } from '@/components/layout/ErrorBoundary';
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} ${spaceGrotesk.variable}`}>
-      <body className="bg-gray-100 text-[#1A1A1A] font-sans antialiased" suppressHydrationWarning>
+    <html
+      lang="pt-BR"
+      className={`${inter.variable} ${spaceGrotesk.variable}`}
+    >
+      <body
+        className="bg-[var(--color-bg-dark)] text-[var(--color-text-main)] font-sans antialiased"
+        suppressHydrationWarning
+      >
         <ThemeProvider>
           <ErrorBoundary>
-            <div className="min-h-screen flex flex-col">
-              <main className="w-full min-h-screen relative pb-24 bg-white overflow-x-hidden">
+            <AmbientEngine />
+            <AmbientBackground />
+            <Sidebar />
+            <div className="min-h-screen flex flex-col md:pl-20">
+              <main className="w-full min-h-screen relative pb-24 overflow-x-hidden">
                 {children}
                 <SpeedDial />
               </main>

@@ -243,12 +243,12 @@ export interface BudgetProgress {
 
 // Interface para os atributos do sistema F.A.C.E.R.O.
 export interface FaceroStats {
-  F: number; // Festim (Renda Passiva)
-  A: number; // Arcano (Ações/RV)
-  C: number; // Cache (Cripto/Opções)
-  E: number; // Exodia (Exterior)
-  R: number; // Reaver (Renda Fixa)
-  O: number; // Órbit (Oportunidades/Caixa)
+  F: number; // Festim  (Renda Passiva)
+  A: number; // Arcano  (Ações/RV)
+  C: number; // Cache   (Cripto/Opções)
+  E: number; // Exodia  (Exterior)
+  R: number; // Reaver  (Renda Fixa)
+  O: number; // Órbit   (Oportunidades/Caixa)
 }
 
 // Arquétipos (Classes de Herói) disponíveis

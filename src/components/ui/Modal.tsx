@@ -25,7 +25,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
           />
           
           {/* Modal Content */}
@@ -33,13 +33,13 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed left-6 right-6 top-1/2 -translate-y-1/2 bg-white rounded-[2.5rem] shadow-2xl z-50 overflow-hidden max-w-lg mx-auto"
+            className="fixed left-6 right-6 top-1/2 -translate-y-1/2 bg-[var(--color-bg-panel)] rounded-[2.5rem] shadow-2xl z-50 overflow-hidden max-w-lg mx-auto border border-[var(--color-border)] medieval-border"
           >
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-xl font-display font-bold text-gray-900">{title}</h3>
+            <div className="p-6 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-bg-dark)]">
+              <h3 className="text-xl font-bold text-[var(--color-text-main)] medieval-title">{title}</h3>
               <button 
                 onClick={onClose}
-                className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                className="w-10 h-10 rounded-full bg-[var(--color-bg-panel)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors border border-[var(--color-border)]"
               >
                 <X className="w-6 h-6" />
               </button>

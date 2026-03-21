@@ -26,15 +26,15 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-gray-100">
-          <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Ops! Algo deu errado.</h2>
-            <p className="text-gray-600 mb-6">
+        <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--color-bg-dark)]">
+          <div className="bg-[var(--color-bg-panel)] p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-[var(--color-border)] medieval-border">
+            <h2 className="text-2xl font-bold text-[var(--color-text-main)] mb-4 medieval-title">Ops! A magia falhou.</h2>
+            <p className="text-[var(--color-text-muted)] mb-6">
               Ocorreu um erro inesperado. Por favor, tente recarregar a página ou entre em contato com o suporte se o problema persistir.
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors"
+              className="w-full py-3 bg-[var(--color-primary)] text-[var(--color-bg-dark)] font-bold rounded-xl hover:brightness-110 transition-colors medieval-glow"
             >
               Recarregar Página
             </button>

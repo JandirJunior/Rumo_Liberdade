@@ -9,7 +9,6 @@ import { Suspense, useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useSearchParams } from 'next/navigation';
 import { Search, Filter, ArrowUpRight, ArrowDownLeft, Wallet, Plus, Sparkles, Edit2, Trash2, Upload } from 'lucide-react';
-import { BottomNav } from '@/components/layout/BottomNav';
 import { Header } from '@/components/layout/Header';
 import { Modal } from '@/components/ui/Modal';
 import { ImportModal } from '@/components/ui/ImportModal';
@@ -69,10 +68,10 @@ function TransactionsContent() {
 
   if (transactionsLoading || categoriesLoading) {
     return (
-      <div className={cn("min-h-screen flex items-center justify-center", colors.bg)}>
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-dark)]">
         <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-500 font-medium">Carregando Quests...</p>
+          <div className="w-12 h-12 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-[var(--color-text-muted)] font-medium">Carregando Quests...</p>
         </div>
       </div>
     );
@@ -268,27 +267,27 @@ function TransactionsContent() {
   const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
   return (
-    <div className={cn("min-h-screen transition-colors duration-500", colors.bg)}>
+    <div className="min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)]">
       <Header />
       
       <main className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 pb-32">
         <header className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-display font-bold text-gray-900">Quests</h2>
-              <p className="text-sm text-gray-500">Suas missões e histórico de transações</p>
+              <h2 className="text-2xl medieval-title font-bold text-[var(--color-text-main)]">Quests</h2>
+              <p className="text-sm text-[var(--color-text-muted)]">Suas missões e histórico de transações</p>
             </div>
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setIsImportModalOpen(true)}
-                className="px-4 h-10 rounded-xl flex items-center gap-2 bg-white border border-gray-200 text-gray-700 shadow-sm font-bold text-sm transition-transform active:scale-95 hover:bg-gray-50"
+                className="px-4 h-10 rounded-xl flex items-center gap-2 bg-[var(--color-bg-panel)] border border-[var(--color-border)] text-[var(--color-text-main)] shadow-sm font-bold text-sm transition-transform active:scale-95 hover:bg-[var(--color-bg-dark)] medieval-border"
               >
                 <Upload className="w-4 h-4" />
                 <span className="hidden sm:inline">Importar</span>
               </button>
               <button 
                 onClick={() => setIsModalOpen(true)}
-                className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform active:scale-95", colors.primary)}
+                className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform active:scale-95 medieval-border", colors.primary)}
               >
                 <Plus className="w-6 h-6" />
               </button>
@@ -296,24 +295,24 @@ function TransactionsContent() {
           </div>
 
           {/* Month/Year Filter */}
-          <div className="flex items-center justify-between bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
-            <button onClick={handlePrevMonth} className="p-2 text-gray-400 hover:text-gray-900 transition-colors">
+          <div className="flex items-center justify-between bg-[var(--color-bg-panel)] rounded-2xl p-2 shadow-sm border border-[var(--color-border)] medieval-border">
+            <button onClick={handlePrevMonth} className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
               <ArrowDownLeft className="w-5 h-5 rotate-45" />
             </button>
             <div className="text-center">
-              <p className="text-sm font-bold text-gray-900">{monthNames[month - 1]}</p>
-              <p className="text-xs text-gray-500">{year}</p>
+              <p className="text-sm font-bold text-[var(--color-text-main)]">{monthNames[month - 1]}</p>
+              <p className="text-xs text-[var(--color-text-muted)]">{year}</p>
             </div>
-            <button onClick={handleNextMonth} className="p-2 text-gray-400 hover:text-gray-900 transition-colors">
+            <button onClick={handleNextMonth} className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
               <ArrowUpRight className="w-5 h-5 rotate-45" />
             </button>
           </div>
         
         {/* Surplus Card */}
-        <section className={cn("p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden", colors.primary)}>
-          <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 blur-3xl"></div>
+        <section className={cn("p-8 rounded-2xl text-white shadow-xl relative overflow-hidden medieval-border medieval-glow", colors.primary)}>
+          <div className="absolute top-0 right-0 w-48 h-48 bg-black/30 rounded-full -mr-24 -mt-24 blur-3xl"></div>
           <div className="relative z-10 flex flex-col items-center text-center space-y-4">
-            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20">
+            <div className="w-16 h-16 bg-black/30 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10">
               <Wallet className="w-8 h-8" />
             </div>
             <div>
@@ -329,13 +328,13 @@ function TransactionsContent() {
         {/* Search and Filter */}
         <div className="space-y-4">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-text-muted)]" />
             <input
               type="text"
               placeholder="Buscar transação..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-white border border-gray-100 rounded-2xl shadow-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+              className="w-full pl-12 pr-4 py-4 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all text-[var(--color-text-main)] medieval-border"
             />
           </div>
           
@@ -345,10 +344,10 @@ function TransactionsContent() {
                 key={f}
                 onClick={() => setFilter(f as any)}
                 className={cn(
-                  "px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all border",
+                  "px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all border medieval-border",
                   filter === f 
                     ? cn(colors.primary, "text-white border-transparent shadow-lg", colors.shadow) 
-                    : "bg-white text-gray-500 border-gray-100 hover:border-gray-200"
+                    : "bg-[var(--color-bg-panel)] text-[var(--color-text-muted)] border-[var(--color-border)] hover:border-[var(--color-primary)]"
                 )}
               >
                 {f === 'all' ? 'Tudo' : f === 'income' ? 'Receitas' : f === 'expense' ? 'Despesas' : 'Investimentos'}
@@ -361,8 +360,8 @@ function TransactionsContent() {
       {/* Transaction List */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Transações</h4>
-          <Filter className="w-4 h-4 text-gray-400" />
+          <h4 className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Transações</h4>
+          <Filter className="w-4 h-4 text-[var(--color-text-muted)]" />
         </div>
         
         <div className="space-y-4">
@@ -382,20 +381,20 @@ function TransactionsContent() {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="flex items-center gap-4 p-4 bg-white border border-gray-50 rounded-2xl shadow-sm hover:shadow-md transition-shadow group"
+                  className="flex items-center gap-4 p-4 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl shadow-sm hover:shadow-md transition-shadow group medieval-border"
                 >
                   <div className={cn(
-                    "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0",
-                    t.type === 'income' ? "bg-emerald-50 text-emerald-600" : 
-                    t.type === 'expense' ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
+                    "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border border-[var(--color-border)]",
+                    t.type === 'income' ? "bg-emerald-900/20 text-emerald-500" : 
+                    t.type === 'expense' ? "bg-red-900/20 text-red-500" : "bg-blue-900/20 text-blue-500"
                   )}>
                     {t.type === 'income' ? <ArrowUpRight className="w-6 h-6" /> : 
                      t.type === 'expense' ? <ArrowDownLeft className="w-6 h-6" /> : <Wallet className="w-6 h-6" />}
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-900 truncate">{t.description}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                    <p className="text-sm font-bold text-[var(--color-text-main)] truncate">{t.description}</p>
+                    <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
                       {categoryName} • {new Date((t as any).created_at || t.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       {` • Por: ${userName}`}
                     </p>
@@ -404,15 +403,15 @@ function TransactionsContent() {
                   <div className="text-right flex flex-col items-end gap-1">
                     <p className={cn(
                       "text-sm font-bold",
-                      t.type === 'income' ? "text-emerald-600" : "text-gray-900"
+                      t.type === 'income' ? "text-emerald-500" : "text-[var(--color-text-main)]"
                     )}>
                       {t.type === 'income' ? '+' : '-'} {formatCurrency(t.amount)}
                     </p>
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => handleEditTransaction(t)} className="text-gray-400 hover:text-blue-500 transition-colors">
+                      <button onClick={() => handleEditTransaction(t)} className="text-[var(--color-text-muted)] hover:text-blue-500 transition-colors">
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
-                      <button onClick={() => handleDeleteTransaction(t.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                      <button onClick={() => handleDeleteTransaction(t.id)} className="text-[var(--color-text-muted)] hover:text-red-500 transition-colors">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -422,10 +421,10 @@ function TransactionsContent() {
             })
           ) : (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="w-8 h-8 text-gray-300" />
+              <div className="w-16 h-16 bg-[var(--color-bg-dark)] rounded-full flex items-center justify-center mx-auto mb-4 border border-[var(--color-border)]">
+                <Search className="w-8 h-8 text-[var(--color-text-muted)]" />
               </div>
-              <p className="text-gray-500 font-medium">Nenhuma transação encontrada.</p>
+              <p className="text-[var(--color-text-muted)] font-medium">Nenhuma transação encontrada.</p>
             </div>
           )}
         </div>
@@ -443,17 +442,17 @@ function TransactionsContent() {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Tipo</label>
+            <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-2 block">Tipo</label>
             <div className="grid grid-cols-3 gap-2">
               {(['income', 'expense', 'investment'] as const).map((type) => (
                 <button
                   key={type}
                   onClick={() => setNewTransaction({...newTransaction, type, category_id: ''})}
                   className={cn(
-                    "py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all",
+                    "py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all medieval-border",
                     newTransaction.type === type 
                       ? cn(colors.primary, "text-white border-transparent") 
-                      : "bg-gray-50 text-gray-500 border-gray-100"
+                      : "bg-[var(--color-bg-dark)] text-[var(--color-text-muted)] border-[var(--color-border)]"
                   )}
                 >
                   {type === 'income' ? 'Receita' : type === 'expense' ? 'Despesa' : 'Aporte'}
@@ -465,11 +464,11 @@ function TransactionsContent() {
           {newTransaction.type === 'investment' ? (
             <>
               <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Categoria F.A.C.E.R.O.</label>
+                <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Categoria F.A.C.E.R.O.</label>
                 <select 
                   value={newTransaction.faceroType}
                   onChange={(e) => setNewTransaction({...newTransaction, faceroType: e.target.value})}
-                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm"
+                  className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-sm text-[var(--color-text-main)]"
                 >
                   <option value="F">Fundo Imobiliário</option>
                   <option value="A">Ações</option>
@@ -481,35 +480,35 @@ function TransactionsContent() {
               </div>
               
               <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Ativo / Ticker</label>
+                <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Ativo / Ticker</label>
                 <input 
                   type="text"
                   placeholder="Ex: MXRF11, PETR4, BTC"
                   value={newTransaction.ticker}
                   onChange={(e) => setNewTransaction({...newTransaction, ticker: e.target.value})}
-                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Quantidade</label>
+                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Quantidade</label>
                   <input 
                     type="number"
                     step="0.00000001"
                     placeholder="0.00"
                     value={newTransaction.quantity}
                     onChange={(e) => setNewTransaction({...newTransaction, quantity: e.target.value})}
-                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                    className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Data Operação</label>
+                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Data Operação</label>
                   <input 
                     type="date"
                     value={newTransaction.operation_date}
                     onChange={(e) => setNewTransaction({...newTransaction, operation_date: e.target.value})}
-                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                    className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
                   />
                 </div>
               </div>
@@ -518,13 +517,13 @@ function TransactionsContent() {
             <>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block">Descrição</label>
+                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block">Descrição</label>
                   <button
                     onClick={handleSuggestCategory}
                     disabled={!newTransaction.description || isSuggesting}
                     className={cn(
-                      "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 px-2 py-1 rounded-lg transition-all",
-                      (!newTransaction.description || isSuggesting) ? "text-gray-400 bg-gray-50 cursor-not-allowed" : "text-purple-600 bg-purple-50 hover:bg-purple-100"
+                      "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 px-2 py-1 rounded-lg transition-all medieval-border",
+                      (!newTransaction.description || isSuggesting) ? "text-gray-500 bg-gray-800 cursor-not-allowed" : "text-purple-400 bg-purple-900/20 hover:bg-purple-900/40"
                     )}
                   >
                     <Sparkles className="w-3 h-3" />
@@ -536,15 +535,15 @@ function TransactionsContent() {
                   placeholder="Ex: Almoço, Salário, Aporte FII"
                   value={newTransaction.description}
                   onChange={(e) => setNewTransaction({...newTransaction, description: e.target.value})}
-                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Categoria RPG</label>
+                <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-2 block">Categoria RPG</label>
                 <select
                   value={newTransaction.category_id}
                   onChange={(e) => setNewTransaction({...newTransaction, category_id: e.target.value})}
-                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm"
+                  className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-sm text-[var(--color-text-main)]"
                 >
                   <option value="" disabled>Selecione uma categoria...</option>
                   {Object.entries(groupedCategories).map(([groupName, cats]) => (
@@ -560,13 +559,13 @@ function TransactionsContent() {
           )}
 
           <div>
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Valor Total (R$)</label>
+            <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-2 block">Valor Total (R$)</label>
             <input 
               type="number"
               placeholder="0,00"
               value={newTransaction.amount}
               onChange={(e) => setNewTransaction({...newTransaction, amount: e.target.value})}
-              className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
             />
           </div>
 
@@ -578,11 +577,11 @@ function TransactionsContent() {
                 : (!newTransaction.description || !newTransaction.amount || !newTransaction.category_id)
             }
             className={cn(
-              "w-full py-4 rounded-2xl text-white font-bold shadow-lg transition-all active:scale-95 mt-4", 
+              "w-full py-4 rounded-2xl text-white font-bold shadow-lg transition-all active:scale-95 mt-4 medieval-border", 
               (newTransaction.type === 'investment' 
                 ? (!newTransaction.ticker || !newTransaction.quantity || !newTransaction.amount)
                 : (!newTransaction.description || !newTransaction.amount || !newTransaction.category_id)) 
-                ? "opacity-50 cursor-not-allowed" : colors.primary
+                ? "opacity-50 cursor-not-allowed bg-gray-800" : colors.primary
             )}
           >
             Confirmar Transação
@@ -600,9 +599,9 @@ function TransactionsContent() {
       
       {isImportModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none">
-          <div className="bg-white p-4 rounded-xl shadow-xl border border-gray-200 mt-[400px] pointer-events-auto max-w-md">
-            <p className="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Instruções de Importação:</p>
-            <p className="text-[10px] text-gray-500 leading-relaxed">
+          <div className="bg-[var(--color-bg-panel)] p-4 rounded-xl shadow-xl border border-[var(--color-border)] mt-[400px] pointer-events-auto max-w-md medieval-border">
+            <p className="text-xs font-bold text-[var(--color-text-main)] mb-2 uppercase tracking-wider">Instruções de Importação:</p>
+            <p className="text-[10px] text-[var(--color-text-muted)] leading-relaxed">
               O arquivo deve ser um CSV com os seguintes cabeçalhos: <strong>type</strong> (income/expense), <strong>amount</strong> (valor), <strong>description</strong> (descrição), <strong>category_id</strong> (ID da categoria) e <strong>date</strong> (YYYY-MM-DD).
             </p>
           </div>
@@ -611,17 +610,17 @@ function TransactionsContent() {
 
       <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Excluir Transação">
         <div className="space-y-6">
-          <p className="text-gray-600 text-sm">Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.</p>
+          <p className="text-[var(--color-text-muted)] text-sm">Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.</p>
           <div className="flex gap-3">
             <button
               onClick={() => setIsDeleteModalOpen(false)}
-              className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-700 font-bold transition-all active:scale-95"
+              className="flex-1 py-4 rounded-2xl bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] font-bold transition-all active:scale-95 medieval-border"
             >
               Cancelar
             </button>
             <button
               onClick={confirmDeleteTransaction}
-              className="flex-1 py-4 rounded-2xl bg-red-500 text-white font-bold transition-all active:scale-95"
+              className="flex-1 py-4 rounded-2xl bg-red-900/50 border border-red-700/50 text-red-500 font-bold transition-all active:scale-95 medieval-border hover:bg-red-900/80"
             >
               Excluir
             </button>
@@ -630,7 +629,6 @@ function TransactionsContent() {
       </Modal>
 
       </main>
-      <BottomNav />
     </div>
   );
 }
