@@ -15,9 +15,11 @@ export function useKingdomInvites(email?: string) {
 
   useEffect(() => {
     if (!email) {
-      setInvites([]);
-      setLoading(false);
-      return;
+      const timer = setTimeout(() => {
+        setInvites([]);
+        setLoading(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }
 
     const q = query(

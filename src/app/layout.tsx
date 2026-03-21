@@ -1,11 +1,15 @@
-import type { Metadata, Viewport } from 'next';
+'use client';
+
 import { Inter, Space_Grotesk } from 'next/font/google';
-import { ThemeProvider } from '@/lib/ThemeContext';
+import { ThemeProvider, useTheme } from '@/lib/ThemeContext';
 import { SpeedDial } from '@/components/ui/SpeedDial';
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary';
 import { AmbientEngine } from '@/components/game/AmbientEngine';
 import { AmbientBackground } from '@/components/game/AmbientBackground';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { BottomNav } from '@/components/layout/BottomNav';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
 import './globals.css';
 
 const inter = Inter({
@@ -18,17 +22,29 @@ const spaceGrotesk = Space_Grotesk({
   variable: '--font-display',
 });
 
-export const metadata: Metadata = {
-  title: 'Rumo à Liberdade',
-  description: 'Controle financeiro inteligente para investidores de longo prazo',
-};
+function LayoutContent({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { user, loading } = useTheme();
+  
+  const isAuthPage = pathname === '/logon' || pathname === '/genesis';
+  const showNav = !isAuthPage && user && !loading;
 
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-};
+  return (
+    <div className="min-h-screen flex flex-col">
+      {showNav && <Sidebar />}
+      <div className={cn(
+        "min-h-screen flex flex-col transition-all duration-300",
+        showNav ? "md:pl-20 pb-20 md:pb-0" : "pl-0"
+      )}>
+        <main className="w-full min-h-screen relative overflow-x-hidden">
+          {children}
+          {showNav && <SpeedDial />}
+        </main>
+      </div>
+      {showNav && <BottomNav />}
+    </div>
+  );
+}
 
 export default function RootLayout({
   children,
@@ -48,13 +64,9 @@ export default function RootLayout({
           <ErrorBoundary>
             <AmbientEngine />
             <AmbientBackground />
-            <Sidebar />
-            <div className="min-h-screen flex flex-col md:pl-20">
-              <main className="w-full min-h-screen relative pb-24 overflow-x-hidden">
-                {children}
-                <SpeedDial />
-              </main>
-            </div>
+            <LayoutContent>
+              {children}
+            </LayoutContent>
           </ErrorBoundary>
         </ThemeProvider>
       </body>

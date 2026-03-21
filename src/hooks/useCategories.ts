@@ -69,9 +69,11 @@ export function useCategories() {
 
     // ⛔ Sem usuário ou reino → limpa estado
     if (!kingdom || !auth.currentUser) {
-      setCategories([]);
-      setLoading(false);
-      return;
+      const timer = setTimeout(() => {
+        setCategories([]);
+        setLoading(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }
 
     /**

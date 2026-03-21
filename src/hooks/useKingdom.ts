@@ -94,6 +94,57 @@ export function useKingdom() {
 
         unsubscribes.push(unsubscribeMember);
 
+        const setupListeners = (kId: string, unsubs: (() => void)[]) => {
+          // Assets
+          const unsubAssets = onSnapshot(
+            getCollectionByKingdom('investments', kId),
+            (snap) => {
+              setAssets(
+                snap.docs.map((d) => ({
+                  id: d.id,
+                  ...d.data()
+                })) as Asset[]
+              );
+            }
+          );
+
+          // Transactions
+          const unsubTransactions = onSnapshot(
+            query(
+              getCollectionByKingdom('transactions', kId),
+              orderBy('created_at', 'desc')
+            ),
+            (snap) => {
+              setTransactions(
+                snap.docs.map((d) => ({
+                  id: d.id,
+                  ...d.data(),
+                  date: parseDate(d.data().date),
+                  created_at: parseDate(d.data().created_at)
+                })) as Transaction[]
+              );
+            }
+          );
+
+          // Logs
+          const unsubLogs = onSnapshot(
+            query(
+              getCollectionByKingdom('activity_logs', kId),
+              orderBy('created_at', 'desc')
+            ),
+            (snap) => {
+              setActivityLogs(
+                snap.docs.map((d) => ({
+                  id: d.id,
+                  ...d.data()
+                })) as ActivityLog[]
+              );
+            }
+          );
+
+          unsubs.push(unsubAssets, unsubTransactions, unsubLogs);
+        };
+
         setupListeners(currentKingdom.id, unsubscribes);
 
       } catch (err) {
@@ -108,60 +159,6 @@ export function useKingdom() {
       unsubscribes.forEach((u) => u && u());
     };
   }, []);
-
-  /**
-   * 📡 LISTENERS
-   */
-  const setupListeners = (kingdomId: string, unsubscribes: (() => void)[]) => {
-    // Assets
-    const unsubAssets = onSnapshot(
-      getCollectionByKingdom('investments', kingdomId),
-      (snap) => {
-        setAssets(
-          snap.docs.map((d) => ({
-            id: d.id,
-            ...d.data()
-          })) as Asset[]
-        );
-      }
-    );
-
-    // Transactions
-    const unsubTransactions = onSnapshot(
-      query(
-        getCollectionByKingdom('transactions', kingdomId),
-        orderBy('created_at', 'desc')
-      ),
-      (snap) => {
-        setTransactions(
-          snap.docs.map((d) => ({
-            id: d.id,
-            ...d.data(),
-            date: parseDate(d.data().date),
-            created_at: parseDate(d.data().created_at)
-          })) as Transaction[]
-        );
-      }
-    );
-
-    // Logs
-    const unsubLogs = onSnapshot(
-      query(
-        getCollectionByKingdom('activity_logs', kingdomId),
-        orderBy('created_at', 'desc')
-      ),
-      (snap) => {
-        setActivityLogs(
-          snap.docs.map((d) => ({
-            id: d.id,
-            ...d.data()
-          })) as ActivityLog[]
-        );
-      }
-    );
-
-    unsubscribes.push(unsubAssets, unsubTransactions, unsubLogs);
-  };
 
   /**
    * ⚙️ ACTIONS
@@ -290,9 +287,11 @@ export function useKingdomMembers(kingdomId?: string) {
 
   useEffect(() => {
     if (!kingdomId) {
-      setMembers([]);
-      setLoading(false);
-      return;
+      const timer = setTimeout(() => {
+        setMembers([]);
+        setLoading(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }
 
     const q = query(

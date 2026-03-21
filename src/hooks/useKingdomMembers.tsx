@@ -16,9 +16,11 @@ export function useKingdomMembers(kingdomId?: string) {
 
   useEffect(() => {
     if (!kingdomId) {
-      setMembers([]);
-      setLoading(false);
-      return;
+      const timer = setTimeout(() => {
+        setMembers([]);
+        setLoading(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }
 
     const q = query(
