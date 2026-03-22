@@ -47,7 +47,7 @@ function AttributesContent() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=1920"
+          src="/assets/background/attributes.jpg"
           alt="Attributes Background"
           fill
           priority

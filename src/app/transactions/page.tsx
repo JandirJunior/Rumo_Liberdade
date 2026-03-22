@@ -169,7 +169,7 @@ function TransactionsContent() {
           ticker: newTransaction.ticker,
           value: parseFloat(newTransaction.amount),
           quantity: parseFloat(newTransaction.quantity),
-          operation_date: newTransaction.operation_date
+          date: newTransaction.operation_date
         });
         setIsModalOpen(false);
         setEditingTransactionId(null);
@@ -272,7 +272,7 @@ function TransactionsContent() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=1920"
+          src="/assets/background/transactions.jpg"
           alt="Transactions Background"
           fill
           priority

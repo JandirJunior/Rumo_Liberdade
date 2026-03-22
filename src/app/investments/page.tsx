@@ -33,6 +33,7 @@ export default function Investments() {
   const [isEarningModalOpen, setIsEarningModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isPlanningModalOpen, setIsPlanningModalOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean, ids: string[] | null }>({ isOpen: false, ids: null });
   const [newInvestment, setNewInvestment] = useState({
     type: 'F',
     ticker: '',
@@ -188,7 +189,7 @@ export default function Investments() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=1920"
+          src="/assets/background/investments.jpg"
           alt="Investments Background"
           fill
           priority
@@ -259,6 +260,42 @@ export default function Investments() {
           planning={contributionPlanning}
           assets={assets}
         />
+
+        {/* Modal de Confirmação de Exclusão */}
+        <Modal
+          isOpen={deleteConfirmation.isOpen}
+          onClose={() => setDeleteConfirmation({ isOpen: false, ids: null })}
+          title="Confirmar Exclusão"
+        >
+          <div className="space-y-6">
+            <div className="flex items-center gap-4 p-4 bg-red-950/20 border border-red-900/30 rounded-2xl">
+              <AlertCircle className="w-8 h-8 text-red-500 shrink-0" />
+              <p className="text-sm text-red-200">
+                Tem certeza que deseja excluir este investimento? Esta ação também removerá a transação financeira associada e não pode ser desfeita.
+              </p>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirmation({ isOpen: false, ids: null })}
+                className="flex-1 px-4 py-3 bg-[var(--color-bg-dark)] text-[var(--color-text-main)] rounded-xl font-bold border border-[var(--color-border)] hover:bg-[var(--color-bg-panel)] transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  if (deleteConfirmation.ids) {
+                    await deleteInvestment(deleteConfirmation.ids);
+                    setDeleteConfirmation({ isOpen: false, ids: null });
+                  }
+                }}
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-900/20 hover:bg-red-700 transition-all"
+              >
+                Excluir Agora
+              </button>
+            </div>
+          </div>
+        </Modal>
 
 
       {/* [RESPONSIVIDADE] Buffs Section - Scroll horizontal no mobile, flex wrap no desktop */}
@@ -413,11 +450,7 @@ export default function Investments() {
                     </div>
                   </div>
                   <button 
-                    onClick={async () => {
-                      if (confirm('Tem certeza que deseja excluir este investimento e sua transação associada?')) {
-                        await deleteInvestment(asset.ids);
-                      }
-                    }}
+                    onClick={() => setDeleteConfirmation({ isOpen: true, ids: asset.ids })}
                     className="mt-2 text-xs text-red-500 hover:text-red-700 font-bold"
                   >
                     Excluir

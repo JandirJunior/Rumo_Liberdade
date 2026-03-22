@@ -31,7 +31,7 @@ export function BottomNav() {
                 isActive ? "text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
               )}
             >
-              <item.icon size={20} className={cn(isActive && "medieval-glow")} />
+              <item.icon size={20} className={cn(isActive ? "medieval-glow" : undefined)} />
               <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
             </Link>
           );

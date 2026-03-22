@@ -131,7 +131,7 @@ export default function Tavern() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&q=80&w=1920"
+          src="/assets/background/tavern.jpg"
           alt="Tavern Background"
           fill
           priority

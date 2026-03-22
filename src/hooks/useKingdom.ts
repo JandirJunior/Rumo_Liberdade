@@ -413,6 +413,7 @@ export function useKingdom() {
     transactions,
     activityLogs,
     addTransaction,
+    updateTransaction,
     addInvestment,
     addEarning,
     deleteTransaction,

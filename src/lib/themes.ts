@@ -33,24 +33,24 @@ export interface ThemeColors {
 
 export const THEMES: Record<ThemeType, ThemeColors> = {
   FESTIM: {
-    primary: '#D4AF37',
-    accent: '#F5DEB3',
-    bgDark: '#1A1005',
-    bgPanel: '#2D1D0A',
-    bgOverlay: 'rgba(0,0,0,0.6)',
-    border: '#78350F',
-    textMain: '#FFFBEB',
-    textMuted: '#FBBF24',
-    shadow: 'rgba(212,175,55,0.25)',
-    glow: '0 0 20px rgba(212,175,55,0.6)',
+    primary: '#D4AF37', // Dourado
+    accent: '#F5DEB3', // Trigo
+    bgDark: '#F5F2ED', // Papel Envelhecido
+    bgPanel: '#FFFFFF',
+    bgOverlay: 'rgba(255,255,255,0.6)',
+    border: '#D4AF37',
+    textMain: '#1A1005',
+    textMuted: '#78350F',
+    shadow: 'rgba(212,175,55,0.1)',
+    glow: '0 0 10px rgba(212,175,55,0.3)',
     texture: '/textures/parchment.webp',
   },
 
   ARCANO: {
-    primary: '#7C3AED',
-    accent: '#C4B5FD',
-    bgDark: '#0F0720',
-    bgPanel: '#1E1035',
+    primary: '#7C3AED', // Roxo
+    accent: '#3B82F6', // Azul Chamativo
+    bgDark: '#050510', // Azul Escuro Quase Preto
+    bgPanel: '#0F0F25',
     bgOverlay: 'rgba(0,0,0,0.7)',
     border: '#312E81',
     textMain: '#F5F3FF',
@@ -60,10 +60,10 @@ export const THEMES: Record<ThemeType, ThemeColors> = {
   },
 
   CACHE: {
-    primary: '#065F46',
-    accent: '#34D399',
-    bgDark: '#061610',
-    bgPanel: '#0D2A1F',
+    primary: '#065F46', // Verde Musgo
+    accent: '#3E2723', // Café
+    bgDark: '#1B1B05', // Terra / Dark
+    bgPanel: '#2D2D0A',
     bgOverlay: 'rgba(0,0,0,0.7)',
     border: '#064E3B',
     textMain: '#ECFDF5',
@@ -73,22 +73,22 @@ export const THEMES: Record<ThemeType, ThemeColors> = {
   },
 
   EXODIA: {
-    primary: '#3B82F6',
-    accent: '#93C5FD',
-    bgDark: '#081225',
-    bgPanel: '#0F1F3D',
-    bgOverlay: 'rgba(0,0,0,0.5)',
-    border: '#1E3A8A',
-    textMain: '#EFF6FF',
-    textMuted: '#60A5FA',
-    shadow: 'rgba(59,130,246,0.3)',
-    glow: '0 0 15px rgba(59,130,246,0.5)',
+    primary: '#3B82F6', // Azul Claro
+    accent: '#94A3B8', // Cinza Metálico
+    bgDark: '#F8FAFC', // Branco / Claro
+    bgPanel: '#FFFFFF',
+    bgOverlay: 'rgba(255,255,255,0.5)',
+    border: '#3B82F6',
+    textMain: '#0F172A',
+    textMuted: '#64748B',
+    shadow: 'rgba(59,130,246,0.1)',
+    glow: '0 0 10px rgba(59,130,246,0.3)',
   },
 
   REAVER: {
-    primary: '#991B1B',
-    accent: '#DC2626',
-    bgDark: '#050505',
+    primary: '#991B1B', // Vermelho
+    accent: '#4B5563', // Cinza Escuro
+    bgDark: '#050505', // Preto
     bgPanel: '#111111',
     bgOverlay: 'rgba(0,0,0,0.8)',
     border: '#2A2A2A',
@@ -99,16 +99,16 @@ export const THEMES: Record<ThemeType, ThemeColors> = {
   },
 
   ORBITA: {
-    primary: '#7F1D1D',
-    accent: '#F87171',
-    bgDark: '#110505',
-    bgPanel: '#1F0A0A',
-    bgOverlay: 'rgba(0,0,0,0.6)',
+    primary: '#7F1D1D', // Vermelho
+    accent: '#065F46', // Verde
+    bgDark: '#F5F2ED', // Papel Envelhecido
+    bgPanel: '#FFFFFF',
+    bgOverlay: 'rgba(255,255,255,0.6)',
     border: '#7F1D1D',
-    textMain: '#FEF2F2',
-    textMuted: '#FCA5A5',
-    shadow: 'rgba(127,29,29,0.4)',
-    glow: '0 0 15px rgba(239,68,68,0.5)',
+    textMain: '#1A1005',
+    textMuted: '#7F1D1D',
+    shadow: 'rgba(127,29,29,0.1)',
+    glow: '0 0 10px rgba(127,29,29,0.3)',
   },
 
   PAPER: {

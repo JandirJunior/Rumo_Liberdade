@@ -122,7 +122,7 @@ export default function GenesisQuiz() {
     <div className="min-h-screen bg-[var(--color-bg-dark)] text-[var(--color-text-main)] p-8 flex flex-col items-center justify-center overflow-y-auto relative">
       <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
         <Image 
-          src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=1920" 
+          src="/assets/background/genesis.jpg" 
           alt="Background" 
           fill
           priority

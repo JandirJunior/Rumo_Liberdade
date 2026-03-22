@@ -68,7 +68,7 @@ export default function LoginPage() {
       {/* Camada de Fundo: Imagem ilustrativa de aventura RPG com overlay de gradiente */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="https://images.unsplash.com/photo-1533154683836-84ea7a0bc310?auto=format&fit=crop&q=80&w=1920"
+          src="/assets/background/logon.jpg"
           alt="RPG Adventure Background"
           fill
           priority

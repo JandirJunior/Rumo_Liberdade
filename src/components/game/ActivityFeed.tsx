@@ -1,4 +1,4 @@
-import { ActivityLog } from '@/lib/types';
+import { ActivityLog } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Activity, PlusCircle, Edit, Trash2, UserPlus, LogIn, LogOut, Shield } from 'lucide-react';

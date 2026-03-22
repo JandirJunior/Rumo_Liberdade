@@ -9,7 +9,8 @@ export async function logActivity(
   kingdomId: string,
   userId: string,
   action: string,
-  entityId?: string
+  entityId?: string,
+  details?: any
 ) {
   const id = doc(collection(db, 'activity_logs')).id;
 
@@ -19,6 +20,7 @@ export async function logActivity(
     user_id: userId,
     action,
     entity_id: entityId || null,
+    details: details || null,
     created_at: new Date()
   });
 }

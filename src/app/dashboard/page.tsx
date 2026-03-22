@@ -177,7 +177,7 @@ export default function Dashboard() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&q=80&w=1920"
+          src="/assets/background/dashboard.jpg"
           alt="Dashboard Background"
           fill
           priority

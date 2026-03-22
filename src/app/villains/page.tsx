@@ -37,7 +37,7 @@ export default function Villains() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://images.unsplash.com/photo-1502700807168-484a3e7889d0?auto=format&fit=crop&q=80&w=1920"
+          src="/assets/background/villains.jpg"
           alt="Villains Background"
           fill
           priority
