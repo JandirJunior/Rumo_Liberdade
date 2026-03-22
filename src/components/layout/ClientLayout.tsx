@@ -1,6 +1,7 @@
 'use client';
 
 import { ThemeProvider, useTheme } from '@/lib/ThemeContext';
+import { KingdomProvider } from '@/contexts/KingdomContext';
 import { SpeedDial } from '@/components/ui/SpeedDial';
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary';
 import { AmbientEngine } from '@/components/game/AmbientEngine';
@@ -37,13 +38,15 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
-      <ErrorBoundary>
-        <AmbientEngine />
-        <AmbientBackground />
-        <LayoutContent>
-          {children}
-        </LayoutContent>
-      </ErrorBoundary>
+      <KingdomProvider>
+        <ErrorBoundary>
+          <AmbientEngine />
+          <AmbientBackground />
+          <LayoutContent>
+            {children}
+          </LayoutContent>
+        </ErrorBoundary>
+      </KingdomProvider>
     </ThemeProvider>
   );
 }

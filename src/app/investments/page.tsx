@@ -22,7 +22,7 @@ import { financialEngine } from '@/lib/financialEngine';
 export default function Investments() {
   const { theme } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
-  const { assets, loading, addInvestment, addEarning, deleteInvestment, contributionPlanning, updateContributionPlanning } = useKingdom();
+  const { assets, loading: kingdomLoading, addInvestment, addEarning, deleteInvestment, contributionPlanning, updateContributionPlanning } = useKingdom();
   
   const { totalValue, aggregated, tickerDetails } = useMemo(() => 
     financialEngine.calculateInvestmentPower(assets),
@@ -33,6 +33,7 @@ export default function Investments() {
   const [isEarningModalOpen, setIsEarningModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isPlanningModalOpen, setIsPlanningModalOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean, ids: string[] | null }>({ isOpen: false, ids: null });
   const [newInvestment, setNewInvestment] = useState({
     type: 'F',
@@ -133,7 +134,16 @@ export default function Investments() {
     atual: asset.currentPercent * 100,
     alvo: asset.targetPercent * 100,
     valor: asset.value,
+    type: asset.faceroType,
   }));
+
+  const filteredTickerDetails = selectedCategory 
+    ? tickerDetails?.filter(asset => asset.faceroType === selectedCategory)
+    : tickerDetails;
+
+  const filteredAggregated = selectedCategory 
+    ? aggregated.filter(asset => asset.faceroType === selectedCategory)
+    : aggregated;
 
   const BUFFS = [
     { 
@@ -173,7 +183,7 @@ export default function Investments() {
     }
   };
 
-  if (loading) {
+  if (kingdomLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-dark)]">
         <div className="text-center space-y-4">
@@ -341,7 +351,7 @@ export default function Investments() {
                       cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                       contentStyle={{ borderRadius: '12px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-panel)', color: 'var(--color-text-main)', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
                     />
-                    <Bar dataKey="atual" fill="var(--color-primary)" radius={[0, 4, 4, 0]} name="Poder Atual %" />
+                    <Bar dataKey="atual" fill="var(--color-primary)" radius={[0, 4, 4, 0]} name="Poder Atual %" onClick={(data: any) => setSelectedCategory(data.type === selectedCategory ? null : data.type)} />
                     <Bar dataKey="alvo" fill="var(--color-border)" radius={[0, 4, 4, 0]} name="Poder Alvo %" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -368,7 +378,7 @@ export default function Investments() {
               </div>
               
               <div className="space-y-4">
-                {aggregated.filter(a => a.deficit > 0).map((asset, i) => (
+                {filteredAggregated.filter(a => a.deficit > 0).map((asset, i) => (
                   <div key={i} className="flex items-center justify-between bg-white/10 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
@@ -405,7 +415,7 @@ export default function Investments() {
 
               <div className="space-y-3">
                 <p className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Distribuição Sugerida (FACERO)</p>
-                {aggregated.map((asset, i) => {
+                {filteredAggregated.map((asset, i) => {
                   const suggestedAmount = (totalValue * 0.05) * asset.targetPercent;
                   return (
                     <div key={i} className="flex items-center justify-between p-3 bg-[var(--color-bg-dark)] rounded-xl border border-[var(--color-border)]">
@@ -434,7 +444,7 @@ export default function Investments() {
             <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Inventário de Ativos</h4>
             {/* [RESPONSIVIDADE] No mobile é 1 coluna, no tablet (sm) divide em 2 colunas, no desktop (lg) volta pra 1 coluna pois já está na coluna direita do grid principal */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-              {tickerDetails?.map((asset: any, i: number) => (
+              {filteredTickerDetails?.map((asset: any, i: number) => (
                 <div key={i} className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-4 shadow-sm flex flex-col justify-between medieval-border">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-12 h-12 bg-[var(--color-bg-dark)] rounded-2xl flex items-center justify-center text-[var(--color-primary)] shrink-0 border border-[var(--color-border)]">

@@ -14,6 +14,7 @@ import { FaceroStats, Archetype } from '@/types';
 import { ARCHETYPE_IMAGES } from '@/lib/data';
 import { BudgetProgressPanel } from '@/components/ui/BudgetProgressPanel';
 import { useKingdom } from '@/hooks/useKingdom';
+import { useTheme } from '@/lib/ThemeContext';
 import { PlanningModal } from '@/components/investments/PlanningModal';
 
 // Banco de questões do quiz com pontuação para cada atributo F.A.C.E.R.O.
@@ -67,6 +68,7 @@ export default function GenesisQuiz() {
   const [finished, setFinished] = useState(false);
   const [showBudget, setShowBudget] = useState(false);
   const router = useRouter();
+  const { theme } = useTheme();
   const { kingdom, loading: kingdomLoading, contributionPlanning, updateContributionPlanning } = useKingdom();
   const [isPlanningModalOpen, setIsPlanningModalOpen] = useState(false);
 
