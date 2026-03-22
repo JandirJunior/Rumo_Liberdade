@@ -5,7 +5,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Header } from '@/components/layout/Header';
-import { MOCK_ASSETS } from '@/lib/data';
 import { formatCurrency, cn } from '@/lib/utils';
 import { Info, TrendingUp, AlertCircle, Sparkles, Zap, Shield, Swords, Compass, Wand2, Plus, Upload, Target } from 'lucide-react';
 import { PlanningModal } from '@/components/investments/PlanningModal';
@@ -66,7 +65,7 @@ export default function Investments() {
       ticker: newInvestment.ticker.toUpperCase(),
       value: parseFloat(newInvestment.value),
       quantity: parseFloat(newInvestment.quantity),
-      operation_date: newInvestment.operation_date
+      date: newInvestment.operation_date
     });
     
     setIsModalOpen(false);
@@ -116,7 +115,7 @@ export default function Investments() {
         ticker: item.ticker.toUpperCase(),
         value: parseFloat(item.value),
         quantity: parseFloat(item.quantity),
-        operation_date: item.date || new Date().toISOString().split('T')[0]
+        date: item.date || new Date().toISOString().split('T')[0]
       });
     }
   };
@@ -189,9 +188,10 @@ export default function Investments() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://images.unsplash.com/photo-1590283603385-fc77b09f7835?auto=format&fit=crop&q=80&w=1920"
+          src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=1920"
           alt="Investments Background"
           fill
+          priority
           className="object-cover"
           referrerPolicy="no-referrer"
         />
@@ -296,7 +296,7 @@ export default function Investments() {
             <h4 className="text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-6">Equilíbrio F.A.C.E.R.O. (%)</h4>
             <div className="h-64 sm:h-80 w-full">
               {mounted && (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                   <BarChart data={chartData} layout="vertical" margin={{ left: -20 }}>
                     <XAxis type="number" hide />
                     <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: 'var(--color-text-muted)' }} />
@@ -415,7 +415,7 @@ export default function Investments() {
                   <button 
                     onClick={async () => {
                       if (confirm('Tem certeza que deseja excluir este investimento e sua transação associada?')) {
-                        await deleteInvestment(asset.id);
+                        await deleteInvestment(asset.ids);
                       }
                     }}
                     className="mt-2 text-xs text-red-500 hover:text-red-700 font-bold"

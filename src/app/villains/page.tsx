@@ -40,6 +40,7 @@ export default function Villains() {
           src="https://images.unsplash.com/photo-1502700807168-484a3e7889d0?auto=format&fit=crop&q=80&w=1920"
           alt="Villains Background"
           fill
+          priority
           className="object-cover"
           referrerPolicy="no-referrer"
         />

@@ -125,6 +125,7 @@ export default function GenesisQuiz() {
           src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=1920" 
           alt="Background" 
           fill
+          priority
           className="object-cover"
           referrerPolicy="no-referrer"
         />

@@ -22,6 +22,7 @@ import {
   where,
   doc,
   setDoc,
+  updateDoc,
   deleteDoc,
   getDoc,
   writeBatch,
@@ -48,6 +49,7 @@ import { hasPermission } from '@/lib/permissionEngine';
 export function useKingdom() {
   const [kingdom, setKingdom] = useState<Kingdom | null>(null);
   const [role, setRole] = useState<KingdomRole | null>(null);
+  const [memberId, setMemberId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -90,6 +92,7 @@ export function useKingdom() {
         const unsubscribeMember = onSnapshot(memberQuery, (snap) => {
           if (!snap.empty) {
             setRole(snap.docs[0].data().role);
+            setMemberId(snap.docs[0].id);
           }
         }, (error) => {
           handleFirestoreError(error, OperationType.GET, 'kingdom_members');
@@ -224,6 +227,25 @@ export function useKingdom() {
     await addXP(auth.currentUser!.uid, 10);
   };
 
+  const updateTransaction = async (id: string, data: Partial<Transaction>) => {
+    validateBase();
+    
+    const txRef = doc(db, 'transactions', id);
+    const txDoc = await getDoc(txRef);
+    
+    if (!txDoc.exists()) {
+      throw new Error('Transaction not found');
+    }
+    
+    const updateData: any = { ...data };
+    if (data.date) {
+      updateData.date = new Date(data.date);
+    }
+    
+    await updateDoc(txRef, updateData);
+    await logActivity(kingdom!.id, auth.currentUser!.uid, 'UPDATE_TRANSACTION', id);
+  };
+
   const addInvestment = async (data: {
     ticker: string;
     value: number;
@@ -295,29 +317,40 @@ export function useKingdom() {
     await deleteDoc(doc(db, 'transactions', id));
   };
 
-  const deleteInvestment = async (id: string) => {
+  const deleteInvestment = async (ids: string | string[]) => {
     validateBase();
-    console.log('Attempting to delete investment:', id);
-    
-    const invDoc = await getDoc(doc(db, 'investments', id));
-    if (!invDoc.exists()) {
-        console.error('Investment not found:', id);
-        throw new Error('Investimento não encontrado');
-    }
-    const invData = invDoc.data();
-    console.log('Investment data:', invData);
+    const idsArray = Array.isArray(ids) ? ids : [ids];
+    console.log('Attempting to delete investments:', idsArray);
     
     const batch = writeBatch(db);
-    batch.delete(doc(db, 'investments', id));
     
-    if (invData.transaction_id) {
-        console.log('Deleting associated transaction:', invData.transaction_id);
-        batch.delete(doc(db, 'transactions', invData.transaction_id));
+    for (const id of idsArray) {
+      const invDoc = await getDoc(doc(db, 'investments', id));
+      if (!invDoc.exists()) {
+          console.warn('Investment not found:', id);
+          continue;
+      }
+      const invData = invDoc.data();
+      console.log('Investment data:', invData);
+      
+      batch.delete(doc(db, 'investments', id));
+      
+      if (invData.transaction_id) {
+          console.log('Deleting associated transaction:', invData.transaction_id);
+          batch.delete(doc(db, 'transactions', invData.transaction_id));
+      }
     }
     
     await batch.commit();
-    console.log('Investment deleted successfully');
-    await logActivity(kingdom!.id, auth.currentUser!.uid, 'DELETE_INVESTMENT', id);
+    console.log('Investments deleted successfully');
+    await logActivity(kingdom!.id, auth.currentUser!.uid, 'DELETE_INVESTMENT', idsArray.join(', '));
+  };
+
+  const joinKingdomByCode = async (code: string) => {
+    if (!auth.currentUser) throw new Error('Not authenticated');
+    const kingdom = await kingdomService.getKingdomByInviteCode(code);
+    if (!kingdom) throw new Error('Invalid code');
+    await kingdomService.addMember(kingdom.id, auth.currentUser.uid, 'member');
   };
 
   const updateContributionPlanning = async (percentages: {
@@ -374,14 +407,17 @@ export function useKingdom() {
   return {
     kingdom,
     role,
+    memberId,
     loading,
     assets,
     transactions,
     activityLogs,
     addTransaction,
     addInvestment,
+    addEarning,
     deleteTransaction,
     deleteInvestment,
+    joinKingdomByCode,
     contributionPlanning,
     updateContributionPlanning
   };

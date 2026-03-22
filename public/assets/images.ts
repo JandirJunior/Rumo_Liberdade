@@ -16,4 +16,4 @@ export const VILLAINS = Array.from({ length: 192 }, (_, i) => ({
   image: `/assets/villains/villain_${String(i + 1).padStart(3, "0")}.webp`
 }));
 
-export const USER_DEFAULT_AVATAR = "/assets/user/avatar_default.webp";
+export const USER_DEFAULT_AVATAR = "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix";

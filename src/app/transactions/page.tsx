@@ -272,9 +272,10 @@ function TransactionsContent() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://images.unsplash.com/photo-1519074063912-ad25b57b6d17?auto=format&fit=crop&q=80&w=1920"
+          src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=1920"
           alt="Transactions Background"
           fill
+          priority
           className="object-cover"
           referrerPolicy="no-referrer"
         />

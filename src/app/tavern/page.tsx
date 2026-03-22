@@ -134,6 +134,7 @@ export default function Tavern() {
           src="https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&q=80&w=1920"
           alt="Tavern Background"
           fill
+          priority
           className="object-cover"
           referrerPolicy="no-referrer"
         />

@@ -11,7 +11,7 @@ import { GoogleGenAI } from '@google/genai';
 import { Avatar } from '@/components/game/Avatar';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Header } from '@/components/layout/Header';
-import { MOCK_PROFILE, MOCK_ASSETS, MOCK_TRANSACTIONS, MOCK_GAME_STATE, ARCHETYPE_IMAGES } from '@/lib/data';
+import { MOCK_GAME_STATE, ARCHETYPE_IMAGES } from '@/lib/data';
 import { UserGameState } from '@/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';

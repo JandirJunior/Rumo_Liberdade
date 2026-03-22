@@ -31,16 +31,16 @@ function AttributesContent() {
 
   const cofreReino = budgetProgress
     .filter(b => b.rpg_group === '💎 Cofre do Reino (Receitas Fixas)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.gasto_real + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
+    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
   const saquesMissoes = budgetProgress
     .filter(b => b.rpg_group === '⚡ Saque de Missões (Receitas Variáveis)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.gasto_real + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
+    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
   const tributosReino = budgetProgress
     .filter(b => b.rpg_group === '🛡️ Tributos do Reino (Despesas Fixas)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.gasto_real + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
+    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
   const aventurasHeroi = budgetProgress
     .filter(b => b.rpg_group === '⚔️ Aventuras do Herói (Despesas Variáveis)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.gasto_real + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
+    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
   
   return (
     <div className={cn("min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)] relative overflow-hidden")}>
@@ -50,6 +50,7 @@ function AttributesContent() {
           src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=1920"
           alt="Attributes Background"
           fill
+          priority
           className="object-cover"
           referrerPolicy="no-referrer"
         />

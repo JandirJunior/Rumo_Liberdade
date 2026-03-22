@@ -8,11 +8,11 @@ type AmbientEngineProps = {
   volume?: number;
 };
 
-export function AmbientEngine({ baseAudioUrl = '/assets/audio/base-ambient.mp3', randomSounds = [], volume = 0.2 }: AmbientEngineProps) {
+export function AmbientEngine({ baseAudioUrl, randomSounds = [], volume = 0.2 }: AmbientEngineProps) {
   const baseAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !baseAudioUrl) return;
 
     // Initialize base audio
     if (!baseAudioRef.current) {

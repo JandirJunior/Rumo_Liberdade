@@ -71,6 +71,7 @@ export default function LoginPage() {
           src="https://images.unsplash.com/photo-1533154683836-84ea7a0bc310?auto=format&fit=crop&q=80&w=1920"
           alt="RPG Adventure Background"
           fill
+          priority
           className="object-cover opacity-20 mix-blend-overlay"
           referrerPolicy="no-referrer"
         />

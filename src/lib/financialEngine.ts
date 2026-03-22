@@ -181,7 +181,7 @@ export function calculateInvestmentPower(assets: any[]) {
   });
 
   // Group by ticker for average cost
-  const tickerGroups: Record<string, { totalValue: number, totalQuantity: number, type: string, faceroType: string }> = {};
+  const tickerGroups: Record<string, { totalValue: number, totalQuantity: number, type: string, faceroType: string, ids: string[] }> = {};
   
   if (Array.isArray(assets)) {
     assets.forEach(asset => {
@@ -192,11 +192,15 @@ export function calculateInvestmentPower(assets: any[]) {
           totalValue: 0, 
           totalQuantity: 0, 
           type: asset.type || 'other', 
-          faceroType: asset.faceroType || 'O' 
+          faceroType: asset.faceroType || 'O',
+          ids: []
         };
       }
       tickerGroups[ticker].totalValue += Number(asset.value || 0);
       tickerGroups[ticker].totalQuantity += Number(asset.quantity || 0);
+      if (asset.id) {
+        tickerGroups[ticker].ids.push(asset.id);
+      }
     });
   }
 
@@ -206,7 +210,8 @@ export function calculateInvestmentPower(assets: any[]) {
     totalQuantity: data.totalQuantity,
     averageCost: data.totalQuantity > 0 ? data.totalValue / data.totalQuantity : 0,
     type: data.type,
-    faceroType: data.faceroType
+    faceroType: data.faceroType,
+    ids: data.ids
   }));
 
   return {

@@ -11,7 +11,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { TrendingUp, TrendingDown, Target, ChevronRight, Bell, Trophy, Zap, Shield, Wand2, HandCoins, Compass, VenetianMask, Home, Sparkles, MessageSquare, User } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
-import { MOCK_GOALS, MOCK_PROFILE, MOCK_TRANSACTIONS, MOCK_GAME_STATE, MOCK_ASSETS } from '@/lib/data';
+import { MOCK_GOALS, MOCK_GAME_STATE } from '@/lib/data';
 import { formatCurrency, cn } from '@/lib/utils';
 import { ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis } from 'recharts';
 import { useTheme } from '@/lib/ThemeContext';
@@ -70,16 +70,16 @@ export default function Dashboard() {
 
   const cofreReino = budgetProgress
     .filter(b => b.rpg_group === '💎 Cofre do Reino (Receitas Fixas)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.gasto_real + curr.gasto_real }), { orcado: 0, realizado: 0 });
+    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real }), { orcado: 0, realizado: 0 });
   const saquesMissoes = budgetProgress
     .filter(b => b.rpg_group === '⚡ Saques de Missões (Receitas Variáveis)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.gasto_real + curr.gasto_real }), { orcado: 0, realizado: 0 });
+    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real }), { orcado: 0, realizado: 0 });
   const tributosReino = budgetProgress
     .filter(b => b.rpg_group === '🛡️ Tributos do Reino (Despesas Fixas)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.gasto_real + curr.gasto_real }), { orcado: 0, realizado: 0 });
+    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real }), { orcado: 0, realizado: 0 });
   const aventurasHeroi = budgetProgress
     .filter(b => b.rpg_group === '⚔️ Aventuras do Herói (Despesas Variáveis)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.gasto_real + curr.gasto_real }), { orcado: 0, realizado: 0 });
+    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real }), { orcado: 0, realizado: 0 });
 
   // Total investido no Inventário
   const { totalValue: totalInvested } = financialEngine.calculateInvestmentPower(assets);
@@ -180,6 +180,7 @@ export default function Dashboard() {
           src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&q=80&w=1920"
           alt="Dashboard Background"
           fill
+          priority
           className="object-cover"
           referrerPolicy="no-referrer"
         />
@@ -352,10 +353,10 @@ export default function Dashboard() {
                 <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Hexágono F.A.C.E.R.O.</h4>
                 <Zap className="w-5 h-5 text-[var(--color-primary)] fill-[var(--color-primary)]" />
               </div>
-              <Link href="/investments" className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-4 shadow-sm h-72 flex items-center justify-center medieval-border relative overflow-hidden block hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer">
+              <Link href="/investments" className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-4 shadow-sm h-72 block relative overflow-hidden hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer medieval-border">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--color-primary)_0%,transparent_70%)] opacity-5"></div>
                 {mounted && (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                     <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                       <PolarGrid stroke="var(--color-border)" strokeDasharray="3 3" />
                       <PolarAngleAxis 
