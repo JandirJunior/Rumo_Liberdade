@@ -14,8 +14,8 @@ import { ActivityFeed } from '@/components/game/ActivityFeed';
 
 export function KingdomManager({ colors }: { colors: any }) {
   const { kingdom, role, loading: kingdomLoading, activityLogs } = useKingdom();
-  const { members, loading: membersLoading } = useKingdomMembers(kingdom?.id);
-  const { invites, loading: invitesLoading } = useUserInvites(auth.currentUser?.email || undefined);
+  const { members, loading: membersLoading } = useKingdomMembers();
+  const { invites, loading: invitesLoading } = useUserInvites();
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<KingdomRole>('member');

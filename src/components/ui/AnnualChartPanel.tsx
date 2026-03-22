@@ -26,7 +26,7 @@ export function AnnualChartPanel() {
 
     const data = filteredCategories.map(cat => {
       const budget = budgets.find(b => b.category_id === cat.id);
-      const orcado = budget ? (budget.budget_amount || 0) : 0;
+      const orcado = budget ? (budget.quantidade || budget.amount || 0) : 0;
 
       const catTransactions = transactions.filter(t => {
         const d = new Date(t.date);

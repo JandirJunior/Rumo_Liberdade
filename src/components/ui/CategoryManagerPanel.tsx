@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Plus, Edit2, Trash2, Save, X, Target, Castle, Compass } from 'lucide-react';
 import { useCategories } from '@/hooks/useCategories';
-import { CategoryEntity } from '@/lib/financialEngine';
+import { CategoryEntity } from '@/types';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';

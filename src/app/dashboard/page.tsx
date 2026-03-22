@@ -47,7 +47,7 @@ export default function Dashboard() {
 
   const { budgetProgress } = useBudgets(month, year);
 
-  const { members } = useKingdomMembers(kingdom?.id);
+  const { members } = useKingdomMembers();
   const { payables } = useAccountsPayable();
   const { receivables } = useAccountsReceivable();
   const { invoices } = useCreditCardInvoices();

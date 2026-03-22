@@ -385,6 +385,8 @@ export interface Budget {
   month?: string;
 }
 
+export type BudgetEntity = Budget;
+
 export interface InvestmentCategory {
   id: string;
   name: string;

@@ -13,7 +13,8 @@ import {
   updateDoc,
   deleteDoc,
   getDoc,
-  writeBatch
+  writeBatch,
+  runTransaction
 } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 
@@ -191,7 +192,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
             ...d.data(),
             date: parseDate(d.data().date),
             created_at: parseDate(d.data().created_at)
-          } as Transaction)));
+          } as unknown as Transaction)));
         });
 
         const unsubLogs = onSnapshot(query(getCollectionByKingdom('activity_logs', kId), orderBy('created_at', 'desc')), (snap) => {
@@ -199,7 +200,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
             id: d.id,
             ...d.data(),
             created_at: parseDate(d.data().created_at)
-          } as ActivityLog)));
+          } as unknown as ActivityLog)));
         });
 
         const unsubPlanning = onSnapshot(getCollectionByKingdom('contribution_planning', kId), (snap) => {
@@ -534,7 +535,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
   const payCreditCardInvoice = async (id: string, paidAt: string) => {
     if (!auth.currentUser || !kingdom) return;
     const docRef = doc(db, 'credit_card_invoices', id);
-    await runTransaction(db, async (transaction) => {
+    await runTransaction(db, async (transaction: any) => {
       const docSnap = await transaction.get(docRef);
       if (!docSnap.exists()) throw new Error('Fatura não encontrada.');
       const data = docSnap.data();
