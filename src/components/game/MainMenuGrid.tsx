@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { Home, BarChart3, Pickaxe, ScrollText, Skull, MessageSquare } from 'lucide-react';
+import { Home, BarChart3, HandCoins, ScrollText, Skull, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const MODULES = [
@@ -28,7 +28,7 @@ const MODULES = [
     id: 'inventory',
     title: 'Inventário',
     description: 'Gerencie seus ativos e tesouros',
-    icon: Pickaxe,
+    icon: HandCoins,
     href: '/investments',
     color: 'text-emerald-500',
     bg: 'bg-emerald-500/10',

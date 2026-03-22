@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, Suspense } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
@@ -42,10 +43,21 @@ function AttributesContent() {
     .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.gasto_real + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
   
   return (
-    <div className={cn("min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)]")}>
+    <div className={cn("min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)] relative overflow-hidden")}>
+      {/* Imagem de Fundo Sugestiva */}
+      <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
+        <Image
+          src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=1920"
+          alt="Attributes Background"
+          fill
+          className="object-cover"
+          referrerPolicy="no-referrer"
+        />
+      </div>
+
       <Header />
       
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 pb-32">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 pb-32 relative z-10">
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-3xl medieval-title font-bold text-[var(--color-text-main)]">Atributos</h2>
@@ -73,14 +85,8 @@ function AttributesContent() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Coluna de Receitas */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-emerald-400" />
-              <span className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-wider">
-                Receitas
-              </span>
-            </div>
             
-            <Link href="/transactions" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
+            <Link href="/transactions?search=Cofre do Reino" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">💎</span>
                 <span className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-wider">
@@ -91,7 +97,12 @@ function AttributesContent() {
               <div className="flex justify-between items-end">
                 <div>
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
-                  <p className="text-lg font-bold text-emerald-400">{formatCurrency(cofreReino.realizado)}</p>
+                  <p className={cn(
+                    "text-lg font-bold",
+                    (cofreReino.realizado || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                  )}>
+                    {formatCurrency(cofreReino.realizado || 0)}
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Previsto</p>
@@ -104,7 +115,7 @@ function AttributesContent() {
               </div>
             </Link>
 
-            <Link href="/transactions" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
+            <Link href="/transactions?search=Saque de Missões" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">⚡</span>
                 <span className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-wider">
@@ -115,7 +126,12 @@ function AttributesContent() {
               <div className="flex justify-between items-end">
                 <div>
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
-                  <p className="text-lg font-bold text-emerald-400">{formatCurrency(saquesMissoes.realizado)}</p>
+                  <p className={cn(
+                    "text-lg font-bold",
+                    (saquesMissoes.realizado || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                  )}>
+                    {formatCurrency(saquesMissoes.realizado || 0)}
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Previsto</p>
@@ -131,14 +147,8 @@ function AttributesContent() {
 
           {/* Coluna de Despesas */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingDown className="w-4 h-4 text-red-400" />
-              <span className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-wider">
-                Despesas
-              </span>
-            </div>
-
-            <Link href="/transactions" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
+            
+            <Link href="/transactions?search=Tributos do Reino" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">🛡️</span>
                 <span className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-wider">
@@ -149,7 +159,12 @@ function AttributesContent() {
               <div className="flex justify-between items-end">
                 <div>
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
-                  <p className="text-lg font-bold text-red-400">{formatCurrency(tributosReino.realizado)}</p>
+                  <p className={cn(
+                    "text-lg font-bold",
+                    (tributosReino.realizado || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                  )}>
+                    {formatCurrency(tributosReino.realizado || 0)}
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Previsto</p>
@@ -162,7 +177,7 @@ function AttributesContent() {
               </div>
             </Link>
 
-            <Link href="/transactions" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
+            <Link href="/transactions?search=Aventuras do Herói" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">⚔️</span>
                 <span className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-wider">
@@ -173,7 +188,12 @@ function AttributesContent() {
               <div className="flex justify-between items-end">
                 <div>
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
-                  <p className="text-lg font-bold text-red-400">{formatCurrency(aventurasHeroi.realizado)}</p>
+                  <p className={cn(
+                    "text-lg font-bold",
+                    (aventurasHeroi.realizado || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                  )}>
+                    {formatCurrency(aventurasHeroi.realizado || 0)}
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Previsto</p>

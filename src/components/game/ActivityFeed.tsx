@@ -4,6 +4,8 @@ import { ptBR } from 'date-fns/locale';
 import { Activity, PlusCircle, Edit, Trash2, UserPlus, LogIn, LogOut, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+import { parseDate } from '@/services/firebaseUtils';
+
 interface ActivityFeedProps {
   logs: ActivityLog[];
   colors: any;
@@ -70,7 +72,7 @@ export function ActivityFeed({ logs, colors }: ActivityFeedProps) {
           <div className="flex-1">
             <p className="text-sm text-[var(--color-text-main)]">{getMessage(log)}</p>
             <p className="text-xs text-[var(--color-text-muted)] mt-1">
-              {formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: ptBR })}
+              {formatDistanceToNow(parseDate(log.created_at), { addSuffix: true, locale: ptBR })}
             </p>
           </div>
         </div>

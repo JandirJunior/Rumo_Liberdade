@@ -1,12 +1,15 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Header } from '@/components/layout/Header';
 import { MOCK_ASSETS } from '@/lib/data';
 import { formatCurrency, cn } from '@/lib/utils';
-import { Info, TrendingUp, AlertCircle, Sparkles, Zap, Shield, Swords, Compass, Wand2, Plus, Upload } from 'lucide-react';
+import { Info, TrendingUp, AlertCircle, Sparkles, Zap, Shield, Swords, Compass, Wand2, Plus, Upload, Target } from 'lucide-react';
+import { PlanningModal } from '@/components/investments/PlanningModal';
+import { ContributionComparison } from '@/components/investments/ContributionComparison';
 
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
@@ -20,7 +23,7 @@ import { financialEngine } from '@/lib/financialEngine';
 export default function Investments() {
   const { theme } = useTheme();
   const colors = THEMES[theme] || THEMES.default;
-  const { assets, loading, addInvestment, addEarning } = useKingdom();
+  const { assets, loading, addInvestment, addEarning, deleteInvestment, contributionPlanning, updateContributionPlanning } = useKingdom();
   
   const { totalValue, aggregated, tickerDetails } = useMemo(() => 
     financialEngine.calculateInvestmentPower(assets),
@@ -30,6 +33,7 @@ export default function Investments() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEarningModalOpen, setIsEarningModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isPlanningModalOpen, setIsPlanningModalOpen] = useState(false);
   const [newInvestment, setNewInvestment] = useState({
     type: 'F',
     ticker: '',
@@ -181,10 +185,21 @@ export default function Investments() {
   }
 
   return (
-    <div className="min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)]">
+    <div className="min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)] relative overflow-hidden">
+      {/* Imagem de Fundo Sugestiva */}
+      <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
+        <Image
+          src="https://images.unsplash.com/photo-1590283603385-fc77b09f7835?auto=format&fit=crop&q=80&w=1920"
+          alt="Investments Background"
+          fill
+          className="object-cover"
+          referrerPolicy="no-referrer"
+        />
+      </div>
+
       <Header />
       
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 pb-32 space-y-8">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 pb-32 space-y-8 relative z-10">
         {/* [RESPONSIVIDADE] Título da Seção */}
         <header className="flex items-center justify-between">
           <div>
@@ -192,6 +207,13 @@ export default function Investments() {
             <p className="text-sm text-[var(--color-text-muted)]">Onde seus rendimentos se transformam em poder</p>
           </div>
           <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setIsPlanningModalOpen(true)}
+              className="px-4 h-10 rounded-xl flex items-center gap-2 bg-[var(--color-bg-panel)] border border-[var(--color-border)] text-[var(--color-text-main)] shadow-sm font-bold text-sm transition-transform active:scale-95 hover:bg-[var(--color-bg-dark)] medieval-border"
+            >
+              <Target className="w-4 h-4" />
+              <span className="hidden sm:inline">Planejamento</span>
+            </button>
             <button 
               onClick={() => setIsImportModalOpen(true)}
               className="px-4 h-10 rounded-xl flex items-center gap-2 bg-[var(--color-bg-panel)] border border-[var(--color-border)] text-[var(--color-text-main)] shadow-sm font-bold text-sm transition-transform active:scale-95 hover:bg-[var(--color-bg-dark)] medieval-border"
@@ -224,6 +246,18 @@ export default function Investments() {
           onImport={handleImportInvestments}
           title="Importar Investimentos"
           template={['type', 'ticker', 'value', 'quantity', 'date']}
+        />
+
+        <PlanningModal
+          isOpen={isPlanningModalOpen}
+          onClose={() => setIsPlanningModalOpen(false)}
+          onSave={updateContributionPlanning}
+          initialPlanning={contributionPlanning}
+        />
+
+        <ContributionComparison
+          planning={contributionPlanning}
+          assets={assets}
         />
 
 
@@ -378,6 +412,16 @@ export default function Investments() {
                       <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Custo Médio: {formatCurrency(asset.averageCost)}</p>
                     </div>
                   </div>
+                  <button 
+                    onClick={async () => {
+                      if (confirm('Tem certeza que deseja excluir este investimento e sua transação associada?')) {
+                        await deleteInvestment(asset.id);
+                      }
+                    }}
+                    className="mt-2 text-xs text-red-500 hover:text-red-700 font-bold"
+                  >
+                    Excluir
+                  </button>
                 </div>
               ))}
               {(!tickerDetails || tickerDetails.length === 0) && (
@@ -401,13 +445,16 @@ export default function Investments() {
         <div className="space-y-4">
           <div>
             <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Ativo / Ticker</label>
-            <input 
-              type="text"
-              placeholder="Ex: MXRF11, PETR4"
+            <select 
               value={newEarning.ticker}
               onChange={(e) => setNewEarning({...newEarning, ticker: e.target.value})}
               className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
-            />
+            >
+              <option value="">Selecione um ativo</option>
+              {Array.from(new Set(assets.map(a => a.ticker))).map(ticker => (
+                <option key={ticker} value={ticker}>{ticker}</option>
+              ))}
+            </select>
           </div>
 
           <div>

@@ -34,12 +34,12 @@ import {
   KingdomRole,
   Asset,
   Transaction,
-  ActivityLog
+  ActivityLog,
+  ContributionPlanning
 } from '@/types';
 
 import { kingdomService } from '@/services/kingdomService';
-import { getCollectionByKingdom } from '@/services/firebaseUtils';
-import { handleFirestoreError, OperationType } from '@/services/firebaseUtils';
+import { getCollectionByKingdom, parseDate, handleFirestoreError, OperationType } from '@/services/firebaseUtils';
 
 import { addXP, calculateXPFromInvestments } from '@/lib/gameEngine';
 import { logActivity } from '@/lib/auditLogger';
@@ -53,6 +53,7 @@ export function useKingdom() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [contributionPlanning, setContributionPlanning] = useState<ContributionPlanning | null>(null);
 
   /**
    * 🔐 AUTH + REINO
@@ -90,6 +91,8 @@ export function useKingdom() {
           if (!snap.empty) {
             setRole(snap.docs[0].data().role);
           }
+        }, (error) => {
+          handleFirestoreError(error, OperationType.GET, 'kingdom_members');
         });
 
         unsubscribes.push(unsubscribeMember);
@@ -105,6 +108,9 @@ export function useKingdom() {
                   ...d.data()
                 })) as Asset[]
               );
+            },
+            (error) => {
+              handleFirestoreError(error, OperationType.GET, 'investments');
             }
           );
 
@@ -123,6 +129,9 @@ export function useKingdom() {
                   created_at: parseDate(d.data().created_at)
                 })) as Transaction[]
               );
+            },
+            (error) => {
+              handleFirestoreError(error, OperationType.GET, 'transactions');
             }
           );
 
@@ -136,13 +145,34 @@ export function useKingdom() {
               setActivityLogs(
                 snap.docs.map((d) => ({
                   id: d.id,
-                  ...d.data()
+                  ...d.data(),
+                  created_at: parseDate(d.data().created_at)
                 })) as ActivityLog[]
               );
+            },
+            (error) => {
+              handleFirestoreError(error, OperationType.GET, 'activity_logs');
             }
           );
 
-          unsubs.push(unsubAssets, unsubTransactions, unsubLogs);
+          // Contribution Planning
+          const unsubPlanning = onSnapshot(
+            query(
+              getCollectionByKingdom('contribution_planning', kId)
+            ),
+            (snap) => {
+              if (!snap.empty) {
+                setContributionPlanning(snap.docs[0].data() as ContributionPlanning);
+              } else {
+                setContributionPlanning(null);
+              }
+            },
+            (error) => {
+              handleFirestoreError(error, OperationType.GET, 'contribution_planning');
+            }
+          );
+
+          unsubs.push(unsubAssets, unsubTransactions, unsubLogs, unsubPlanning);
         };
 
         setupListeners(currentKingdom.id, unsubscribes);
@@ -216,7 +246,8 @@ export function useKingdom() {
       type: data.type,
       created_at: new Date(),
       kingdom_id: kingdom!.id,
-      created_by: auth.currentUser!.uid
+      created_by: auth.currentUser!.uid,
+      transaction_id: txId
     });
 
     batch.set(doc(db, 'transactions', txId), {
@@ -237,9 +268,82 @@ export function useKingdom() {
     await addXP(auth.currentUser!.uid, xp);
   };
 
+  const addEarning = async (data: {
+    ticker: string;
+    amount: number;
+    type: 'dividend' | 'jcp' | 'rent' | 'other';
+    date: string;
+  }) => {
+    validateBase();
+    const id = doc(collection(db, 'transactions')).id;
+    await setDoc(doc(db, 'transactions', id), {
+      id,
+      type: 'earning',
+      amount: data.amount,
+      category_id: 'earning',
+      description: `Provento de ${data.ticker} (${data.type})`,
+      date: new Date(data.date),
+      created_at: new Date(),
+      user_id: auth.currentUser!.uid,
+      kingdom_id: kingdom!.id
+    });
+    await logActivity(kingdom!.id, auth.currentUser!.uid, 'CREATE_EARNING', id);
+  };
+
   const deleteTransaction = async (id: string) => {
     validateBase();
     await deleteDoc(doc(db, 'transactions', id));
+  };
+
+  const deleteInvestment = async (id: string) => {
+    validateBase();
+    console.log('Attempting to delete investment:', id);
+    
+    const invDoc = await getDoc(doc(db, 'investments', id));
+    if (!invDoc.exists()) {
+        console.error('Investment not found:', id);
+        throw new Error('Investimento não encontrado');
+    }
+    const invData = invDoc.data();
+    console.log('Investment data:', invData);
+    
+    const batch = writeBatch(db);
+    batch.delete(doc(db, 'investments', id));
+    
+    if (invData.transaction_id) {
+        console.log('Deleting associated transaction:', invData.transaction_id);
+        batch.delete(doc(db, 'transactions', invData.transaction_id));
+    }
+    
+    await batch.commit();
+    console.log('Investment deleted successfully');
+    await logActivity(kingdom!.id, auth.currentUser!.uid, 'DELETE_INVESTMENT', id);
+  };
+
+  const updateContributionPlanning = async (percentages: {
+    F: number;
+    A: number;
+    C: number;
+    E: number;
+    R: number;
+    O: number;
+  }) => {
+    validateBase();
+    
+    let planningRef;
+    if (contributionPlanning) {
+      planningRef = doc(db, 'contribution_planning', contributionPlanning.id);
+    } else {
+      planningRef = doc(collection(db, 'contribution_planning'));
+    }
+
+    const payload = {
+      id: planningRef.id,
+      kingdom_id: kingdom!.id,
+      percentages
+    };
+    await setDoc(planningRef, payload);
+    await logActivity(kingdom!.id, auth.currentUser!.uid, 'UPDATE_CONTRIBUTION_PLANNING', planningRef.id);
   };
 
   /**
@@ -276,7 +380,10 @@ export function useKingdom() {
     activityLogs,
     addTransaction,
     addInvestment,
-    deleteTransaction
+    deleteTransaction,
+    deleteInvestment,
+    contributionPlanning,
+    updateContributionPlanning
   };
 }
 
@@ -306,6 +413,9 @@ export function useKingdomMembers(kingdomId?: string) {
       }));
       setMembers(data);
       setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'kingdom_members');
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -314,10 +424,45 @@ export function useKingdomMembers(kingdomId?: string) {
   return { members, loading };
 }
 
-/**
- * 📩 useKingdomInvites
- * Gerencia convites do reino
- */
+export function useUserInvites(email?: string) {
+  const [invites, setInvites] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!email) {
+      setTimeout(() => {
+        setInvites([]);
+        setLoading(false);
+      }, 0);
+      return;
+    }
+
+    const unsub = onSnapshot(
+      query(
+        collection(db, 'kingdom_invites'),
+        where('email', '==', email),
+        where('status', '==', 'pending')
+      ),
+      (snap) => {
+        setInvites(
+          snap.docs.map(d => ({
+            id: d.id,
+            ...d.data()
+          }))
+        );
+        setLoading(false);
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, 'user_invites');
+        setLoading(false);
+      }
+    );
+
+    return () => unsub();
+  }, [email]);
+
+  return { invites, loading };
+}
 
 export function useKingdomInvites(kingdomId?: string) {
   const [invites, setInvites] = useState<any[]>([]);
@@ -337,6 +482,9 @@ export function useKingdomInvites(kingdomId?: string) {
             ...d.data()
           }))
         );
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, 'kingdom_invites');
       }
     );
 

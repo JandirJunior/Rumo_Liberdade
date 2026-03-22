@@ -13,11 +13,13 @@ import { Avatar } from '@/components/game/Avatar';
 import { Archetype } from '@/types';
 import { ARCHETYPE_IMAGES } from '@/lib/data';
 import { STATIC_CHARACTERS } from '@/lib/characters';
-import { Shield, Wand2, Pickaxe, Compass, VenetianMask, Home, Zap, Trophy, User, Sparkles, Lock } from 'lucide-react';
+import { Shield, Wand2, HandCoins, Compass, VenetianMask, Home, Zap, Trophy, User, Sparkles, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/layout/Header';
 import { useKingdom } from '@/hooks/useKingdom';
 import { KingdomManager } from './KingdomManager';
+import { auth } from '@/services/firebase';
+import { signOut } from 'firebase/auth';
 
 import { ImageKey } from '@/assets/images';
 
@@ -45,7 +47,7 @@ const ARCHETYPES: { type: Archetype; name: string; desc: string; icon: any; colo
     type: 'Dwarf', 
     name: 'CACHE', 
     desc: 'Foco em Cripto Ativos e Moedas Digitais.', 
-    icon: Pickaxe,
+    icon: HandCoins,
     color: 'bg-emerald-600',
     illustration: ARCHETYPE_IMAGES['Dwarf']
   },
@@ -115,11 +117,31 @@ export default function Tavern() {
   // Busca os dados completos do arquétipo atualmente selecionado para exibir informações detalhadas (como o nome do Mentor).
   const currentArchetypeData = ARCHETYPES.find(a => a.type === gameState.archetype);
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      window.location.href = '/logon';
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
-    <div className="min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)]">
+    <div className="min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)] relative overflow-hidden">
+      {/* Imagem de Fundo Sugestiva */}
+      <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
+        <Image
+          src="https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&q=80&w=1920"
+          alt="Tavern Background"
+          fill
+          className="object-cover"
+          referrerPolicy="no-referrer"
+        />
+      </div>
+
       <Header />
       
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 pb-32 space-y-8">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 pb-32 space-y-8 relative z-10">
         {/* [RESPONSIVIDADE] Título da Seção */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -127,8 +149,16 @@ export default function Tavern() {
             <p className="text-sm text-[var(--color-text-muted)]">Personalize seu herói financeiro</p>
           </div>
           
-          {/* Toggle Modo de Jogo */}
-          <div className="flex items-center gap-3 bg-[var(--color-bg-panel)] p-2 rounded-2xl shadow-sm border border-[var(--color-border)] self-start medieval-border">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleLogout}
+              className="px-4 py-2 bg-red-900/50 text-red-500 border border-red-700/50 rounded-xl text-sm font-bold hover:bg-red-900/80 transition-colors medieval-border"
+            >
+              Sair do Sistema
+            </button>
+            
+            {/* Toggle Modo de Jogo */}
+            <div className="flex items-center gap-3 bg-[var(--color-bg-panel)] p-2 rounded-2xl shadow-sm border border-[var(--color-border)] self-start medieval-border">
             <button 
               onClick={() => setGameMode('heroi')}
               className={cn(
@@ -148,7 +178,8 @@ export default function Tavern() {
               Reino (Multi)
             </button>
           </div>
-        </header>
+        </div>
+      </header>
 
         {/* 
           [RESPONSIVIDADE] Character Preview (Perfil do Herói)
@@ -160,14 +191,6 @@ export default function Tavern() {
             <div className="w-32 h-32 bg-black/30 rounded-full flex items-center justify-center backdrop-blur-md border-4 border-white/20 overflow-hidden relative shadow-2xl shrink-0">
               <Avatar character={ARCHETYPE_IMAGES[gameState.archetype] || ARCHETYPE_IMAGES['Iniciante']} size={128} />
             </div>
-            <button 
-              onClick={() => {
-                window.location.href = '/logoff';
-              }}
-              className="mt-4 px-4 py-2 bg-red-900/50 text-red-500 border border-red-700/50 rounded-xl text-sm font-bold hover:bg-red-900/80 transition-colors medieval-border"
-            >
-              Sair do Sistema
-            </button>
             <div className="flex-1">
               <h3 className="text-3xl md:text-4xl medieval-title font-bold">{gameState.archetype}</h3>
               <p className="text-white/90 text-sm font-medium mt-1">Nível {gameState.level} • {gameState.xp.toLocaleString()} XP</p>

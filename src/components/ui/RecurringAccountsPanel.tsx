@@ -8,6 +8,7 @@ import { formatCurrency, cn } from '@/lib/utils';
 import { Plus, Trash2, Edit2, CreditCard, ArrowUpRight, ArrowDownRight, Calendar, Sparkles } from 'lucide-react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { useSearchParams } from 'next/navigation';
+import { Modal } from '@/components/ui/Modal';
 
 export function RecurringAccountsPanel() {
   const { payables, addPayable, deletePayable } = useAccountsPayable();
@@ -206,180 +207,176 @@ export function RecurringAccountsPanel() {
         </button>
       </div>
 
-      {/* Add Form */}
-      <AnimatePresence>
-        {isAdding && (
-          <motion.form
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            onSubmit={handleAdd}
-            className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] space-y-4 overflow-hidden"
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Add Modal */}
+      <Modal
+        isOpen={isAdding}
+        onClose={resetForm}
+        title={`Adicionar ${activeTab === 'payable' ? 'Conta a Pagar' : activeTab === 'receivable' ? 'Conta a Receber' : 'Cartão de Crédito'}`}
+      >
+        <form onSubmit={handleAdd} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+                  {activeTab === 'cards' ? 'Nome do Cartão' : 'Descrição'}
+                </label>
+                <button
+                  type="button"
+                  onClick={handleSuggestCategory}
+                  disabled={!description || isSuggesting}
+                  className={cn(
+                    "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 px-2 py-1 rounded-lg transition-all border",
+                    (!description || isSuggesting) ? "text-[var(--color-text-muted)] bg-[var(--color-bg-dark)] border-[var(--color-border)] cursor-not-allowed" : "text-[var(--color-accent)] bg-[var(--color-bg-dark)] border-[var(--color-accent)] hover:brightness-110"
+                  )}
+                >
+                  <Sparkles className="w-3 h-3" />
+                  {isSuggesting ? '...' : 'Sugerir'}
+                </button>
+              </div>
+              <input
+                type="text"
+                required
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+                placeholder={activeTab === 'cards' ? 'Ex: Nubank' : 'Ex: Aluguel'}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Categoria RPG</label>
+              <select
+                required
+                value={category_id}
+                onChange={(e) => setCategoryId(e.target.value)}
+                className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+              >
+                <option value="" disabled>Selecione...</option>
+                {Object.entries(groupedCategories).map(([groupName, cats]) => (
+                  <optgroup key={groupName} label={groupName}>
+                    {cats.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+
+            {activeTab !== 'cards' && (
               <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
-                    {activeTab === 'cards' ? 'Nome do Cartão' : 'Descrição'}
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleSuggestCategory}
-                    disabled={!description || isSuggesting}
-                    className={cn(
-                      "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 px-2 py-1 rounded-lg transition-all border",
-                      (!description || isSuggesting) ? "text-[var(--color-text-muted)] bg-[var(--color-bg-dark)] border-[var(--color-border)] cursor-not-allowed" : "text-[var(--color-accent)] bg-[var(--color-bg-dark)] border-[var(--color-accent)] hover:brightness-110"
-                    )}
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    {isSuggesting ? '...' : 'Sugerir'}
-                  </button>
-                </div>
+                <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Valor</label>
                 <input
-                  type="text"
+                  type="number"
                   required
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
                   className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
-                  placeholder={activeTab === 'cards' ? 'Ex: Nubank' : 'Ex: Aluguel'}
+                  placeholder="0.00"
                 />
               </div>
+            )}
 
+            {activeTab !== 'cards' && (
               <div className="space-y-1">
-                <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Categoria RPG</label>
-                <select
+                <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Data de Vencimento</label>
+                <input
+                  type="date"
                   required
-                  value={category_id}
-                  onChange={(e) => setCategoryId(e.target.value)}
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
                   className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
-                >
-                  <option value="" disabled>Selecione...</option>
-                  {Object.entries(groupedCategories).map(([groupName, cats]) => (
-                    <optgroup key={groupName} label={groupName}>
-                      {cats.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
+                />
               </div>
+            )}
 
-              {activeTab !== 'cards' && (
+            {activeTab === 'cards' && (
+              <>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Valor</label>
+                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Limite</label>
                   <input
                     type="number"
                     required
                     step="0.01"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    value={cardLimit}
+                    onChange={(e) => setCardLimit(e.target.value)}
                     className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
                     placeholder="0.00"
                   />
                 </div>
-              )}
-
-              {activeTab !== 'cards' && (
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Data de Vencimento</label>
+                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Dia de Fechamento</label>
                   <input
-                    type="date"
+                    type="number"
                     required
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
+                    min="1"
+                    max="31"
+                    value={closingDay}
+                    onChange={(e) => setClosingDay(e.target.value)}
                     className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+                    placeholder="Ex: 5"
                   />
                 </div>
-              )}
-
-              {activeTab === 'cards' && (
-                <>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Limite</label>
-                    <input
-                      type="number"
-                      required
-                      step="0.01"
-                      value={cardLimit}
-                      onChange={(e) => setCardLimit(e.target.value)}
-                      className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Dia de Fechamento</label>
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      max="31"
-                      value={closingDay}
-                      onChange={(e) => setClosingDay(e.target.value)}
-                      className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
-                      placeholder="Ex: 5"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Dia de Vencimento</label>
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      max="31"
-                      value={dueDay}
-                      onChange={(e) => setDueDay(e.target.value)}
-                      className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
-                      placeholder="Ex: 12"
-                    />
-                  </div>
-                </>
-              )}
-
-              {activeTab !== 'cards' && (
-                <div className="sm:col-span-2 flex items-center gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isRecurring}
-                      onChange={(e) => setIsRecurring(e.target.checked)}
-                      className="rounded text-[var(--color-primary)] focus:ring-[var(--color-primary)] bg-[var(--color-bg-dark)] border-[var(--color-border)]"
-                    />
-                    <span className="text-sm font-medium text-[var(--color-text-main)]">É recorrente?</span>
-                  </label>
-                  
-                  {isRecurring && (
-                    <select
-                      value={recurrenceRule}
-                      onChange={(e) => setRecurrenceRule(e.target.value)}
-                      className="bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
-                    >
-                      <option value="monthly">Mensal</option>
-                      <option value="weekly">Semanal</option>
-                      <option value="yearly">Anual</option>
-                    </select>
-                  )}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Dia de Vencimento</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    max="31"
+                    value={dueDay}
+                    onChange={(e) => setDueDay(e.target.value)}
+                    className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+                    placeholder="Ex: 12"
+                  />
                 </div>
-              )}
-            </div>
+              </>
+            )}
 
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-4 py-2 text-sm font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-dark)] border border-transparent hover:border-[var(--color-border)] rounded-xl transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-[var(--color-primary)] text-[var(--color-bg-dark)] text-sm font-bold rounded-xl hover:brightness-110 transition-colors medieval-glow"
-              >
-                Salvar
-              </button>
-            </div>
-          </motion.form>
-        )}
-      </AnimatePresence>
+            {activeTab !== 'cards' && (
+              <div className="sm:col-span-2 flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isRecurring}
+                    onChange={(e) => setIsRecurring(e.target.checked)}
+                    className="rounded text-[var(--color-primary)] focus:ring-[var(--color-primary)] bg-[var(--color-bg-dark)] border-[var(--color-border)]"
+                  />
+                  <span className="text-sm font-medium text-[var(--color-text-main)]">É recorrente?</span>
+                </label>
+                
+                {isRecurring && (
+                  <select
+                    value={recurrenceRule}
+                    onChange={(e) => setRecurrenceRule(e.target.value)}
+                    className="bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+                  >
+                    <option value="monthly">Mensal</option>
+                    <option value="weekly">Semanal</option>
+                    <option value="yearly">Anual</option>
+                  </select>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={resetForm}
+              className="px-4 py-2 text-sm font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-dark)] border border-transparent hover:border-[var(--color-border)] rounded-xl transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-[var(--color-primary)] text-[var(--color-bg-dark)] text-sm font-bold rounded-xl hover:brightness-110 transition-colors medieval-glow"
+            >
+              Salvar
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Lists */}
       <div className="space-y-3">

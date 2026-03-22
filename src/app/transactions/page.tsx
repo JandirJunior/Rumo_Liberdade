@@ -6,6 +6,7 @@
 'use client';
 
 import { Suspense, useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion } from 'motion/react';
 import { useSearchParams } from 'next/navigation';
 import { Search, Filter, ArrowUpRight, ArrowDownLeft, Wallet, Plus, Sparkles, Edit2, Trash2, Upload } from 'lucide-react';
@@ -267,10 +268,21 @@ function TransactionsContent() {
   const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
   return (
-    <div className="min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)]">
+    <div className="min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)] relative overflow-hidden">
+      {/* Imagem de Fundo Sugestiva */}
+      <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
+        <Image
+          src="https://images.unsplash.com/photo-1519074063912-ad25b57b6d17?auto=format&fit=crop&q=80&w=1920"
+          alt="Transactions Background"
+          fill
+          className="object-cover"
+          referrerPolicy="no-referrer"
+        />
+      </div>
+
       <Header />
       
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 pb-32">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 pb-32 relative z-10">
         <header className="space-y-6">
           <div className="flex items-center justify-between">
             <div>

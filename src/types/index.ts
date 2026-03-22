@@ -390,6 +390,19 @@ export interface InvestmentCategory {
   name: string;
 }
 
+export interface ContributionPlanning {
+  id: string;
+  kingdom_id: string;
+  percentages: {
+    F: number;
+    A: number;
+    C: number;
+    E: number;
+    R: number;
+    O: number;
+  };
+}
+
 export interface InvestmentProvent {
   id: string;
   kingdom_id: string;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import { motion } from 'motion/react';
 import { Shield, Sword, Skull, Trophy, Flame } from 'lucide-react';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -32,10 +33,21 @@ export default function Villains() {
   }, [transactions, assets, loading]);
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-dark)] text-[var(--color-text-main)] transition-colors duration-500 pb-32">
+    <div className="min-h-screen bg-[var(--color-bg-dark)] text-[var(--color-text-main)] transition-colors duration-500 pb-32 relative overflow-hidden">
+      {/* Imagem de Fundo Sugestiva */}
+      <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
+        <Image
+          src="https://images.unsplash.com/photo-1502700807168-484a3e7889d0?auto=format&fit=crop&q=80&w=1920"
+          alt="Villains Background"
+          fill
+          className="object-cover"
+          referrerPolicy="no-referrer"
+        />
+      </div>
+
       <Header />
       
-      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 relative z-10">
         <header className="space-y-2">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-[var(--color-bg-dark)] shadow-lg bg-[var(--color-primary)] medieval-border medieval-glow">

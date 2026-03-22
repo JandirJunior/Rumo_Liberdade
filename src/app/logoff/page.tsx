@@ -12,15 +12,15 @@ export default function LogoffPage() {
     const performLogoff = async () => {
       try {
         await signOut(auth);
-        router.push('/');
+        window.location.href = '/logon';
       } catch (error) {
         console.error('Error signing out:', error);
-        router.push('/');
+        window.location.href = '/logon';
       }
     };
 
     performLogoff();
-  }, [router]);
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">

@@ -63,3 +63,15 @@ export function handleFirestoreError(
 
   throw new Error(`Erro ao ${operation} ${entity}`);
 }
+
+/**
+ * 📅 PARSER DE DATAS DO FIRESTORE
+ */
+export function parseDate(date: any): Date {
+  if (!date) return new Date();
+  if (date instanceof Date) return date;
+  if (typeof date.toDate === 'function') return date.toDate();
+  if (date.seconds) return new Date(date.seconds * 1000);
+  const d = new Date(date);
+  return isNaN(d.getTime()) ? new Date() : d;
+}

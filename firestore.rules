@@ -69,6 +69,11 @@ service cloud.firestore {
     // Rules
     // ===============================================================
 
+    // Connection Test
+    match /_connection_test/{docId} {
+      allow read: if true;
+    }
+
     // Users
     match /users/{userId} {
       allow read: if isAuthenticated(); // Permite buscar usuários para convites
@@ -189,6 +194,14 @@ service cloud.firestore {
       allow read: if isViewer(resource.data.kingdom_id);
       allow create: if isAuthenticated() && isKingdomMember(request.resource.data.kingdom_id);
       allow update, delete: if false;
+    }
+
+    // Contribution Planning
+    match /contribution_planning/{planningId} {
+      allow read: if isViewer(resource.data.kingdom_id);
+      allow create: if isMember(request.resource.data.kingdom_id);
+      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id);
+      allow delete: if isMember(resource.data.kingdom_id);
     }
 
     // Categories (Custom per Kingdom)

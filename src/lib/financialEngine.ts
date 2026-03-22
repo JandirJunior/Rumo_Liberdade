@@ -281,7 +281,7 @@ export function calculateBudgetProgressData(
                d.getMonth() + 1 === month && 
                d.getFullYear() === year;
       })
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
     // Calculate Previsto (Predicted)
     let previsto = 0;

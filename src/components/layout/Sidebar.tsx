@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'motion/react';
-import { Home, Pickaxe, ScrollText, MessageSquare, BarChart3, Skull } from 'lucide-react';
+import { Home, HandCoins, ScrollText, MessageSquare, BarChart3, Skull } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function Sidebar() {
@@ -12,7 +12,7 @@ export function Sidebar() {
   const navItems = [
     { icon: Home, label: 'Reino', href: '/dashboard' },
     { icon: BarChart3, label: 'Atributos', href: '/attributes' },
-    { icon: Pickaxe, label: 'Inventário', href: '/investments' },
+    { icon: HandCoins, label: 'Inventário', href: '/investments' },
     { icon: ScrollText, label: 'Quests', href: '/transactions' },
     { icon: Skull, label: 'Masmorra', href: '/villains' },
     { icon: MessageSquare, label: 'Mentor', href: '/chat' },

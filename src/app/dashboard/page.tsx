@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { TrendingUp, TrendingDown, Target, ChevronRight, Bell, Trophy, Zap, Shield, Wand2, Pickaxe, Compass, VenetianMask, Home, Sparkles, MessageSquare, User } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, ChevronRight, Bell, Trophy, Zap, Shield, Wand2, HandCoins, Compass, VenetianMask, Home, Sparkles, MessageSquare, User } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { MOCK_GOALS, MOCK_PROFILE, MOCK_TRANSACTIONS, MOCK_GAME_STATE, MOCK_ASSETS } from '@/lib/data';
 import { formatCurrency, cn } from '@/lib/utils';
@@ -135,7 +135,7 @@ export default function Dashboard() {
     switch(gameState.archetype) {
       case 'Paladino': return <Shield className="w-6 h-6" />;
       case 'Mago': return <Wand2 className="w-6 h-6" />;
-      case 'Dwarf': return <Pickaxe className="w-6 h-6" />;
+      case 'Dwarf': return <HandCoins className="w-6 h-6" />;
       case 'Elfo': return <Compass className="w-6 h-6" />;
       case 'Ladino': return <VenetianMask className="w-6 h-6" />;
       case 'Hobbit': return <Home className="w-6 h-6" />;
@@ -173,11 +173,22 @@ export default function Dashboard() {
   };
 
   return (
-    <div className={cn("min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)]")}>
+    <div className={cn("min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)] relative overflow-hidden")}>
+      {/* Imagem de Fundo Sugestiva */}
+      <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
+        <Image
+          src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&q=80&w=1920"
+          alt="Dashboard Background"
+          fill
+          className="object-cover"
+          referrerPolicy="no-referrer"
+        />
+      </div>
+
       {/* Cabeçalho superior */}
       <Header />
       
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 pb-32">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 pb-32 relative z-10">
         {/* [RESPONSIVIDADE] Título da Seção com margem inferior ajustada */}
         <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -208,11 +219,7 @@ export default function Dashboard() {
           </div>
         </header>
 
-        <MainMenuGrid />
-
-        {/* [RESPONSIVIDADE] Container principal usando CSS Grid. 
-            No mobile (padrão) é 1 coluna (flex-col ou grid-cols-1).
-            No desktop (lg) divide em 12 colunas para melhor aproveitamento do espaço. */}
+        {/* [RESPONSIVIDADE] Container principal usando CSS Grid. */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* [RESPONSIVIDADE] Coluna Esquerda no Desktop (Ocupa 7 de 12 colunas) */}
@@ -247,37 +254,6 @@ export default function Dashboard() {
                 {/* [RESPONSIVIDADE] Grid de receitas/despesas removido para a página de Atributos */}
               </div>
             </motion.div>
-
-            {/* Botão Poder dos Investimentos */}
-            <Link href="/investments" className={cn("w-full p-4 rounded-2xl flex items-center justify-between transition-all hover:scale-[1.02] bg-[var(--color-bg-panel)] medieval-border shadow-sm block")}>
-              <div className="flex items-center gap-3">
-                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-[var(--color-bg-dark)] shadow-sm bg-[var(--color-primary)]")}>
-                  <Zap className="w-5 h-5" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-[var(--color-text-main)]">Poder dos Investimentos</p>
-                  <p className="text-[10px] text-[var(--color-text-muted)] font-medium">Visualizar detalhes no Inventário</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-[var(--color-text-muted)]" />
-            </Link>
-
-            {/* Acesso Rápido */}
-            {/* [RESPONSIVIDADE] 2 colunas no mobile, 2 colunas no desktop (já que está dentro da coluna esquerda) */}
-            <section className="grid grid-cols-2 gap-4">
-              <Link href="/chat" className={cn("p-4 rounded-2xl flex flex-col items-center justify-center gap-3 transition-all hover:scale-105 bg-[var(--color-bg-panel)] medieval-border")}>
-                <div className={cn("w-12 h-12 rounded-full flex items-center justify-center text-[var(--color-bg-dark)] shadow-lg bg-[var(--color-primary)]")}>
-                  <MessageSquare className="w-6 h-6" />
-                </div>
-                <span className="text-sm font-bold text-[var(--color-text-main)]">Mentor</span>
-              </Link>
-              <Link href="/investments" className={cn("p-4 rounded-2xl flex flex-col items-center justify-center gap-3 transition-all hover:scale-105 bg-[var(--color-bg-panel)] medieval-border")}>
-                <div className={cn("w-12 h-12 rounded-full flex items-center justify-center text-[var(--color-bg-dark)] shadow-lg bg-[var(--color-primary)]")}>
-                  <Pickaxe className="w-6 h-6" />
-                </div>
-                <span className="text-sm font-bold text-[var(--color-text-main)]">Inventário</span>
-              </Link>
-            </section>
 
             {/* Painéis RPG Secundários */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -376,7 +352,7 @@ export default function Dashboard() {
                 <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Hexágono F.A.C.E.R.O.</h4>
                 <Zap className="w-5 h-5 text-[var(--color-primary)] fill-[var(--color-primary)]" />
               </div>
-              <div className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-4 shadow-sm h-72 flex items-center justify-center medieval-border relative overflow-hidden">
+              <Link href="/investments" className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-4 shadow-sm h-72 flex items-center justify-center medieval-border relative overflow-hidden block hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--color-primary)_0%,transparent_70%)] opacity-5"></div>
                 {mounted && (
                   <ResponsiveContainer width="100%" height="100%">
@@ -403,7 +379,7 @@ export default function Dashboard() {
                     </RadarChart>
                   </ResponsiveContainer>
                 )}
-              </div>
+              </Link>
             </section>
 
             {/* Lista de Quests Ativas */}

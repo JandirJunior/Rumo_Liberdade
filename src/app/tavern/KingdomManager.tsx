@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { useKingdom, useKingdomMembers, useKingdomInvites } from '@/hooks/useKingdom';
+import { useKingdom, useKingdomMembers, useUserInvites } from '@/hooks/useKingdom';
 import { kingdomService } from '@/services/kingdomService';
 import { auth, db } from '@/services/firebase';
 import { collection, doc, updateDoc } from 'firebase/firestore';
@@ -15,7 +15,7 @@ import { ActivityFeed } from '@/components/game/ActivityFeed';
 export function KingdomManager({ colors }: { colors: any }) {
   const { kingdom, role, loading: kingdomLoading, activityLogs } = useKingdom();
   const { members, loading: membersLoading } = useKingdomMembers(kingdom?.id);
-  const { invites, loading: invitesLoading } = useKingdomInvites(auth.currentUser?.email || undefined);
+  const { invites, loading: invitesLoading } = useUserInvites(auth.currentUser?.email || undefined);
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<KingdomRole>('member');
