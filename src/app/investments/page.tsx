@@ -338,9 +338,11 @@ export default function Investments() {
         
         {/* [RESPONSIVIDADE] Coluna Esquerda (Ocupa 7 de 12 colunas no desktop) */}
         <div className="lg:col-span-7 space-y-8">
-          {/* Allocation Chart */}
-          <section className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm medieval-border">
-            <h4 className="text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest mb-6">Equilíbrio F.A.C.E.R.O. (%)</h4>
+          {/* Consolidated F.A.C.E.R.O. Power Panel */}
+          <section className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm medieval-border space-y-8">
+            <h4 className="text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest">Painel de Poder F.A.C.E.R.O.</h4>
+            
+            {/* Equilíbrio Chart */}
             <div className="h-64 sm:h-80 w-full">
               {mounted && (
                 <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
@@ -357,56 +359,14 @@ export default function Investments() {
                 </ResponsiveContainer>
               )}
             </div>
-          </section>
 
-          {/* Rebalancing Tool */}
-          <section className="space-y-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className={cn("w-5 h-5", colors.accent)} />
-              <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Quest de Aporte</h4>
-            </div>
-            
-            <div className={cn("rounded-2xl p-6 text-white shadow-xl medieval-border medieval-glow", colors.primary, colors.shadow)}>
-              <div className="flex items-start gap-4 mb-6">
-                <div className="w-10 h-10 bg-black/30 rounded-xl flex items-center justify-center shrink-0 backdrop-blur-md">
-                  <AlertCircle className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold">Onde forjar mais poder?</p>
-                  <p className="text-xs text-white/70">Ativos abaixo do nível de alocação alvo.</p>
-                </div>
+            {/* Planejamento de Próximo Aporte */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2">
+                <Compass className="w-5 h-5 text-[var(--color-primary)]" />
+                <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Planejamento de Próximo Aporte</h4>
               </div>
               
-              <div className="space-y-4">
-                {filteredAggregated.filter(a => a.deficit > 0).map((asset, i) => (
-                  <div key={i} className="flex items-center justify-between bg-white/10 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
-                        {getFaceroIcon(asset.faceroType)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold">{asset.name}</p>
-                        <p className="text-[10px] text-white/60 font-bold uppercase tracking-wider">Déficit de Poder</p>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-black text-white">Aportar</p>
-                      <p className="text-[10px] text-white/60">-{((asset.deficit) * 100).toFixed(1)}%</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Planning Section */}
-          <section className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm medieval-border">
-            <div className="flex items-center gap-2 mb-6">
-              <Compass className="w-5 h-5 text-[var(--color-primary)]" />
-              <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Planejamento de Próximo Aporte</h4>
-            </div>
-            
-            <div className="space-y-6">
               <div className="p-4 bg-[var(--color-bg-dark)] rounded-2xl border border-[var(--color-border)]">
                 <p className="text-xs font-bold text-[var(--color-primary)] uppercase tracking-widest mb-1">Valor Disponível</p>
                 <p className="text-2xl font-display font-bold text-[var(--color-text-main)]">{formatCurrency(totalValue * 0.05)}</p>

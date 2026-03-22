@@ -22,6 +22,7 @@ function AttributesContent() {
   const { transactions } = useKingdom();
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'Visão Geral' | 'Orçamento' | 'Recorrências'>('Visão Geral');
 
   const today = new Date();
   const [month, setMonth] = useState(today.getMonth() + 1);
@@ -41,6 +42,10 @@ function AttributesContent() {
   const aventurasHeroi = budgetProgress
     .filter(b => b.rpg_group === '⚔️ Aventuras do Herói (Despesas Variáveis)')
     .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
+  
+  // Filter out the specified expense categories from the progress panel
+  const expenseCategoriesToRemove = ['Previdência privada', 'Seguros', 'Aluguel/Financiamento', 'Impostos e taxas'];
+  const filteredBudgetProgress = budgetProgress.filter(b => !expenseCategoriesToRemove.includes(b.category_name));
   
   return (
     <div className={cn("min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)] relative overflow-hidden")}>
@@ -209,23 +214,37 @@ function AttributesContent() {
           </div>
         </div>
 
-        {/* Recurring Accounts Panel */}
-        <section>
-          <RecurringAccountsPanel />
-        </section>
-
-        {/* Annual Chart Section */}
-        <section className="bg-[var(--color-bg-panel)] rounded-2xl p-6 border border-[var(--color-border)] shadow-sm space-y-6 medieval-border">
-          <header>
-            <h3 className="text-xl medieval-title font-bold text-[var(--color-text-main)]">Visão Mensal</h3>
-            <p className="text-sm text-[var(--color-text-muted)]">Comparativo de Orçamento vs Realizado no mês atual.</p>
-          </header>
-          <AnnualChartPanel />
-        </section>
-
-        {/* Budget Progress Panel */}
-        <section className="space-y-6">
-          <BudgetProgressPanel month={today.getMonth() + 1} year={today.getFullYear()} hideSelectors={true} />
+        {/* Painéis de Detalhe com Abas */}
+        <section className="bg-[var(--color-bg-panel)] rounded-2xl border border-[var(--color-border)] shadow-sm medieval-border overflow-hidden">
+          <div className="flex border-b border-[var(--color-border)]">
+            {['Visão Geral', 'Orçamento', 'Recorrências'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab as any)}
+                className={cn(
+                  "px-6 py-4 text-sm font-bold transition-colors border-b-2",
+                  activeTab === tab 
+                    ? "border-[var(--color-primary)] text-[var(--color-text-main)]" 
+                    : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+                )}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          
+          <div className="p-6">
+            {activeTab === 'Visão Geral' && <AnnualChartPanel />}
+            {activeTab === 'Orçamento' && (
+              <BudgetProgressPanel 
+                month={today.getMonth() + 1} 
+                year={today.getFullYear()} 
+                hideSelectors={true} 
+                budgetProgress={filteredBudgetProgress} 
+              />
+            )}
+            {activeTab === 'Recorrências' && <RecurringAccountsPanel />}
+          </div>
         </section>
 
       </main>

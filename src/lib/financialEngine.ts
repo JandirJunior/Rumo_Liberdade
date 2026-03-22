@@ -25,12 +25,12 @@ export const FACERO_TARGETS: Record<string, number> = {
 };
 
 export const FACERO_LABELS: Record<string, string> = {
-  'F': 'Fundo Imobiliário',
-  'A': 'Ações',
-  'C': 'Cripto',
-  'E': 'Exterior / ETFs',
-  'R': 'Renda Fixa',
-  'O': 'Outros',
+  'F': 'FUNDOS IMOBILIÁRIOS',
+  'A': 'AÇÕES',
+  'C': 'CRIPTO ATIVOS',
+  'E': 'EXTERIOR ETF',
+  'R': 'RENDA FIXA',
+  'O': 'OPORTUNIDADES OUTROS INVESTIMENTS',
 };
 
 export function parseDate(date: any): Date {

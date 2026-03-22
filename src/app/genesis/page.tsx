@@ -67,6 +67,7 @@ export default function GenesisQuiz() {
   const [stats, setStats] = useState<FaceroStats>({ F: 0, A: 0, C: 0, E: 0, R: 0, O: 0 });
   const [finished, setFinished] = useState(false);
   const [showBudget, setShowBudget] = useState(false);
+  const [showInvestment, setShowInvestment] = useState(false);
   const router = useRouter();
   const { theme } = useTheme();
   const { kingdom, loading: kingdomLoading, contributionPlanning, updateContributionPlanning } = useKingdom();
@@ -204,6 +205,50 @@ export default function GenesisQuiz() {
                 className="w-full mt-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-primary)] text-[var(--color-primary)] font-bold rounded-xl hover:bg-[var(--color-primary)] hover:text-[var(--color-bg-dark)] transition-all"
               >
                 Planejar Aportes FACERO
+              </button>
+            </div>
+
+            <PlanningModal
+              isOpen={isPlanningModalOpen}
+              onClose={() => setIsPlanningModalOpen(false)}
+              onSave={updateContributionPlanning}
+              initialPlanning={contributionPlanning}
+            />
+
+            <button
+              onClick={() => { setShowBudget(false); setShowInvestment(true); }}
+              className="w-full py-5 bg-[var(--color-primary)] hover:brightness-110 text-[var(--color-bg-dark)] font-bold rounded-2xl shadow-xl transition-all active:scale-95 medieval-border medieval-glow flex items-center justify-center gap-2"
+            >
+              Concluir Orçamento e Planejar Aportes
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </motion.div>
+        ) : showInvestment && !finished ? (
+          /* Interface de Planejamento de Aporte (FACERO) */
+          <motion.div
+            key="investment"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="w-full max-w-4xl space-y-8 z-10"
+          >
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 bg-[var(--color-bg-panel)] rounded-2xl flex items-center justify-center mx-auto mb-4 medieval-border medieval-glow">
+                <Compass className="w-8 h-8 text-[var(--color-primary)]" />
+              </div>
+              <h2 className="text-3xl medieval-title font-bold text-[var(--color-text-main)]">Planejamento de Aportes (FACERO)</h2>
+              <p className="text-[var(--color-text-muted)] max-w-md mx-auto">
+                <span className="text-[var(--color-primary)] font-bold uppercase tracking-tighter">[PASSO OBRIGATÓRIO]</span><br />
+                Defina como seus recursos serão distribuídos entre os ativos do sistema F.A.C.E.R.O.
+              </p>
+            </div>
+
+            <div className="bg-[var(--color-bg-panel)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl medieval-border">
+              <button
+                onClick={() => setIsPlanningModalOpen(true)}
+                className="w-full py-4 bg-[var(--color-bg-dark)] border border-[var(--color-primary)] text-[var(--color-primary)] font-bold rounded-xl hover:bg-[var(--color-primary)] hover:text-[var(--color-bg-dark)] transition-all"
+              >
+                Configurar Aportes FACERO
               </button>
             </div>
 
