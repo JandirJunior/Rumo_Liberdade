@@ -12,7 +12,7 @@ import { THEMES } from '@/lib/themes';
 export function CategoryManagerPanel() {
   const { categories, loading, addCategory, updateCategory, deleteCategory } = useCategories();
   const { theme, gameMode } = useTheme();
-  const colors = THEMES[theme] || THEMES.default;
+  const colors = THEMES[theme] || THEMES.ORBITA;
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);

@@ -1,3 +1,9 @@
+/**
+ * Contexto do Reino (Multiplayer): Gerencia estado e operações relacionadas a reinos.
+ * Fornece dados de reino atual, membros, convites, transações compartilhadas e permissões.
+ * Implementa listeners em tempo real do Firestore para sincronização entre usuários.
+ * Suporta funcionalidades de colaboração financeira em modo reino vs modo herói individual.
+ */
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -17,12 +23,12 @@ import {
   runTransaction
 } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { 
-  Kingdom, 
-  KingdomRole, 
-  Transaction, 
-  Asset, 
-  ActivityLog, 
+import {
+  Kingdom,
+  KingdomRole,
+  Transaction,
+  Asset,
+  ActivityLog,
   ContributionPlanning,
   CategoryEntity,
   BudgetEntity,
@@ -35,7 +41,7 @@ import { getCollectionByKingdom, parseDate, handleFirestoreError, OperationType 
 import { kingdomService } from '@/services/kingdomService';
 import { financialEngine } from '@/lib/financialEngine';
 import { useTheme } from '@/lib/ThemeContext';
-import { addXP, calculateXPFromInvestments } from '@/lib/gameEngine';
+import { addXP, calculateXPFromInvestments, calculateTotalXPFromAssets, calculatePlayerLevel } from '@/lib/gameEngine';
 import { logActivity } from '@/lib/auditLogger';
 
 interface KingdomContextType {
@@ -43,7 +49,7 @@ interface KingdomContextType {
   role: KingdomRole | null;
   memberId: string | null;
   loading: boolean;
-  
+
   // Data
   transactions: Transaction[];
   assets: Asset[];
@@ -55,49 +61,56 @@ interface KingdomContextType {
   receivables: AccountReceivable[];
   creditCards: any[];
   creditCardInvoices: CreditCardInvoice[];
-  
+
   // Computed
   getBudgetProgress: (month: number, year: number) => BudgetProgress[];
-  
+
   // Actions
   addTransaction: (data: Partial<Transaction>) => Promise<void>;
   updateTransaction: (id: string, data: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
-  
+
   addInvestment: (data: any) => Promise<void>;
+  updateInvestment: (id: string, data: any) => Promise<void>;
   deleteInvestment: (ids: string | string[]) => Promise<void>;
-  
+
   addEarning: (data: any) => Promise<void>;
-  
+
   saveBudget: (category_id: string, amount: number) => Promise<void>;
-  
+
   addCategory: (category: any) => Promise<void>;
   updateCategory: (id: string, category: any) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
-  
+
   addPayable: (payable: any) => Promise<void>;
   updatePayable: (id: string, payable: any) => Promise<void>;
   payPayable: (id: string, paidAt: string) => Promise<void>;
   deletePayable: (id: string) => Promise<void>;
-  
+
   addReceivable: (receivable: any) => Promise<void>;
   updateReceivable: (id: string, receivable: any) => Promise<void>;
   receiveReceivable: (id: string, receivedAt: string) => Promise<void>;
   deleteReceivable: (id: string) => Promise<void>;
-  
+
   addCreditCard: (card: any) => Promise<void>;
   updateCreditCard: (id: string, card: any) => Promise<void>;
   deleteCreditCard: (id: string) => Promise<void>;
-  
+
   addCreditCardInvoice: (invoice: any) => Promise<void>;
   updateCreditCardInvoice: (id: string, invoice: any) => Promise<void>;
   payCreditCardInvoice: (id: string, paidAt: string) => Promise<void>;
   deleteCreditCardInvoice: (id: string) => Promise<void>;
-  
+
   members: any[];
   userInvites: any[];
   kingdomInvites: any[];
-  
+
+  // XP & Levels
+  kingdomLevel: number;
+  kingdomXP: number;
+  heroLevel: number;
+  heroXP: number;
+
   updateContributionPlanning: (percentages: any) => Promise<void>;
   joinKingdomByCode: (code: string) => Promise<void>;
 }
@@ -126,10 +139,43 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
   const [userInvites, setUserInvites] = useState<any[]>([]);
   const [kingdomInvites, setKingdomInvites] = useState<any[]>([]);
 
+  // XP & Levels
+  const [kingdomXP, setKingdomXP] = useState(0);
+  const [kingdomLevel, setKingdomLevel] = useState(1);
+  const [heroXP, setHeroXP] = useState(0);
+  const [heroLevel, setHeroLevel] = useState(1);
+
+  const { gameState, user } = useTheme();
+
+  useEffect(() => {
+    if (!assets) return;
+
+    // Kingdom XP: Global de todos os investimentos
+    const kXP = calculateTotalXPFromAssets(assets);
+    const kState = calculatePlayerLevel(kXP);
+    setKingdomXP(kXP);
+    setKingdomLevel(kState.level);
+
+    // Hero XP: Apenas do usuário logado + XP base do gameState (outras atividades)
+    const myAssets = assets.filter(a => a.user_id === user?.uid || a.userId === user?.uid || a.created_by === user?.uid);
+    const myInvestmentXP = calculateTotalXPFromAssets(myAssets);
+    
+    // O XP total do herói é o XP base (quests, etc) + XP de investimentos
+    // Para evitar duplicidade se o XP de investimentos já estiver no gameState.xp, 
+    // vamos considerar que o gameState.xp é o XP "base" e somamos o de investimentos dinamicamente
+    // OU simplesmente usamos o myInvestmentXP se o usuário quiser que o nível seja puramente de investimentos.
+    // Baseado na solicitação: "quando mais quantidades e mais valor investido maior deverá ser o nivel"
+    const totalHeroXP = (gameState.xp || 0) + myInvestmentXP;
+    const hState = calculatePlayerLevel(totalHeroXP);
+    
+    setHeroXP(totalHeroXP);
+    setHeroLevel(hState.level);
+  }, [assets, gameState.xp, user?.uid]);
+
   useEffect(() => {
     let unsubscribes: (() => void)[] = [];
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+    const loadKingdomData = async () => {
       if (!user) {
         setKingdom(null);
         setRole(null);
@@ -249,8 +295,8 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
         });
 
         unsubscribes.push(
-          unsubAssets, unsubTransactions, unsubLogs, unsubPlanning, 
-          unsubCategories, unsubBudgets, unsubPayables, unsubReceivables, 
+          unsubAssets, unsubTransactions, unsubLogs, unsubPlanning,
+          unsubCategories, unsubBudgets, unsubPayables, unsubReceivables,
           unsubCreditCards, unsubCreditCardInvoices, unsubMembers, unsubUserInvites, unsubKingdomInvites
         );
 
@@ -259,13 +305,14 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
       } finally {
         setLoading(false);
       }
-    });
+    };
+
+    loadKingdomData();
 
     return () => {
-      unsubscribeAuth();
       unsubscribes.forEach(u => u && u());
     };
-  }, []);
+  }, [user]);
 
   // Actions
   const addTransaction = async (data: Partial<Transaction>) => {
@@ -308,46 +355,148 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
     const batch = writeBatch(db);
     const invId = doc(collection(db, 'investments')).id;
     const txId = doc(collection(db, 'transactions')).id;
+
+    // Calcular investimento total = valor total informado
+    const totalInvestedAmount = Number(data.value);
+    // Calcular preço unitário = valor total / quantidade
+    const unitPrice = Number(data.quantity) > 0 ? totalInvestedAmount / Number(data.quantity) : 0;
+
     batch.set(doc(db, 'investments', invId), {
       id: invId,
       ticker: data.ticker,
       quantity: data.quantity,
-      invested_value: data.value,
+      price: unitPrice, // preço unitário calculado
+      invested_value: totalInvestedAmount, // valor total investido
       type: data.type,
+      faceroType: determineFaceroType(data.type),
       created_at: new Date(),
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid,
       transaction_id: txId
     });
+
     batch.set(doc(db, 'transactions', txId), {
       id: txId,
       type: 'investment',
-      amount: data.value,
-      category_id: 'investment',
+      amount: totalInvestedAmount,
+      category_id: 'investimentos',
       description: `Aporte em ${data.ticker}`,
       date: new Date(data.date),
       created_at: new Date(),
       user_id: auth.currentUser.uid,
-      kingdom_id: kingdom.id
+      userName: auth.currentUser.displayName || 'Usuário',
+      kingdom_id: kingdom.id,
+      created_by: auth.currentUser.uid
     });
-    await batch.commit();
-    await addXP(auth.currentUser.uid, calculateXPFromInvestments(data.value));
+    try {
+      await batch.commit();
+      await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_INVESTMENT', invId);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'investments/transactions');
+    }
+  };
+
+  const updateInvestment = async (id: string, data: any) => {
+    if (!auth.currentUser || !kingdom) return;
+    
+    try {
+      const updateData: any = { ...data };
+      if (data.type) updateData.faceroType = determineFaceroType(data.type);
+      
+      // Remover campos undefined para evitar erro no Firestore
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined) {
+          delete updateData[key];
+        }
+      });
+      
+      await updateDoc(doc(db, 'investments', id), {
+        ...updateData,
+        updated_at: new Date()
+      });
+      
+      await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_INVESTMENT', id);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `investments/${id}`);
+    }
+  };
+
+  // Migração de dados legados: garante que todos os investimentos tenham invested_value
+  const migrateInvestmentData = async (assetsData: Asset[], kingdomId: string) => {
+    if (!auth.currentUser) return;
+
+    const batch = writeBatch(db);
+    let hasUpdates = false;
+
+    for (const asset of assetsData) {
+      if (!asset.id) continue;
+
+      // Se não tem invested_value, precisa calcular
+      if (!asset.invested_value || asset.invested_value === 0) {
+        let calculatedValue = 0;
+
+        // Tentar calcular invested_value baseado nos campos disponíveis
+        if (asset.price && asset.quantity) {
+          calculatedValue = Number(asset.price) * Number(asset.quantity);
+        } else if (asset.value && asset.quantity) {
+          calculatedValue = Number(asset.value) * Number(asset.quantity);
+        } else if (asset.value) {
+          // Fallback: usar value como is (pode ser total ou unitário)
+          calculatedValue = Number(asset.value);
+        }
+
+        // Atualizar só se conseguir calcular um valor válido
+        if (calculatedValue > 0) {
+          batch.update(doc(db, 'investments', asset.id), {
+            invested_value: calculatedValue
+          });
+          hasUpdates = true;
+        }
+      }
+    }
+
+    // Executar atualizações em batch apenas se houver mudanças
+    if (hasUpdates && auth.currentUser.uid) {
+      try {
+        await batch.commit();
+        console.log('✅ Migração de investimentos concluída');
+      } catch (error) {
+        console.error('Erro ao migrar dados de investimentos:', error);
+      }
+    }
+  };
+
+  const determineFaceroType = (investmentType: string): string => {
+    const typeMap: Record<string, string> = {
+      'fii': 'F',
+      'stock': 'A',
+      'crypto': 'C',
+      'etf': 'E',
+      'fixed_income': 'R',
+      'other': 'O'
+    };
+    return typeMap[investmentType] || 'O';
   };
 
   const deleteInvestment = async (ids: string | string[]) => {
     if (!auth.currentUser || !kingdom) return;
     const idsArray = Array.isArray(ids) ? ids : [ids];
     const batch = writeBatch(db);
-    for (const id of idsArray) {
-      const invDoc = await getDoc(doc(db, 'investments', id));
-      if (invDoc.exists()) {
-        const invData = invDoc.data();
-        batch.delete(doc(db, 'investments', id));
-        if (invData.transaction_id) batch.delete(doc(db, 'transactions', invData.transaction_id));
+    
+    try {
+      for (const id of idsArray) {
+        const invDoc = await getDoc(doc(db, 'investments', id));
+        if (invDoc.exists()) {
+          const invData = invDoc.data();
+          batch.delete(doc(db, 'investments', id));
+          if (invData.transaction_id) batch.delete(doc(db, 'transactions', invData.transaction_id));
+        }
       }
+      await batch.commit();
+      await logActivity(kingdom.id, auth.currentUser.uid, 'DELETE_INVESTMENT', idsArray.join(', '));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, 'investments');
     }
-    await batch.commit();
-    await logActivity(kingdom.id, auth.currentUser.uid, 'DELETE_INVESTMENT', idsArray.join(', '));
   };
 
   const addEarning = async (data: any) => {
@@ -410,6 +559,10 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
     if (!auth.currentUser || !kingdom) return;
     const installments = payable.installments && payable.installments > 1 ? payable.installments : 1;
     const baseAmount = payable.amount / installments;
+    
+    // Garantir status válido
+    const validStatus = ['pendente', 'pago', 'atrasado'].includes(payable.status) ? payable.status : 'pendente';
+
     for (let i = 0; i < installments; i++) {
       const newId = doc(collection(db, 'accounts_payable')).id;
       const rawDueDate = payable.due_date || payable.dueDate || new Date().toISOString();
@@ -418,6 +571,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
       const dueDateStr = dueDate.toISOString().split('T')[0];
       const newPayable = {
         ...payable,
+        status: validStatus,
         id: newId,
         amount: baseAmount,
         due_date: dueDateStr,
@@ -436,7 +590,14 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
 
   const updatePayable = async (id: string, payable: any) => {
     if (!auth.currentUser || !kingdom) return;
-    await setDoc(doc(db, 'accounts_payable', id), payable, { merge: true });
+    
+    // Garantir status válido se estiver sendo atualizado
+    const updateData = { ...payable };
+    if (updateData.status && !['pendente', 'pago', 'atrasado'].includes(updateData.status)) {
+      updateData.status = 'pendente';
+    }
+
+    await setDoc(doc(db, 'accounts_payable', id), updateData, { merge: true });
     await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'payable' });
   };
 
@@ -455,8 +616,16 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
   const addReceivable = async (receivable: any) => {
     if (!auth.currentUser || !kingdom) return;
     const newId = doc(collection(db, 'accounts_receivable')).id;
+    
+    // Garantir status válido e data
+    const validStatus = ['pendente', 'recebido', 'atrasado', 'inadimplente'].includes(receivable.status) ? receivable.status : 'pendente';
+    const dueDate = receivable.dueDate || receivable.due_date || new Date().toISOString().split('T')[0];
+
     const newReceivable = {
       ...receivable,
+      status: validStatus,
+      dueDate: dueDate,
+      due_date: dueDate,
       id: newId,
       userId: auth.currentUser.uid,
       createdAt: new Date().toISOString(),
@@ -469,7 +638,14 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
 
   const updateReceivable = async (id: string, receivable: any) => {
     if (!auth.currentUser || !kingdom) return;
-    await setDoc(doc(db, 'accounts_receivable', id), receivable, { merge: true });
+    
+    // Garantir status válido se estiver sendo atualizado
+    const updateData = { ...receivable };
+    if (updateData.status && !['pendente', 'recebido', 'atrasado', 'inadimplente'].includes(updateData.status)) {
+      updateData.status = 'pendente';
+    }
+
+    await setDoc(doc(db, 'accounts_receivable', id), updateData, { merge: true });
     await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'receivable' });
   };
 
@@ -573,21 +749,24 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const contextValue = {
+    kingdom, role, memberId, loading,
+    transactions, assets, activityLogs, contributionPlanning, categories, budgets, payables, receivables, creditCards, creditCardInvoices,
+    getBudgetProgress,
+    kingdomLevel, kingdomXP, heroLevel, heroXP,
+    addTransaction, updateTransaction, deleteTransaction,
+    addInvestment, updateInvestment, deleteInvestment, addEarning,
+    saveBudget, addCategory, updateCategory, deleteCategory,
+    addPayable, updatePayable, payPayable, deletePayable,
+    addReceivable, updateReceivable, receiveReceivable, deleteReceivable,
+    addCreditCard, updateCreditCard, deleteCreditCard,
+    addCreditCardInvoice, updateCreditCardInvoice, payCreditCardInvoice, deleteCreditCardInvoice,
+    members, userInvites, kingdomInvites,
+    updateContributionPlanning, joinKingdomByCode
+  };
+
   return (
-    <KingdomContext.Provider value={{
-      kingdom, role, memberId, loading,
-      transactions, assets, activityLogs, contributionPlanning, categories, budgets, payables, receivables, creditCards, creditCardInvoices,
-      getBudgetProgress,
-      addTransaction, updateTransaction, deleteTransaction,
-      addInvestment, deleteInvestment, addEarning,
-      saveBudget, addCategory, updateCategory, deleteCategory,
-      addPayable, updatePayable, payPayable, deletePayable,
-      addReceivable, updateReceivable, receiveReceivable, deleteReceivable,
-      addCreditCard, updateCreditCard, deleteCreditCard,
-      addCreditCardInvoice, updateCreditCardInvoice, payCreditCardInvoice, deleteCreditCardInvoice,
-      members, userInvites, kingdomInvites,
-      updateContributionPlanning, joinKingdomByCode
-    }}>
+    <KingdomContext.Provider value={contextValue}>
       {children}
     </KingdomContext.Provider>
   );

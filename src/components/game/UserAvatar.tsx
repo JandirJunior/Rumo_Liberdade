@@ -19,6 +19,7 @@ export function UserAvatar({ src, size = 64, alt = "User Avatar" }: UserAvatarPr
         fill
         className="object-cover"
         referrerPolicy="no-referrer"
+        unoptimized
       />
     </div>
   );

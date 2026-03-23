@@ -22,7 +22,7 @@ import { THEMES } from '@/lib/themes';
 export default function AIChat() {
   // Acessa o estado global e o tema atual através do contexto
   const { gameState, theme } = useTheme();
-  const colors = THEMES[theme] || THEMES.default;
+  const colors = THEMES[theme] || THEMES.ORBITA;
 
   // Mapeamento de nomes de mentores baseados no arquétipo do usuário
   const MENTOR_NAMES: Record<string, string> = {

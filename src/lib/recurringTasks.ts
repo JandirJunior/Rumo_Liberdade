@@ -51,7 +51,7 @@ export async function generateRecurringQuests(kingdomId?: string) {
           ...payable,
           id: newId,
           dueDate: nextDate,
-          status: 'pending',
+          status: 'pendente',
           createdAt: new Date().toISOString()
         };
         
@@ -104,7 +104,7 @@ export async function generateRecurringQuests(kingdomId?: string) {
           ...receivable,
           id: newId,
           dueDate: nextDate,
-          status: 'pending',
+          status: 'pendente',
           createdAt: new Date().toISOString()
         };
         

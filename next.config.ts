@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  experimental: {
+    allowedDevOrigins: [
+      'ais-dev-wtmohswcsdehq2iav7q42t-115791841333.us-west1.run.app',
+      'ais-pre-wtmohswcsdehq2iav7q42t-115791841333.us-west1.run.app'
+    ]
+  },
   // Allow access to remote image placeholder.
   images: {
     remotePatterns: [

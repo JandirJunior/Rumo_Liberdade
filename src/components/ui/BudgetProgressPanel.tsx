@@ -18,7 +18,7 @@ export function BudgetProgressPanel({
   isPlanningMode?: boolean
 } = {}) {
   const { theme } = useTheme();
-  const colors = THEMES[theme] || THEMES.default;
+  const colors = THEMES[theme] || THEMES.ORBITA;
   
   const today = new Date();
   const [month, setMonth] = useState(initialMonth || today.getMonth() + 1);
@@ -163,25 +163,25 @@ export function BudgetProgressPanel({
                 const isEditing = editingCategory === item.category_id;
 
                 return (
-                  <div key={item.category_id} className="bg-[var(--color-bg-panel)] rounded-3xl p-5 border border-[var(--color-border)] shadow-sm relative overflow-hidden medieval-border">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
+                  <div key={item.category_id} className="bg-[var(--color-bg-panel)] rounded-xl p-3 border border-[var(--color-border)] shadow-sm relative overflow-hidden medieval-border">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
                         <div className={cn(
-                          "w-10 h-10 rounded-2xl flex items-center justify-center text-[var(--color-bg-dark)] shadow-sm",
+                          "w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-bg-dark)] shadow-sm",
                           isExceeded ? "bg-red-500" : (item.color || 'bg-[var(--color-primary)]')
                         )}>
                           {getIcon(item.icon || 'Target')}
                         </div>
                         <div>
-                          <h5 className="text-sm font-bold text-[var(--color-text-main)]">{item.category_name}</h5>
-                          <div className="flex items-center gap-1 mt-1">
+                          <h5 className="text-xs font-bold text-[var(--color-text-main)]">{item.category_name}</h5>
+                          <div className="flex items-center gap-1">
                             {isExceeded ? (
                               <AlertCircle className="w-3 h-3 text-red-500" />
                             ) : (
                               <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                             )}
                             <span className={cn(
-                              "text-[10px] font-black uppercase tracking-wider",
+                              "text-[9px] font-black uppercase tracking-wider",
                               isExceeded ? "text-red-500" : "text-emerald-500"
                             )}>
                               {item.status}
@@ -190,21 +190,21 @@ export function BudgetProgressPanel({
                         </div>
                       </div>
 
-                      <div className="text-right flex flex-col items-end gap-1">
+                      <div className="text-right flex flex-col items-end gap-0.5">
                         {isEditing ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
                             <input 
                               type="number" 
                               value={editAmount}
                               onChange={(e) => setEditAmount(e.target.value)}
-                              className="w-24 px-2 py-1 text-sm border-[var(--color-border)] bg-[var(--color-bg-dark)] text-[var(--color-text-main)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                              className="w-20 px-1 py-0.5 text-xs border-[var(--color-border)] bg-[var(--color-bg-dark)] text-[var(--color-text-main)] rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
                               autoFocus
                             />
                             <button 
                               onClick={() => handleSave(item.category_id)}
-                              className="text-xs bg-[var(--color-primary)] text-[var(--color-bg-dark)] px-2 py-1 rounded-lg font-bold"
+                              className="text-[10px] bg-[var(--color-primary)] text-[var(--color-bg-dark)] px-1.5 py-0.5 rounded-lg font-bold"
                             >
-                              Salvar
+                              OK
                             </button>
                           </div>
                         ) : (
@@ -212,23 +212,23 @@ export function BudgetProgressPanel({
                             className="cursor-pointer group text-right"
                             onClick={() => handleEdit(item.category_id, item.orcado)}
                           >
-                            <p className="text-sm font-bold text-[var(--color-text-main)] group-hover:text-[var(--color-primary)] transition-colors">
-                              {formatCurrency(item.gasto_real)} <span className="text-[var(--color-text-muted)] text-xs font-normal">/ {formatCurrency(item.orcado)}</span>
+                            <p className="text-xs font-bold text-[var(--color-text-main)] group-hover:text-[var(--color-primary)] transition-colors">
+                              {formatCurrency(item.gasto_real)} <span className="text-[var(--color-text-muted)] text-[10px] font-normal">/ {formatCurrency(item.orcado)}</span>
                             </p>
-                            <p className="text-[10px] text-[var(--color-text-muted)] font-medium uppercase tracking-wider group-hover:underline">
-                              Editar Orçamento
+                            <p className="text-[9px] text-[var(--color-text-muted)] font-medium uppercase tracking-wider group-hover:underline">
+                              Editar
                             </p>
                           </div>
                         )}
-                        <div className="flex items-center gap-1 mt-1 bg-[var(--color-bg-dark)] px-2 py-0.5 rounded-md border border-[var(--color-border)]">
-                          <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter">Previsto:</span>
-                          <span className="text-[10px] font-bold text-[var(--color-text-main)]">{formatCurrency(item.previsto)}</span>
+                        <div className="flex items-center gap-1 bg-[var(--color-bg-dark)] px-1.5 py-0 rounded-md border border-[var(--color-border)]">
+                          <span className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter">Prev:</span>
+                          <span className="text-[9px] font-bold text-[var(--color-text-main)]">{formatCurrency(item.previsto)}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Barra de Progresso RPG */}
-                    <div className="relative h-3 w-full bg-[var(--color-bg-dark)] rounded-full overflow-hidden shadow-inner mt-4 border border-[var(--color-border)]">
+                    <div className="relative h-2 w-full bg-[var(--color-bg-dark)] rounded-full overflow-hidden shadow-inner mt-2 border border-[var(--color-border)]">
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${item.progresso}%` }}
@@ -244,9 +244,9 @@ export function BudgetProgressPanel({
                       )}
                     </div>
                     
-                    <div className="flex justify-between mt-2">
-                      <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{item.progresso.toFixed(0)}%</span>
-                      <span className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-widest">+{item.xp_reward} XP</span>
+                    <div className="flex justify-between mt-1">
+                      <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{item.progresso.toFixed(0)}%</span>
+                      <span className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest">+{item.xp_reward} XP</span>
                     </div>
                   </div>
                 );

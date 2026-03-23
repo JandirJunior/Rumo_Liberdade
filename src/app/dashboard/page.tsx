@@ -12,11 +12,11 @@ import Image from 'next/image';
 import { TrendingUp, TrendingDown, Target, ChevronRight, Bell, Trophy, Zap, Shield, Wand2, HandCoins, Compass, VenetianMask, Home, Sparkles, MessageSquare, User } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { MOCK_GOALS, MOCK_GAME_STATE } from '@/lib/data';
-import { formatCurrency, cn } from '@/lib/utils';
+import { formatCurrency, cn, getColorClass } from '@/lib/utils';
 import { ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis } from 'recharts';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
-import { KingdomLevelPanel, TotalWealthPanel, QuestProgressPanel, MemberRankingPanel } from '@/components/game/RpgPanels';
+import { KingdomLevelPanel, HeroLevelPanel, TotalWealthPanel, QuestProgressPanel, MemberRankingPanel } from '@/components/game/RpgPanels';
 import { useAccountsPayable } from '@/hooks/useAccountsPayable';
 import { useAccountsReceivable } from '@/hooks/useAccountsReceivable';
 import { useCreditCardInvoices } from '@/hooks/useCreditCardInvoices';
@@ -28,6 +28,7 @@ import { ActiveQuestsBoard } from '@/components/game/ActiveQuestsBoard';
 import { generateRecurringQuests } from '@/lib/recurringTasks';
 import { financialEngine } from '@/lib/financialEngine';
 import { getDominantMentor } from '@/services/mentorService';
+import { calculatePlayerLevel } from '@/lib/gameEngine';
 
 import { auth } from '@/services/firebase';
 
@@ -37,8 +38,17 @@ export default function Dashboard() {
   const router = useRouter();
   // Acessa o estado global e o tema atual através do contexto
   const { gameState, theme, gameMode, user, loading: authLoading } = useTheme();
-  const colors = THEMES[theme] || THEMES.default;
-  const { assets, transactions, loading: kingdomLoading, kingdom } = useKingdom();
+  const colors = THEMES[theme] || THEMES.ORBITA;
+  const { 
+    assets, 
+    transactions, 
+    loading: kingdomLoading, 
+    kingdom,
+    kingdomLevel,
+    kingdomXP,
+    heroLevel,
+    heroXP
+  } = useKingdom();
   const { categories } = useCategories();
 
   const today = new Date();
@@ -150,16 +160,12 @@ export default function Dashboard() {
     ...invoices.filter(i => i.status === 'open')
   ].length;
 
-  const completedQuestsCount = [
-    ...payables.filter(p => p.status === 'pago'),
-    ...receivables.filter(r => r.status === 'recebido'),
-    ...invoices.filter(i => i.status === 'paid')
-  ].length;
+  const completedQuestsCount = gameState.completedQuests?.length || 0;
 
   const kingdomStats = {
-    level: gameState.level,
-    xp: gameState.xp,
-    nextLevelXp: (gameState.level + 1) * 100,
+    level: kingdomLevel,
+    xp: kingdomXP,
+    nextLevelXp: (kingdomLevel + 1) * 1000,
     totalWealth: totalInvested,
     activeQuestsCount,
     completedQuestsCount,
@@ -167,17 +173,19 @@ export default function Dashboard() {
       id: m.user_id,
       name: m.user_name || 'Herói',
       role: m.role,
-      wealth: 0, // Poderíamos calcular o patrimônio de cada membro se tivéssemos os dados filtrados por usuário
-      xp: 0 // Precisaríamos do XP de cada usuário
+      wealth: 0,
+      xp: 0
     }))
   };
+
+  const heroState = calculatePlayerLevel(heroXP);
 
   return (
     <div className={cn("min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)] relative overflow-hidden")}>
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="/assets/background/dashboard.jpg"
+          src="https://picsum.photos/seed/dashboard/1920/1080"
           alt="Dashboard Background"
           fill
           priority
@@ -240,7 +248,7 @@ export default function Dashboard() {
                   </p>
                 </div>
                 {/* [RESPONSIVIDADE] Texto responsivo: menor em telas muito pequenas, grande em telas normais */}
-                <h3 className="text-3xl sm:text-4xl medieval-title font-bold mb-8">R$ {totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+                <h3 className={cn("text-3xl sm:text-4xl medieval-title font-bold mb-8", getColorClass(totalInvested))}>R$ {totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                 
                 {gameMode === 'reino' && (
                   <div className="mb-8 p-4 bg-black/10 rounded-2xl border border-black/20 backdrop-blur-sm">
@@ -248,7 +256,7 @@ export default function Dashboard() {
                       <User className="w-4 h-4 text-[var(--color-bg-dark)]/60" />
                       <p className="text-[var(--color-bg-dark)]/80 text-[10px] font-black uppercase tracking-[0.2em]">Seu Poder (Herói)</p>
                     </div>
-                    <h4 className="text-2xl medieval-title font-bold mb-4">R$ {myInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h4>
+                    <h4 className={cn("text-2xl medieval-title font-bold mb-4", getColorClass(myInvested))}>R$ {myInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h4>
                   </div>
                 )}
 
@@ -259,30 +267,28 @@ export default function Dashboard() {
             {/* Painéis RPG Secundários */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <KingdomLevelPanel stats={kingdomStats} />
-              <TotalWealthPanel total={totalInvested} />
+              <HeroLevelPanel 
+                level={heroLevel} 
+                xp={heroXP} 
+                nextLevelXp={heroState.nextLevelXp} 
+                title={heroState.title} 
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <TotalWealthPanel total={totalInvested} />
               <QuestProgressPanel active={activeQuestsCount} completed={completedQuestsCount} />
-              {gameMode === 'reino' && <MemberRankingPanel members={kingdomStats.members} />}
             </div>
 
-            {/* Status do Reino e Mentor Dominante */}
-            <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 medieval-border shadow-sm flex flex-col justify-between">
-                <div className="flex items-center gap-2 mb-4">
-                  <Shield className="w-5 h-5 text-emerald-500" />
-                  <h4 className="text-sm font-bold text-[var(--color-text-main)]">Status do Reino</h4>
-                </div>
-                <div>
-                  <p className="text-2xl medieval-title font-bold text-[var(--color-text-main)]">{kingdom?.name || 'Meu Reino'}</p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                    {myIncome > myExpenses ? 'Superávit Saudável' : 'Atenção aos Gastos'}
-                  </p>
-                </div>
+            {gameMode === 'reino' && (
+              <div className="grid grid-cols-1 gap-4">
+                <MemberRankingPanel members={kingdomStats.members} />
               </div>
+            )}
 
-              <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 medieval-border shadow-sm flex flex-col justify-between">
+            {/* Mentor Dominante e Próxima Meta */}
+            <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Link href="/investments" className="bg-[var(--color-bg-panel)] rounded-2xl p-6 medieval-border shadow-sm flex flex-col justify-between hover:border-[var(--color-primary)] transition-all group">
                 <div className="flex items-center gap-2 mb-4">
                   <Wand2 className="w-5 h-5 text-purple-500" />
                   <h4 className="text-sm font-bold text-[var(--color-text-main)]">Mentor Dominante</h4>
@@ -296,50 +302,68 @@ export default function Dashboard() {
                   ) : (
                     <p className="text-sm text-[var(--color-text-muted)]">Nenhum mentor dominante ainda. Invista para atrair um mentor.</p>
                   )}
+                  <p className="text-[10px] font-bold text-[var(--color-primary)] uppercase tracking-widest mt-4 opacity-0 group-hover:opacity-100 transition-opacity">Ver Inventário →</p>
                 </div>
-              </div>
+              </Link>
+
+              <Link href="/villains" className="bg-[var(--color-bg-panel)] rounded-2xl p-6 medieval-border shadow-sm flex flex-col justify-between hover:border-[var(--color-primary)] transition-all group">
+                <div className="flex items-center gap-2 mb-4">
+                  <Shield className="w-5 h-5 text-emerald-500" />
+                  <h4 className="text-sm font-bold text-[var(--color-text-main)]">Status da Jornada</h4>
+                </div>
+                <div>
+                  <p className="text-2xl medieval-title font-bold text-[var(--color-text-main)]">{nextCharacter.name}</p>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                    {totalPower >= nextCharacter.requiredInvestment ? 'Pronto para o Combate!' : 'Treinando para o Desafio'}
+                  </p>
+                  <p className="text-[10px] font-bold text-[var(--color-primary)] uppercase tracking-widest mt-4 opacity-0 group-hover:opacity-100 transition-opacity">Ver Masmorras →</p>
+                </div>
+              </Link>
             </section>
 
             {/* Progresso da Próxima Meta (Masmorra) */}
             <section className="space-y-4">
               <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Próxima Masmorra</h4>
-              {/* Fundo em tom pastel claro (bg-slate-50) com texto escuro para contraste */}
-              <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 text-[var(--color-text-main)] relative overflow-hidden shadow-xl medieval-border">
-                {/* Imagem de Fundo do Vilão com opacidade reduzida e blend-mode para ficar clara/pastel */}
-                <div className="absolute inset-0 opacity-30">
-                  <Image 
-                    src={nextCharacter.image} 
-                    alt="Vilão da Masmorra" 
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-bg-panel)] via-[var(--color-bg-panel)]/70 to-transparent"></div>
-                </div>
+              <Link href="/investments" className="block group">
+                {/* Fundo em tom pastel claro (bg-slate-50) com texto escuro para contraste */}
+                <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 text-[var(--color-text-main)] relative overflow-hidden shadow-xl medieval-border group-hover:border-[var(--color-primary)] transition-all">
+                  {/* Imagem de Fundo do Vilão com opacidade reduzida e blend-mode para ficar clara/pastel */}
+                  <div className="absolute inset-0 opacity-30">
+                    <Image 
+                      src={nextCharacter.image} 
+                      alt="Vilão da Masmorra" 
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-bg-panel)] via-[var(--color-bg-panel)]/70 to-transparent"></div>
+                  </div>
 
-                <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--color-primary)]/20 rounded-full -mr-12 -mt-12 blur-2xl"></div>
-                <div className="flex items-center gap-4 mb-4 relative z-10">
-                  <div className="w-12 h-12 bg-[var(--color-bg-dark)]/70 rounded-2xl flex items-center justify-center backdrop-blur-md border border-[var(--color-border)] shadow-sm shrink-0">
-                    <Target className="w-6 h-6 text-[var(--color-primary)]" />
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--color-primary)]/20 rounded-full -mr-12 -mt-12 blur-2xl"></div>
+                  <div className="flex items-center gap-4 mb-4 relative z-10">
+                    <div className="w-12 h-12 bg-[var(--color-bg-dark)]/70 rounded-2xl flex items-center justify-center backdrop-blur-md border border-[var(--color-border)] shadow-sm shrink-0">
+                      <Target className="w-6 h-6 text-[var(--color-primary)]" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-[var(--color-text-main)]">Derrotar o {nextCharacter.name}</p>
+                      <p className="text-[10px] text-[var(--color-primary)] font-bold uppercase tracking-widest">Objetivo: R$ {currentMasmorraGoal.toLocaleString('pt-BR')}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-[var(--color-text-main)]">Derrotar o {nextCharacter.name}</p>
-                    <p className="text-[10px] text-[var(--color-primary)] font-bold uppercase tracking-widest">Objetivo: R$ {currentMasmorraGoal.toLocaleString('pt-BR')}</p>
+                  <div className="space-y-2 relative z-10">
+                    <div className="h-2 w-full bg-[var(--color-bg-dark)]/60 rounded-full overflow-hidden backdrop-blur-sm shadow-inner border border-[var(--color-border)]">
+                      <div 
+                        className="h-full bg-[var(--color-primary)] transition-all duration-1000 medieval-glow" 
+                        style={{ width: `${Math.min(100, masmorraProgress)}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
+                      <span>R$ {totalPower.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span>R$ {currentMasmorraGoal.toLocaleString('pt-BR')}</span>
+                    </div>
                   </div>
+                  <p className="text-[10px] font-bold text-[var(--color-primary)] uppercase tracking-widest mt-4 opacity-0 group-hover:opacity-100 transition-opacity relative z-10">Aumentar Investimentos →</p>
                 </div>
-                <div className="space-y-2 relative z-10">
-                  <div className="h-2 w-full bg-[var(--color-bg-dark)]/60 rounded-full overflow-hidden backdrop-blur-sm shadow-inner border border-[var(--color-border)]">
-                    <div 
-                      className="h-full bg-[var(--color-primary)] transition-all duration-1000 medieval-glow" 
-                      style={{ width: `${Math.min(100, masmorraProgress)}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex justify-between text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
-                    <span>R$ {totalPower.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    <span>R$ {currentMasmorraGoal.toLocaleString('pt-BR')}</span>
-                  </div>
-                </div>
-              </div>
+              </Link>
             </section>
 
 

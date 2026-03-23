@@ -8,9 +8,7 @@ export type ThemeType =
   | 'CACHE'
   | 'EXODIA'
   | 'REAVER'
-  | 'ORBITA'
-  | 'PAPER'
-  | 'default';
+  | 'ORBITA';
 
 export interface ThemeColors {
   primary: string;
@@ -43,7 +41,7 @@ export const THEMES: Record<ThemeType, ThemeColors> = {
     textMuted: '#78350F',
     shadow: 'rgba(212,175,55,0.1)',
     glow: '0 0 10px rgba(212,175,55,0.3)',
-    texture: '/textures/parchment.webp',
+    texture: 'https://picsum.photos/seed/parchment/1920/1080',
   },
 
   ARCANO: {
@@ -57,6 +55,7 @@ export const THEMES: Record<ThemeType, ThemeColors> = {
     textMuted: '#A78BFA',
     shadow: 'rgba(124,58,237,0.3)',
     glow: '0 0 20px rgba(124,58,237,0.6)',
+    // sem textura: fundo escuro liso
   },
 
   CACHE: {
@@ -109,34 +108,9 @@ export const THEMES: Record<ThemeType, ThemeColors> = {
     textMuted: '#7F1D1D',
     shadow: 'rgba(127,29,29,0.1)',
     glow: '0 0 10px rgba(127,29,29,0.3)',
+    texture: 'https://picsum.photos/seed/parchment/1920/1080',
   },
 
-  PAPER: {
-    primary: '#5D4037',
-    accent: '#8D6E63',
-    bgDark: '#F5F2ED',
-    bgPanel: '#FFFFFF',
-    bgOverlay: 'rgba(255,255,255,0.5)',
-    border: '#D7CCC8',
-    textMain: '#3E2723',
-    textMuted: '#795548',
-    shadow: 'rgba(93,64,55,0.1)',
-    glow: 'none',
-    texture: '/textures/paper.webp',
-  },
-
-  default: {
-    primary: '#F59E0B',
-    accent: '#FCD34D',
-    bgDark: '#1A1005',
-    bgPanel: '#2D1D0A',
-    bgOverlay: 'rgba(0,0,0,0.6)',
-    border: '#78350F',
-    textMain: '#FFFBEB',
-    textMuted: '#FBBF24',
-    shadow: 'rgba(245,158,11,0.2)',
-    glow: '0 0 20px rgba(245,158,11,0.6)',
-  },
 };
 
 export const ARCHETYPE_THEME_MAP: Record<string, ThemeType> = {
@@ -146,21 +120,34 @@ export const ARCHETYPE_THEME_MAP: Record<string, ThemeType> = {
   Elfo: 'EXODIA',
   Ladino: 'REAVER',
   Hobbit: 'ORBITA',
-  Iniciante: 'default',
+  Iniciante: 'ORBITA',
 };
 
 export function applyTheme(themeName: ThemeType) {
   if (typeof document === 'undefined') return;
 
-  const theme = THEMES[themeName] || THEMES.default;
+  const theme = THEMES[themeName] || THEMES.ORBITA;
   const root = document.documentElement;
 
   Object.entries(theme).forEach(([key, value]) => {
-    if (!value) return;
-    root.style.setProperty(`--color-${key}`, value);
+    if (key === 'texture') {
+      if (!value || value === 'none') {
+        root.style.setProperty('--bg-texture', 'none');
+      } else {
+        root.style.setProperty('--bg-texture', `url(${value})`);
+      }
+      return;
+    }
+
+    if (value === undefined || value === null) return;
+
+    // Converte camelCase para kebab-case (ex: bgDark -> bg-dark)
+    const cssVarName = key.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+    root.style.setProperty(`--color-${cssVarName}`, value);
   });
 
-  if (theme.texture) {
-    root.style.setProperty('--bg-texture', `url(${theme.texture})`);
+  // Caso a propriedade texture não exista no tema, garanta reset para evitar traces de tema anterior
+  if (theme.texture === undefined) {
+    root.style.setProperty('--bg-texture', 'none');
   }
 }

@@ -17,6 +17,7 @@ import { db } from '@/services/firebase';
 export interface GameState {
   level: number;
   xp: number;
+  nextLevelXp: number;
   title: string;
 }
 
@@ -30,16 +31,16 @@ export const TITLES = [
 
 /**
  * 🧠 Calcula nível baseado no XP
+ * Progressão: cada nível exige (nível * 1000) XP total acumulado
+ * Ex: Nível 1: 0, Nível 2: 1000, Nível 3: 3000, Nível 4: 6000...
  */
 export function calculatePlayerLevel(xp: number): GameState {
   let level = 1;
-  let xpRequired = 100;
-  let remainingXp = xp;
+  let totalXpForNextLevel = 1000;
 
-  while (remainingXp >= xpRequired) {
-    remainingXp -= xpRequired;
+  while (xp >= totalXpForNextLevel) {
     level++;
-    xpRequired = level * 100;
+    totalXpForNextLevel += level * 1000;
   }
 
   let title = TITLES[0].title;
@@ -51,7 +52,12 @@ export function calculatePlayerLevel(xp: number): GameState {
     }
   }
 
-  return { level, xp, title };
+  return { 
+    level, 
+    xp, 
+    nextLevelXp: totalXpForNextLevel,
+    title 
+  };
 }
 
 /**
@@ -101,10 +107,23 @@ export function calculateXPFromBudgetControl(planned: number, actual: number): n
 
 /**
  * 📈 XP por investimentos
- * ✔ PADRONIZADO: 10 XP a cada R$100
+ * ✔ PADRONIZADO: 1000 XP por unidade + 10 XP por cada R$1 investido
  */
-export function calculateXPFromInvestments(amount: number): number {
-  return Math.floor(amount / 100) * 10;
+export function calculateXPFromInvestments(amount: number, quantity: number = 0): number {
+  const xpFromAmount = Math.floor(amount * 10);
+  const xpFromQuantity = Math.floor(quantity * 1000);
+  return xpFromAmount + xpFromQuantity;
+}
+
+/**
+ * 🏰 Calcula XP total de uma lista de ativos
+ */
+export function calculateTotalXPFromAssets(assets: any[]): number {
+  return assets.reduce((acc, asset) => {
+    const amount = Number(asset.invested_value || asset.value || asset.total || 0);
+    const quantity = Number(asset.quantity || 0);
+    return acc + calculateXPFromInvestments(amount, quantity);
+  }, 0);
 }
 
 /**

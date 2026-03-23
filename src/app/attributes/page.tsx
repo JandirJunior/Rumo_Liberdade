@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
-import { formatCurrency, cn } from '@/lib/utils';
+import { formatCurrency, cn, getColorClass } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { TrendingUp, TrendingDown, Settings2, X, Target } from 'lucide-react';
@@ -15,14 +15,28 @@ import { BudgetProgressPanel } from '@/components/ui/BudgetProgressPanel';
 import { CategoryManagerPanel } from '@/components/ui/CategoryManagerPanel';
 import { AnnualChartPanel } from '@/components/ui/AnnualChartPanel';
 import { RecurringAccountsPanel } from '@/components/ui/RecurringAccountsPanel';
+import { OverviewListPanel } from '@/components/ui/OverviewListPanel';
 
 function AttributesContent() {
   const { theme } = useTheme();
-  const colors = THEMES[theme] || THEMES.default;
-  const { transactions } = useKingdom();
+  const colors = THEMES[theme] || THEMES.ORBITA;
+  const { transactions, payables, receivables, creditCards, deletePayable, deleteReceivable, deleteCreditCard } = useKingdom();
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'Visão Geral' | 'Orçamento' | 'Recorrências'>('Visão Geral');
+
+  const handleEdit = (item: any) => {
+    console.log('Edit item:', item);
+    // TODO: Implement edit modal
+  };
+
+  const handleDelete = (item: any) => {
+    if (confirm('Tem certeza que deseja excluir este registro?')) {
+      if (item.type === 'payable') deletePayable(item.id);
+      else if (item.type === 'receivable') deleteReceivable(item.id);
+      else if (item.type === 'card') deleteCreditCard(item.id);
+    }
+  };
 
   const today = new Date();
   const [month, setMonth] = useState(today.getMonth() + 1);
@@ -52,7 +66,7 @@ function AttributesContent() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="/assets/background/attributes.jpg"
+          src="https://picsum.photos/seed/attributes/1920/1080"
           alt="Attributes Background"
           fill
           priority
@@ -105,7 +119,7 @@ function AttributesContent() {
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
                   <p className={cn(
                     "text-lg font-bold",
-                    (cofreReino.realizado || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                    getColorClass(cofreReino.realizado || 0)
                   )}>
                     {formatCurrency(cofreReino.realizado || 0)}
                   </p>
@@ -134,7 +148,7 @@ function AttributesContent() {
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
                   <p className={cn(
                     "text-lg font-bold",
-                    (saquesMissoes.realizado || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                    getColorClass(saquesMissoes.realizado || 0)
                   )}>
                     {formatCurrency(saquesMissoes.realizado || 0)}
                   </p>
@@ -167,7 +181,7 @@ function AttributesContent() {
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
                   <p className={cn(
                     "text-lg font-bold",
-                    (tributosReino.realizado || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                    getColorClass(-(tributosReino.realizado || 0))
                   )}>
                     {formatCurrency(tributosReino.realizado || 0)}
                   </p>
@@ -196,7 +210,7 @@ function AttributesContent() {
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
                   <p className={cn(
                     "text-lg font-bold",
-                    (aventurasHeroi.realizado || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                    getColorClass(-(aventurasHeroi.realizado || 0))
                   )}>
                     {formatCurrency(aventurasHeroi.realizado || 0)}
                   </p>
@@ -217,7 +231,7 @@ function AttributesContent() {
         {/* Painéis de Detalhe com Abas */}
         <section className="bg-[var(--color-bg-panel)] rounded-2xl border border-[var(--color-border)] shadow-sm medieval-border overflow-hidden">
           <div className="flex border-b border-[var(--color-border)]">
-            {['Visão Geral', 'Orçamento', 'Recorrências'].map((tab) => (
+            {['Visão Geral', 'Recorrências', 'Orçamento'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
@@ -234,13 +248,12 @@ function AttributesContent() {
           </div>
           
           <div className="p-6">
-            {activeTab === 'Visão Geral' && <AnnualChartPanel />}
+            {activeTab === 'Visão Geral' && <OverviewListPanel payables={payables} receivables={receivables} creditCards={creditCards} onEdit={handleEdit} onDelete={handleDelete} />}
             {activeTab === 'Orçamento' && (
               <BudgetProgressPanel 
                 month={today.getMonth() + 1} 
                 year={today.getFullYear()} 
                 hideSelectors={true} 
-                budgetProgress={filteredBudgetProgress} 
               />
             )}
             {activeTab === 'Recorrências' && <RecurringAccountsPanel />}

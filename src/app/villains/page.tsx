@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 import { Shield, Sword, Skull, Trophy, Flame } from 'lucide-react';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Header } from '@/components/layout/Header';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency, getColorClass } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { FINANCIAL_VILLAINS, calculateVillainDamage } from '@/lib/financialVillains';
@@ -15,29 +15,23 @@ import { useKingdom } from '@/hooks/useKingdom';
 
 export default function Villains() {
   const { theme } = useTheme();
-  const colors = THEMES[theme] || THEMES.default;
-  const { transactions, assets, loading } = useKingdom();
+  const colors = THEMES[theme] || THEMES.ORBITA;
+  const { assets, loading } = useKingdom();
 
   const playerPower = useMemo(() => {
     if (loading) return 0;
 
-    // Calculate player power based on financial data
-    const netWorth = financialEngine.calculateNetWorth(transactions as any, assets as any);
+    // O Poder de Combate é baseado diretamente no valor total investido
     const { totalValue: totalInvested } = financialEngine.calculateInvestmentPower(assets);
-    
-    // Mock scores for budget control and consistency for now
-    const budgetControlScore = 1000;
-    const consistencyScore = 500;
-
-    return financialEngine.calculatePlayerPower(netWorth, totalInvested, budgetControlScore, consistencyScore);
-  }, [transactions, assets, loading]);
+    return totalInvested;
+  }, [assets, loading]);
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-dark)] text-[var(--color-text-main)] transition-colors duration-500 pb-32 relative overflow-hidden">
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="/assets/background/villains.jpg"
+          src="https://picsum.photos/seed/villains/1920/1080"
           alt="Villains Background"
           fill
           priority
@@ -69,7 +63,7 @@ export default function Villains() {
             </div>
             <div>
               <p className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Poder de Combate</p>
-              <h3 className="text-2xl font-display font-bold text-[var(--color-text-main)]">{formatCurrency(playerPower)}</h3>
+              <h3 className={cn("text-2xl font-display font-bold", getColorClass(playerPower))}>{formatCurrency(playerPower)}</h3>
             </div>
           </div>
           <div className="text-right">
@@ -125,7 +119,9 @@ export default function Villains() {
                     <span className={isDefeated ? "text-emerald-500" : "text-red-500"}>
                       {isDefeated ? 'Derrotado!' : 'HP do Vilão'}
                     </span>
-                    <span className="text-[var(--color-text-muted)]">{formatCurrency(currentHp)} / {formatCurrency(villain.hp)}</span>
+                    <span className="text-[var(--color-text-muted)]">
+                      <span className={getColorClass(currentHp)}>{formatCurrency(currentHp)}</span> / {formatCurrency(villain.hp)}
+                    </span>
                   </div>
                   <div className="h-3 bg-[var(--color-bg-dark)] rounded-full overflow-hidden medieval-border">
                     <motion.div 

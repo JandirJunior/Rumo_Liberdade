@@ -14,11 +14,14 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/hooks/useUser';
 
+import { useKingdom } from '@/hooks/useKingdom';
+
 export function Header() {
   const { gameState } = useTheme();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const { userData } = useUser();
+  const { kingdom } = useKingdom();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
@@ -42,13 +45,21 @@ export function Header() {
     <header className="bg-[var(--color-bg-panel)]/80 backdrop-blur-md border-b border-[var(--color-border)] sticky top-0 z-30 px-4 sm:px-6 lg:px-8 py-3 transition-all">
       <div className="w-full flex items-center justify-between">
         {/* Lado Esquerdo: Logotipo (Mobile) e Nome do App */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <Link href="/dashboard" className="flex items-center gap-2 md:hidden">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--color-primary)] text-[var(--color-bg-dark)] font-bold medieval-title">
               R
             </div>
           </Link>
-          <span className="font-bold text-[var(--color-text-main)] hidden sm:block medieval-title text-xl tracking-wider">Rumo à Liberdade</span>
+          <div className="flex flex-col">
+            <span className="font-bold text-[var(--color-text-main)] hidden sm:block medieval-title text-xl tracking-wider">Rumo à Liberdade</span>
+            {kingdom && (
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-[0.2em]">{kingdom.name}</span>
+                <span className="text-[10px] font-bold text-[var(--color-text-muted)]">Nv. {gameState.level}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Lado Direito: Ações e Perfil */}

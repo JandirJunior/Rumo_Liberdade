@@ -4,8 +4,8 @@ import { useAccountsPayable } from '@/hooks/useAccountsPayable';
 import { useAccountsReceivable } from '@/hooks/useAccountsReceivable';
 import { useCreditCards } from '@/hooks/useCreditCards';
 import { useCategories } from '@/hooks/useCategories';
-import { formatCurrency, cn } from '@/lib/utils';
-import { Plus, Trash2, Edit2, CreditCard, ArrowUpRight, ArrowDownRight, Calendar, Sparkles } from 'lucide-react';
+import { formatCurrency, cn, getColorClass } from '@/lib/utils';
+import { Plus, Trash2, Edit2, CreditCard, ArrowUpRight, ArrowDownRight, Calendar, Sparkles, User } from 'lucide-react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { useSearchParams } from 'next/navigation';
 import { Modal } from '@/components/ui/Modal';
@@ -237,8 +237,8 @@ export function RecurringAccountsPanel() {
                 type="text"
                 required
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+                onChange={(e) => setDescription(e.target.value.toUpperCase())}
+                className="w-full bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] uppercase"
                 placeholder={activeTab === 'cards' ? 'Ex: Nubank' : 'Ex: Aluguel'}
               />
             </div>
@@ -380,7 +380,7 @@ export function RecurringAccountsPanel() {
 
       {/* Lists */}
       <div className="space-y-3">
-        {activeTab === 'payable' && payables.map(item => (
+        {activeTab === 'payable' && [...payables].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 10).map(item => (
           <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-panel)] hover:border-[var(--color-primary)] transition-colors">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-red-950/30 text-red-500 border border-red-900/50 flex items-center justify-center">
@@ -388,15 +388,24 @@ export function RecurringAccountsPanel() {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-[var(--color-text-main)]">{item.description}</h4>
-                <div className="flex items-center gap-2 mt-1">
-                  <Calendar className="w-3 h-3 text-[var(--color-text-muted)]" />
-                  <span className="text-xs text-[var(--color-text-muted)]">Vence: {item.dueDate ? new Date(item.dueDate).toLocaleDateString('pt-BR') : 'Sem data'}</span>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3 text-[var(--color-text-muted)]" />
+                    <span className="text-xs text-[var(--color-text-muted)]">Vence: {item.dueDate ? new Date(item.dueDate).toLocaleDateString('pt-BR') : 'Sem data'}</span>
+                  </div>
+                  <span className="text-xs text-[var(--color-text-muted)]">• {item.category_id || 'Categoria'}</span>
+                  <div className="flex items-center gap-1">
+                    <User className="w-3 h-3 text-[var(--color-text-muted)]" />
+                    <span className="text-xs text-[var(--color-text-muted)]">{item.userName || 'Desconhecido'}</span>
+                  </div>
                   {item.isRecurring && <span className="text-[10px] bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-muted)] px-2 py-0.5 rounded-full uppercase font-bold">{item.recurrenceRule}</span>}
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <p className="text-sm font-bold text-[var(--color-text-main)]">{formatCurrency(item.amount)}</p>
+              <p className={cn("text-sm font-bold", getColorClass(-item.amount))}>
+                -{formatCurrency(item.amount)}
+              </p>
               <button onClick={() => deletePayable(item.id)} className="p-2 text-[var(--color-text-muted)] hover:text-red-500 transition-colors">
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -404,7 +413,7 @@ export function RecurringAccountsPanel() {
           </div>
         ))}
 
-        {activeTab === 'receivable' && receivables.map(item => (
+        {activeTab === 'receivable' && [...receivables].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10).map(item => (
           <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-panel)] hover:border-[var(--color-primary)] transition-colors">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-emerald-950/30 text-emerald-500 border border-emerald-900/50 flex items-center justify-center">
@@ -412,15 +421,24 @@ export function RecurringAccountsPanel() {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-[var(--color-text-main)]">{item.description}</h4>
-                <div className="flex items-center gap-2 mt-1">
-                  <Calendar className="w-3 h-3 text-[var(--color-text-muted)]" />
-                  <span className="text-xs text-[var(--color-text-muted)]">Vence: {item.dueDate ? new Date(item.dueDate).toLocaleDateString('pt-BR') : 'Sem data'}</span>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3 text-[var(--color-text-muted)]" />
+                    <span className="text-xs text-[var(--color-text-muted)]">Vence: {item.dueDate ? new Date(item.dueDate).toLocaleDateString('pt-BR') : 'Sem data'}</span>
+                  </div>
+                  <span className="text-xs text-[var(--color-text-muted)]">• {item.category_id || 'Categoria'}</span>
+                  <div className="flex items-center gap-1">
+                    <User className="w-3 h-3 text-[var(--color-text-muted)]" />
+                    <span className="text-xs text-[var(--color-text-muted)]">{item.userName || 'Desconhecido'}</span>
+                  </div>
                   {item.isRecurring && <span className="text-[10px] bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-muted)] px-2 py-0.5 rounded-full uppercase font-bold">{item.recurrenceRule}</span>}
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <p className="text-sm font-bold text-emerald-500">+{formatCurrency(item.amount)}</p>
+              <p className={cn("text-sm font-bold", getColorClass(item.amount))}>
+                +{formatCurrency(item.amount)}
+              </p>
               <button onClick={() => deleteReceivable(item.id)} className="p-2 text-[var(--color-text-muted)] hover:text-red-500 transition-colors">
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -428,7 +446,7 @@ export function RecurringAccountsPanel() {
           </div>
         ))}
 
-        {activeTab === 'cards' && creditCards.map(item => (
+        {activeTab === 'cards' && [...creditCards].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 10).map(item => (
           <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-panel)] hover:border-[var(--color-primary)] transition-colors">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-purple-950/30 text-purple-500 border border-purple-900/50 flex items-center justify-center">
@@ -436,15 +454,22 @@ export function RecurringAccountsPanel() {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-[var(--color-text-main)]">{item.name}</h4>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                   <span className="text-xs text-[var(--color-text-muted)]">Vence dia {item.due_day} | Fecha dia {item.closing_day}</span>
+                  <span className="text-xs text-[var(--color-text-muted)]">• {item.category_id || 'Categoria'}</span>
+                  <div className="flex items-center gap-1">
+                    <User className="w-3 h-3 text-[var(--color-text-muted)]" />
+                    <span className="text-xs text-[var(--color-text-muted)]">{item.created_by || 'Desconhecido'}</span>
+                  </div>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">Limite</p>
-                <p className="text-sm font-bold text-[var(--color-text-main)]">{formatCurrency(item.limit || 0)}</p>
+                <p className={cn("text-sm font-bold", getColorClass(item.limit || 0))}>
+                  {formatCurrency(item.limit || 0)}
+                </p>
               </div>
               <button onClick={() => deleteCreditCard(item.id)} className="p-2 text-[var(--color-text-muted)] hover:text-red-500 transition-colors">
                 <Trash2 className="w-4 h-4" />

@@ -19,6 +19,7 @@ export function Avatar({ character, size = 64 }: AvatarProps) {
         className="object-cover"
         alt="Avatar"
         referrerPolicy="no-referrer"
+        unoptimized
       />
     </div>
   );

@@ -265,6 +265,7 @@ export type Archetype =
 export interface UserGameState {
   level: number;
   xp: number;
+  nextLevelXp: number;
   archetype: Archetype;
   stats: FaceroStats;
   completedQuests: string[];
