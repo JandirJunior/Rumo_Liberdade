@@ -1,16 +1,3 @@
-/**
- * Serviço de Usuários: Gerencia dados e operações de usuários individuais.
- * Responsabilidades:
- * - Criar novos usuários (getUser, createUser)
- * - Atualizar perfis de usuários (updateUser)
- * - Gerenciar estado de gamificação (level, XP, título)
- * - Sincronizar dados de usuários com Firestore
- * Integração:
- * - Usa Firestore collection 'users' indexada por userId
- * - Interage com Firebase Auth para autenticação
- * - Trabalha com tipo UserEntity
- * Contexto: Suporta onboarding e gerenciamento de perfis de usuários.
- */
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 import { UserEntity } from '@/types';

@@ -1,7 +1,6 @@
 'use client';
 
-import { useTheme } from '@/lib/ThemeContext';
-import { THEMES } from '@/lib/themes';
+import { useEffect, useRef } from 'react';
 
 type AmbientBackgroundProps = {
   videoUrl?: string;
@@ -9,22 +8,15 @@ type AmbientBackgroundProps = {
   blur?: number;
 };
 
-export function AmbientBackground({ opacity = 0.05, blur = 8 }: AmbientBackgroundProps) {
-  const { theme } = useTheme();
-  const colors = THEMES[theme] || THEMES.ORBITA;
-
+export function AmbientBackground({ opacity = 0.15, blur = 4 }: AmbientBackgroundProps) {
   return (
-    <div
-      className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden"
-      style={{
-        backgroundColor: colors.bgDark,
-        backgroundImage: `linear-gradient(135deg, ${colors.bgDark}b3 0%, ${colors.bgPanel}66 100%)`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-        filter: `blur(${blur}px)`,
-        opacity,
-      }}
-    />
+    <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden bg-black">
+      <div 
+        className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-purple-900/10 to-black"
+        style={{ opacity, filter: `blur(${blur}px)` }}
+      />
+      {/* Fallback gradient if video fails or is loading */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/80" />
+    </div>
   );
 }

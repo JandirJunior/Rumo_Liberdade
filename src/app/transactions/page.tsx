@@ -14,7 +14,7 @@ import { Header } from '@/components/layout/Header';
 import { Modal } from '@/components/ui/Modal';
 import { ImportModal } from '@/components/ui/ImportModal';
 import { formatCurrency, cn } from '@/lib/utils';
-import { Transaction, TransactionType } from '@/types';
+import { Transaction } from '@/types';
 
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
@@ -25,10 +25,10 @@ import { financialEngine } from '@/lib/financialEngine';
 
 function TransactionsContent() {
   const { theme, user, gameMode } = useTheme();
-  const colors = THEMES[theme] || THEMES.ORBITA;
+  const colors = THEMES[theme] || THEMES.default;
   const { transactions, addTransaction, updateTransaction, deleteTransaction, addInvestment, loading: transactionsLoading } = useKingdom();
   const { categories, loading: categoriesLoading } = useCategories();
-
+  
   const today = new Date();
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [year, setYear] = useState(today.getFullYear());
@@ -109,12 +109,12 @@ function TransactionsContent() {
   const handleSuggestCategory = async () => {
     if (!newTransaction.description) return;
     setIsSuggesting(true);
-
+    
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
-
+      
       const categoryList = categories.map(c => `${c.id}: ${c.name} (${c.flow_type === 'income' ? 'Receita' : 'Despesa'})`).join('\n');
-
+      
       const prompt = `
         Eu tenho uma transação com a seguinte descrição: "${newTransaction.description}".
         O valor é: ${newTransaction.amount || 'desconhecido'}.
@@ -147,7 +147,7 @@ function TransactionsContent() {
         setNewTransaction(prev => ({
           ...prev,
           category_id: result.category_id,
-          type: result.type as TransactionType
+          type: result.type as any
         }));
       }
     } catch (error) {
@@ -162,7 +162,7 @@ function TransactionsContent() {
 
     if (newTransaction.type === 'investment') {
       if (!newTransaction.ticker || !newTransaction.quantity || !newTransaction.faceroType) return;
-
+      
       try {
         await addInvestment({
           type: newTransaction.faceroType,
@@ -206,11 +206,11 @@ function TransactionsContent() {
     }
   };
 
-  const handleImportTransactions = async (data: { type: string; amount: string; description: string; category_id: string; date?: string }[]) => {
+  const handleImportTransactions = async (data: any[]) => {
     for (const item of data) {
       // expected headers: type, amount, description, category_id, date
       await addTransaction({
-        type: item.type.toLowerCase() as TransactionType,
+        type: item.type.toLowerCase() as any,
         amount: parseFloat(item.amount),
         description: item.description,
         category_id: item.category_id,
@@ -230,7 +230,7 @@ function TransactionsContent() {
 
   // Group categories by rpg_group for the select dropdown
   const profileType = gameMode === 'reino' ? 'MultiUsuario' : 'MonoUsuario';
-  const categoriesByType = categories.filter(c =>
+  const categoriesByType = categories.filter(c => 
     (c.flow_type === newTransaction.type || newTransaction.type === 'investment') &&
     (!c.allowed_profiles || c.allowed_profiles.includes(profileType))
   );
@@ -243,8 +243,8 @@ function TransactionsContent() {
     return acc;
   }, {} as Record<string, typeof categories>);
 
-  const { income: totalActualIncome, expense: totalActualExpenses, investment: totalActualInvestments } = financialEngine.calculateMonthlySummary(transactions, month, year);
-
+  const { income: totalActualIncome, expense: totalActualExpenses, investment: totalActualInvestments } = financialEngine.calculateMonthlySummary(transactions as any, month, year);
+  
   const surplus = totalActualIncome - totalActualExpenses - totalActualInvestments;
 
   const handlePrevMonth = () => {
@@ -282,7 +282,7 @@ function TransactionsContent() {
       </div>
 
       <Header />
-
+      
       <main className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 pb-32 relative z-10">
         <header className="space-y-6">
           <div className="flex items-center justify-between">
@@ -291,14 +291,14 @@ function TransactionsContent() {
               <p className="text-sm text-[var(--color-text-muted)]">Suas missões e histórico de transações</p>
             </div>
             <div className="flex items-center gap-2">
-              <button
+              <button 
                 onClick={() => setIsImportModalOpen(true)}
                 className="px-4 h-10 rounded-xl flex items-center gap-2 bg-[var(--color-bg-panel)] border border-[var(--color-border)] text-[var(--color-text-main)] shadow-sm font-bold text-sm transition-transform active:scale-95 hover:bg-[var(--color-bg-dark)] medieval-border"
               >
                 <Upload className="w-4 h-4" />
                 <span className="hidden sm:inline">Importar</span>
               </button>
-              <button
+              <button 
                 onClick={() => setIsModalOpen(true)}
                 className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform active:scale-95 medieval-border", colors.primary)}
               >
@@ -320,326 +320,326 @@ function TransactionsContent() {
               <ArrowUpRight className="w-5 h-5 rotate-45" />
             </button>
           </div>
-
-          {/* Surplus Card */}
-          <section className={cn("p-8 rounded-2xl text-white shadow-xl relative overflow-hidden medieval-border medieval-glow", colors.primary)}>
-            <div className="absolute top-0 right-0 w-48 h-48 bg-black/30 rounded-full -mr-24 -mt-24 blur-3xl"></div>
-            <div className="relative z-10 flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 bg-black/30 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10">
-                <Wallet className="w-8 h-8" />
-              </div>
-              <div>
-                <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1">Saldo para o Inventário</p>
-                <h3 className="text-3xl font-display font-bold">{formatCurrency(surplus)}</h3>
-              </div>
-              <p className="text-white/60 text-xs max-w-[200px]">
-                Este é o valor disponível para ser investido no Inventário este mês.
-              </p>
+        
+        {/* Surplus Card */}
+        <section className={cn("p-8 rounded-2xl text-white shadow-xl relative overflow-hidden medieval-border medieval-glow", colors.primary)}>
+          <div className="absolute top-0 right-0 w-48 h-48 bg-black/30 rounded-full -mr-24 -mt-24 blur-3xl"></div>
+          <div className="relative z-10 flex flex-col items-center text-center space-y-4">
+            <div className="w-16 h-16 bg-black/30 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10">
+              <Wallet className="w-8 h-8" />
             </div>
-          </section>
-
-          {/* Search and Filter */}
-          <div className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-text-muted)]" />
-              <input
-                type="text"
-                placeholder="Buscar transação..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all text-[var(--color-text-main)] medieval-border"
-              />
+            <div>
+              <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1">Saldo para o Inventário</p>
+              <h3 className="text-3xl font-display font-bold">{formatCurrency(surplus)}</h3>
             </div>
+            <p className="text-white/60 text-xs max-w-[200px]">
+              Este é o valor disponível para ser investido no Inventário este mês.
+            </p>
+          </div>
+        </section>
 
-            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-              {['all', 'income', 'expense', 'investment'].map((f) => (
+        {/* Search and Filter */}
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-text-muted)]" />
+            <input
+              type="text"
+              placeholder="Buscar transação..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-4 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all text-[var(--color-text-main)] medieval-border"
+            />
+          </div>
+          
+          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+            {['all', 'income', 'expense', 'investment'].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f as any)}
+                className={cn(
+                  "px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all border medieval-border",
+                  filter === f 
+                    ? cn(colors.primary, "text-white border-transparent shadow-lg", colors.shadow) 
+                    : "bg-[var(--color-bg-panel)] text-[var(--color-text-muted)] border-[var(--color-border)] hover:border-[var(--color-primary)]"
+                )}
+              >
+                {f === 'all' ? 'Tudo' : f === 'income' ? 'Receitas' : f === 'expense' ? 'Despesas' : 'Investimentos'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      {/* Transaction List */}
+      <section className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Transações</h4>
+          <Filter className="w-4 h-4 text-[var(--color-text-muted)]" />
+        </div>
+        
+        <div className="space-y-4">
+          {filteredTransactions.length > 0 ? (
+            filteredTransactions.map((t, i) => {
+              const userName = (t as any).userName || 'Herói Desconhecido';
+              const categoryObj = categories.find(c => c.id === t.category_id);
+              let categoryName = categoryObj ? categoryObj.name : 'Sem Categoria';
+              
+              if (t.type === 'investment' && t.category_id === 'investment') {
+                categoryName = 'Aporte em Investimento';
+              }
+              
+              return (
+                <motion.div
+                  key={t.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="flex items-center gap-4 p-4 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl shadow-sm hover:shadow-md transition-shadow group medieval-border"
+                >
+                  <div className={cn(
+                    "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border border-[var(--color-border)]",
+                    t.type === 'income' ? "bg-emerald-900/20 text-emerald-500" : 
+                    t.type === 'expense' ? "bg-red-900/20 text-red-500" : "bg-blue-900/20 text-blue-500"
+                  )}>
+                    {t.type === 'income' ? <ArrowUpRight className="w-6 h-6" /> : 
+                     t.type === 'expense' ? <ArrowDownLeft className="w-6 h-6" /> : <Wallet className="w-6 h-6" />}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-[var(--color-text-main)] truncate">{t.description}</p>
+                    <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+                      {categoryName} • {new Date((t as any).created_at || t.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {` • Por: ${userName}`}
+                    </p>
+                  </div>
+                  
+                  <div className="text-right flex flex-col items-end gap-1">
+                    <p className={cn(
+                      "text-sm font-bold",
+                      t.type === 'income' ? "text-emerald-500" : "text-[var(--color-text-main)]"
+                    )}>
+                      {t.type === 'income' ? '+' : '-'} {formatCurrency(t.amount)}
+                    </p>
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleEditTransaction(t)} className="text-[var(--color-text-muted)] hover:text-blue-500 transition-colors">
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => handleDeleteTransaction(t.id)} className="text-[var(--color-text-muted)] hover:text-red-500 transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })
+          ) : (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-[var(--color-bg-dark)] rounded-full flex items-center justify-center mx-auto mb-4 border border-[var(--color-border)]">
+                <Search className="w-8 h-8 text-[var(--color-text-muted)]" />
+              </div>
+              <p className="text-[var(--color-text-muted)] font-medium">Nenhuma transação encontrada.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Modal para Adicionar/Editar Transação */}
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingTransactionId(null);
+          setNewTransaction({ description: '', amount: '', type: 'expense', category_id: '', faceroType: 'F', ticker: '', quantity: '', operation_date: new Date().toISOString().split('T')[0] });
+        }} 
+        title={editingTransactionId ? "Editar Transação" : "Nova Transação"}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-2 block">Tipo</label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['income', 'expense', 'investment'] as const).map((type) => (
                 <button
-                  key={f}
-                  onClick={() => setFilter(f as 'all' | 'income' | 'expense' | 'investment')}
+                  key={type}
+                  onClick={() => setNewTransaction({...newTransaction, type, category_id: ''})}
                   className={cn(
-                    "px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all border medieval-border",
-                    filter === f
-                      ? cn(colors.primary, "text-white border-transparent shadow-lg", colors.shadow)
-                      : "bg-[var(--color-bg-panel)] text-[var(--color-text-muted)] border-[var(--color-border)] hover:border-[var(--color-primary)]"
+                    "py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all medieval-border",
+                    newTransaction.type === type 
+                      ? cn(colors.primary, "text-white border-transparent") 
+                      : "bg-[var(--color-bg-dark)] text-[var(--color-text-muted)] border-[var(--color-border)]"
                   )}
                 >
-                  {f === 'all' ? 'Tudo' : f === 'income' ? 'Receitas' : f === 'expense' ? 'Despesas' : 'Investimentos'}
+                  {type === 'income' ? 'Receita' : type === 'expense' ? 'Despesa' : 'Aporte'}
                 </button>
               ))}
             </div>
           </div>
-        </header>
 
-        {/* Transaction List */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Transações</h4>
-            <Filter className="w-4 h-4 text-[var(--color-text-muted)]" />
-          </div>
-
-          <div className="space-y-4">
-            {filteredTransactions.length > 0 ? (
-              filteredTransactions.map((t, i) => {
-                const userName = t.userName || 'Herói Desconhecido';
-                const categoryObj = categories.find(c => c.id === t.category_id);
-                let categoryName = categoryObj ? categoryObj.name : 'Sem Categoria';
-
-                if (t.type === 'investment' && (t.category_id === 'investment' || t.category_id === 'investimentos')) {
-                  categoryName = 'Aporte em Investimento';
-                }
-
-                return (
-                  <motion.div
-                    key={t.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="flex items-center gap-4 p-4 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl shadow-sm hover:shadow-md transition-shadow group medieval-border"
-                  >
-                    <div className={cn(
-                      "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border border-[var(--color-border)]",
-                      t.type === 'income' ? "bg-emerald-900/20 text-emerald-500" :
-                        t.type === 'expense' ? "bg-red-900/20 text-red-500" : "bg-blue-900/20 text-blue-500"
-                    )}>
-                      {t.type === 'income' ? <ArrowUpRight className="w-6 h-6" /> :
-                        t.type === 'expense' ? <ArrowDownLeft className="w-6 h-6" /> : <Wallet className="w-6 h-6" />}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-[var(--color-text-main)] truncate">{t.description}</p>
-                      <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
-                        {categoryName} • {new Date(t.created_at || t.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        {` • Por: ${userName}`}
-                      </p>
-                    </div>
-
-                    <div className="text-right flex flex-col items-end gap-1">
-                      <p className={cn(
-                        "text-sm font-bold",
-                        t.type === 'income' ? "text-emerald-500" : "text-[var(--color-text-main)]"
-                      )}>
-                        {t.type === 'income' ? '+' : '-'} {formatCurrency(t.amount)}
-                      </p>
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => handleEditTransaction(t)} className="text-[var(--color-text-muted)] hover:text-blue-500 transition-colors">
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => handleDeleteTransaction(t.id)} className="text-[var(--color-text-muted)] hover:text-red-500 transition-colors">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-[var(--color-bg-dark)] rounded-full flex items-center justify-center mx-auto mb-4 border border-[var(--color-border)]">
-                  <Search className="w-8 h-8 text-[var(--color-text-muted)]" />
-                </div>
-                <p className="text-[var(--color-text-muted)] font-medium">Nenhuma transação encontrada.</p>
+          {newTransaction.type === 'investment' ? (
+            <>
+              <div>
+                <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Categoria F.A.C.E.R.O.</label>
+                <select 
+                  value={newTransaction.faceroType}
+                  onChange={(e) => setNewTransaction({...newTransaction, faceroType: e.target.value})}
+                  className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-sm text-[var(--color-text-main)]"
+                >
+                  <option value="F">Fundo Imobiliário</option>
+                  <option value="A">Ações</option>
+                  <option value="C">Cripto</option>
+                  <option value="E">Exterior / ETFs</option>
+                  <option value="R">Renda Fixa</option>
+                  <option value="O">Outros investimentos / Oportunidades</option>
+                </select>
               </div>
-            )}
-          </div>
-        </section>
+              
+              <div>
+                <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Ativo / Ticker</label>
+                <input 
+                  type="text"
+                  placeholder="Ex: MXRF11, PETR4, BTC"
+                  value={newTransaction.ticker}
+                  onChange={(e) => setNewTransaction({...newTransaction, ticker: e.target.value})}
+                  className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
+                />
+              </div>
 
-        {/* Modal para Adicionar/Editar Transação */}
-        <Modal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setEditingTransactionId(null);
-            setNewTransaction({ description: '', amount: '', type: 'expense', category_id: '', faceroType: 'F', ticker: '', quantity: '', operation_date: new Date().toISOString().split('T')[0] });
-          }}
-          title={editingTransactionId ? "Editar Transação" : "Nova Transação"}
-        >
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-2 block">Tipo</label>
-              <div className="grid grid-cols-3 gap-2">
-                {(['income', 'expense', 'investment'] as const).map((type) => (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Quantidade</label>
+                  <input 
+                    type="number"
+                    step="0.00000001"
+                    placeholder="0.00"
+                    value={newTransaction.quantity}
+                    onChange={(e) => setNewTransaction({...newTransaction, quantity: e.target.value})}
+                    className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Data Operação</label>
+                  <input 
+                    type="date"
+                    value={newTransaction.operation_date}
+                    onChange={(e) => setNewTransaction({...newTransaction, operation_date: e.target.value})}
+                    className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block">Descrição</label>
                   <button
-                    key={type}
-                    onClick={() => setNewTransaction({ ...newTransaction, type, category_id: '' })}
+                    onClick={handleSuggestCategory}
+                    disabled={!newTransaction.description || isSuggesting}
                     className={cn(
-                      "py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all medieval-border",
-                      newTransaction.type === type
-                        ? cn(colors.primary, "text-white border-transparent")
-                        : "bg-[var(--color-bg-dark)] text-[var(--color-text-muted)] border-[var(--color-border)]"
+                      "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 px-2 py-1 rounded-lg transition-all medieval-border",
+                      (!newTransaction.description || isSuggesting) ? "text-gray-500 bg-gray-800 cursor-not-allowed" : "text-purple-400 bg-purple-900/20 hover:bg-purple-900/40"
                     )}
                   >
-                    {type === 'income' ? 'Receita' : type === 'expense' ? 'Despesa' : 'Aporte'}
+                    <Sparkles className="w-3 h-3" />
+                    {isSuggesting ? 'Analisando...' : 'Sugerir Categoria'}
                   </button>
-                ))}
+                </div>
+                <input 
+                  type="text"
+                  placeholder="Ex: Almoço, Salário, Aporte FII"
+                  value={newTransaction.description}
+                  onChange={(e) => setNewTransaction({...newTransaction, description: e.target.value})}
+                  className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
+                />
               </div>
-            </div>
+              <div>
+                <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-2 block">Categoria RPG</label>
+                <select
+                  value={newTransaction.category_id}
+                  onChange={(e) => setNewTransaction({...newTransaction, category_id: e.target.value})}
+                  className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-sm text-[var(--color-text-main)]"
+                >
+                  <option value="" disabled>Selecione uma categoria...</option>
+                  {Object.entries(groupedCategories).map(([groupName, cats]) => (
+                    <optgroup key={groupName} label={groupName}>
+                      {cats.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
 
-            {newTransaction.type === 'investment' ? (
-              <>
-                <div>
-                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Categoria F.A.C.E.R.O.</label>
-                  <select
-                    value={newTransaction.faceroType}
-                    onChange={(e) => setNewTransaction({ ...newTransaction, faceroType: e.target.value })}
-                    className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-sm text-[var(--color-text-main)]"
-                  >
-                    <option value="F">Fundo Imobiliário</option>
-                    <option value="A">Ações</option>
-                    <option value="C">Cripto</option>
-                    <option value="E">Exterior / ETFs</option>
-                    <option value="R">Renda Fixa</option>
-                    <option value="O">Outros investimentos / Oportunidades</option>
-                  </select>
-                </div>
+          <div>
+            <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-2 block">Valor Total (R$)</label>
+            <input 
+              type="number"
+              placeholder="0,00"
+              value={newTransaction.amount}
+              onChange={(e) => setNewTransaction({...newTransaction, amount: e.target.value})}
+              className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
+            />
+          </div>
 
-                <div>
-                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Ativo / Ticker</label>
-                  <input
-                    type="text"
-                    placeholder="Ex: MXRF11, PETR4, BTC"
-                    value={newTransaction.ticker}
-                    onChange={(e) => setNewTransaction({ ...newTransaction, ticker: e.target.value })}
-                    className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Quantidade</label>
-                    <input
-                      type="number"
-                      step="0.00000001"
-                      placeholder="0.00"
-                      value={newTransaction.quantity}
-                      onChange={(e) => setNewTransaction({ ...newTransaction, quantity: e.target.value })}
-                      className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Data Operação</label>
-                    <input
-                      type="date"
-                      value={newTransaction.operation_date}
-                      onChange={(e) => setNewTransaction({ ...newTransaction, operation_date: e.target.value })}
-                      className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block">Descrição</label>
-                    <button
-                      onClick={handleSuggestCategory}
-                      disabled={!newTransaction.description || isSuggesting}
-                      className={cn(
-                        "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 px-2 py-1 rounded-lg transition-all medieval-border",
-                        (!newTransaction.description || isSuggesting) ? "text-gray-500 bg-gray-800 cursor-not-allowed" : "text-purple-400 bg-purple-900/20 hover:bg-purple-900/40"
-                      )}
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      {isSuggesting ? 'Analisando...' : 'Sugerir Categoria'}
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Ex: Almoço, Salário, Aporte FII"
-                    value={newTransaction.description}
-                    onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
-                    className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-2 block">Categoria RPG</label>
-                  <select
-                    value={newTransaction.category_id}
-                    onChange={(e) => setNewTransaction({ ...newTransaction, category_id: e.target.value })}
-                    className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-sm text-[var(--color-text-main)]"
-                  >
-                    <option value="" disabled>Selecione uma categoria...</option>
-                    {Object.entries(groupedCategories).map(([groupName, cats]) => (
-                      <optgroup key={groupName} label={groupName}>
-                        {cats.map(cat => (
-                          <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                </div>
-              </>
+          <button 
+            onClick={handleAddTransaction}
+            disabled={
+              newTransaction.type === 'investment' 
+                ? (!newTransaction.ticker || !newTransaction.quantity || !newTransaction.amount)
+                : (!newTransaction.description || !newTransaction.amount || !newTransaction.category_id)
+            }
+            className={cn(
+              "w-full py-4 rounded-2xl text-white font-bold shadow-lg transition-all active:scale-95 mt-4 medieval-border", 
+              (newTransaction.type === 'investment' 
+                ? (!newTransaction.ticker || !newTransaction.quantity || !newTransaction.amount)
+                : (!newTransaction.description || !newTransaction.amount || !newTransaction.category_id)) 
+                ? "opacity-50 cursor-not-allowed bg-gray-800" : colors.primary
             )}
+          >
+            Confirmar Transação
+          </button>
+        </div>
+      </Modal>
 
-            <div>
-              <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-2 block">Valor Total (R$)</label>
-              <input
-                type="number"
-                placeholder="0,00"
-                value={newTransaction.amount}
-                onChange={(e) => setNewTransaction({ ...newTransaction, amount: e.target.value })}
-                className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
-              />
-            </div>
+      <ImportModal 
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImport={handleImportTransactions}
+        title="Importar Transações"
+        template={['type', 'amount', 'description', 'category_id', 'date']}
+      />
+      
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none">
+          <div className="bg-[var(--color-bg-panel)] p-4 rounded-xl shadow-xl border border-[var(--color-border)] mt-[400px] pointer-events-auto max-w-md medieval-border">
+            <p className="text-xs font-bold text-[var(--color-text-main)] mb-2 uppercase tracking-wider">Instruções de Importação:</p>
+            <p className="text-[10px] text-[var(--color-text-muted)] leading-relaxed">
+              O arquivo deve ser um CSV com os seguintes cabeçalhos: <strong>type</strong> (income/expense), <strong>amount</strong> (valor), <strong>description</strong> (descrição), <strong>category_id</strong> (ID da categoria) e <strong>date</strong> (YYYY-MM-DD).
+            </p>
+          </div>
+        </div>
+      )}
 
+      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Excluir Transação">
+        <div className="space-y-6">
+          <p className="text-[var(--color-text-muted)] text-sm">Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.</p>
+          <div className="flex gap-3">
             <button
-              onClick={handleAddTransaction}
-              disabled={
-                newTransaction.type === 'investment'
-                  ? (!newTransaction.ticker || !newTransaction.quantity || !newTransaction.amount)
-                  : (!newTransaction.description || !newTransaction.amount || !newTransaction.category_id)
-              }
-              className={cn(
-                "w-full py-4 rounded-2xl text-white font-bold shadow-lg transition-all active:scale-95 mt-4 medieval-border",
-                (newTransaction.type === 'investment'
-                  ? (!newTransaction.ticker || !newTransaction.quantity || !newTransaction.amount)
-                  : (!newTransaction.description || !newTransaction.amount || !newTransaction.category_id))
-                  ? "opacity-50 cursor-not-allowed bg-gray-800" : colors.primary
-              )}
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="flex-1 py-4 rounded-2xl bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] font-bold transition-all active:scale-95 medieval-border"
             >
-              Confirmar Transação
+              Cancelar
+            </button>
+            <button
+              onClick={confirmDeleteTransaction}
+              className="flex-1 py-4 rounded-2xl bg-red-900/50 border border-red-700/50 text-red-500 font-bold transition-all active:scale-95 medieval-border hover:bg-red-900/80"
+            >
+              Excluir
             </button>
           </div>
-        </Modal>
-
-        <ImportModal
-          isOpen={isImportModalOpen}
-          onClose={() => setIsImportModalOpen(false)}
-          onImport={handleImportTransactions}
-          title="Importar Transações"
-          template={['type', 'amount', 'description', 'category_id', 'date']}
-        />
-
-        {isImportModalOpen && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none">
-            <div className="bg-[var(--color-bg-panel)] p-4 rounded-xl shadow-xl border border-[var(--color-border)] mt-[400px] pointer-events-auto max-w-md medieval-border">
-              <p className="text-xs font-bold text-[var(--color-text-main)] mb-2 uppercase tracking-wider">Instruções de Importação:</p>
-              <p className="text-[10px] text-[var(--color-text-muted)] leading-relaxed">
-                O arquivo deve ser um CSV com os seguintes cabeçalhos: <strong>type</strong> (income/expense), <strong>amount</strong> (valor), <strong>description</strong> (descrição), <strong>category_id</strong> (ID da categoria) e <strong>date</strong> (YYYY-MM-DD).
-              </p>
-            </div>
-          </div>
-        )}
-
-        <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Excluir Transação">
-          <div className="space-y-6">
-            <p className="text-[var(--color-text-muted)] text-sm">Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="flex-1 py-4 rounded-2xl bg-[var(--color-bg-dark)] border border-[var(--color-border)] text-[var(--color-text-main)] font-bold transition-all active:scale-95 medieval-border"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmDeleteTransaction}
-                className="flex-1 py-4 rounded-2xl bg-red-900/50 border border-red-700/50 text-red-500 font-bold transition-all active:scale-95 medieval-border hover:bg-red-900/80"
-              >
-                Excluir
-              </button>
-            </div>
-          </div>
-        </Modal>
+        </div>
+      </Modal>
 
       </main>
     </div>

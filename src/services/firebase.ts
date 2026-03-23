@@ -1,9 +1,3 @@
-/**
- * Configuração e Inicialização do Firebase: Centraliza setup do Firebase App, Auth e Firestore.
- * Carrega configuração de firebase-applet-config.json, inicializa instâncias globais de auth e db,
- * configura Firestore com polling para compatibilidade e testa conexão automaticamente.
- * Exporta instâncias para uso em toda a aplicação (contextos, hooks, serviços).
- */
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';

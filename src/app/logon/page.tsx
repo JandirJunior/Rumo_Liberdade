@@ -1,28 +1,23 @@
 /**
- * Página de Login: Ponto de entrada e autenticação da aplicação "Rumo a Liberdade".
- * Implementa login via Google OAuth com Firebase Auth, incluindo tratamento de erros específicos
- * (domínio não autorizado, popup bloqueado, etc.) e onboarding automático de novos usuários.
- * Interface temática de RPG com modal de ajuda para configuração de domínios autorizados.
- * Redireciona para dashboard após login bem-sucedido ou para gênese (quiz de arquétipo) como alternativa.
+ * Página de Login: Ponto de entrada do aplicativo "Rumo a Liberdade".
+ * Apresenta uma interface temática de RPG para autenticação do usuário.
  */
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
-import { Lock, User, Castle, Sparkles, HelpCircle } from 'lucide-react';
+import { Lock, User, Castle, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { auth } from '@/services/firebase';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { useTheme } from '@/lib/ThemeContext';
 import { userService } from '@/services/userService';
-import AuthHelpModal from '@/components/ui/AuthHelpModal';
 
 export default function LoginPage() {
   const router = useRouter();
   const { user, loading } = useTheme();
   const [error, setError] = useState('');
-  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     if (user && !loading) {
@@ -58,13 +53,8 @@ export default function LoginPage() {
         setError('O login foi cancelado. Por favor, tente novamente.');
       } else if (err?.code === 'auth/popup-blocked') {
         setError('O navegador bloqueou o popup de login. Por favor, permita popups.');
-      } else if (err?.code === 'auth/unauthorized-domain') {
-        setError('Domínio não autorizado no Firebase. Verifique Firebase > Authentication > Authorized domains e adicione o domínio usado.');
-      } else if (err?.code === 'auth/network-request-failed') {
-        setError('Falha de rede durante autenticação. Verifique conexão e tente novamente.');
       } else {
-        const errorMessage = err?.message || 'Erro desconhecido';
-        setError(`Falha ao autenticar: (${err?.code || 'sem-codigo'}) ${errorMessage}`);
+        setError('Falha ao autenticar. Tente novamente.');
       }
     }
   };
@@ -106,7 +96,7 @@ export default function LoginPage() {
         {/* Formulário de Login com efeito de Glassmorphism */}
         <form onSubmit={handleLogin} className="space-y-6 bg-[var(--color-bg-panel)]/80 backdrop-blur-md p-8 rounded-[2.5rem] border border-[var(--color-border)] shadow-xl flex flex-col items-center medieval-border">
           {error && <p className="text-red-500 text-sm font-bold">{error}</p>}
-
+          
           <button
             type="submit"
             className="w-full py-4 bg-[var(--color-primary)] hover:brightness-110 text-[var(--color-bg-dark)] font-black rounded-2xl shadow-lg transition-all active:scale-95 uppercase tracking-widest flex items-center justify-center gap-2 medieval-border medieval-glow"
@@ -124,16 +114,6 @@ export default function LoginPage() {
             <Sparkles className="w-5 h-5 text-[var(--color-primary)]" />
             Iniciar Gênese
           </button>
-
-          {/* Botão de Ajuda */}
-          <button
-            type="button"
-            onClick={() => setShowHelp(true)}
-            className="w-full py-4 bg-transparent border-2 border-[var(--color-border)] text-[var(--color-text-main)] hover:bg-[var(--color-border)] font-black rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 uppercase tracking-widest text-sm medieval-border"
-          >
-            <HelpCircle className="w-5 h-5 text-[var(--color-primary)]" />
-            Ajuda com Login
-          </button>
         </form>
 
         {/* Link para Cadastro */}
@@ -141,9 +121,6 @@ export default function LoginPage() {
           Ainda não tem conta? <span className="text-[var(--color-primary)] font-black cursor-pointer underline decoration-[var(--color-primary)] underline-offset-4">Cadastre-se</span>
         </p>
       </motion.div>
-
-      {/* Modal de Ajuda */}
-      <AuthHelpModal open={showHelp} onClose={() => setShowHelp(false)} />
     </div>
   );
 }

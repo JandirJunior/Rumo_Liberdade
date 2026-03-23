@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Header } from '@/components/layout/Header';
 import { formatCurrency, cn } from '@/lib/utils';
-import { Info, TrendingUp, AlertCircle, Sparkles, Zap, Shield, Swords, Compass, Wand2, Plus, Upload, Target, Package, DollarSign, TrendingDown } from 'lucide-react';
+import { Info, TrendingUp, AlertCircle, Sparkles, Zap, Shield, Swords, Compass, Wand2, Plus, Upload, Target } from 'lucide-react';
 import { PlanningModal } from '@/components/investments/PlanningModal';
 import { ContributionComparison } from '@/components/investments/ContributionComparison';
 
@@ -21,12 +21,12 @@ import { financialEngine } from '@/lib/financialEngine';
 
 export default function Investments() {
   const { theme } = useTheme();
-  const colors = THEMES[theme] || THEMES.ORBITA;
-  const { assets, loading: kingdomLoading, transactions, addInvestment, addEarning, deleteInvestment, contributionPlanning, updateContributionPlanning, addTransaction } = useKingdom();
-
-  const { totalValue, aggregated, tickerDetails } = useMemo(() =>
-    financialEngine.calculateInvestmentPower(assets, contributionPlanning?.percentages),
-    [assets, contributionPlanning]
+  const colors = THEMES[theme] || THEMES.default;
+  const { assets, loading: kingdomLoading, addInvestment, addEarning, deleteInvestment, contributionPlanning, updateContributionPlanning } = useKingdom();
+  
+  const { totalValue, aggregated, tickerDetails } = useMemo(() => 
+    financialEngine.calculateInvestmentPower(assets),
+    [assets]
   );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,7 +52,7 @@ export default function Investments() {
 
   const handleAddInvestment = async () => {
     if (!newInvestment.ticker || !newInvestment.value || !newInvestment.quantity) return;
-
+    
     const typeMap: Record<string, string> = {
       'F': 'fii',
       'A': 'stock',
@@ -62,36 +62,34 @@ export default function Investments() {
       'O': 'other'
     };
 
-    const investmentData = {
+    await addInvestment({
       type: typeMap[newInvestment.type],
       ticker: newInvestment.ticker.toUpperCase(),
       value: parseFloat(newInvestment.value),
       quantity: parseFloat(newInvestment.quantity),
       date: newInvestment.operation_date
-    };
-
-    await addInvestment(investmentData);
-
+    });
+    
     setIsModalOpen(false);
-    setNewInvestment({
-      type: 'F',
-      ticker: '',
-      value: '',
-      quantity: '',
-      operation_date: new Date().toISOString().split('T')[0]
+    setNewInvestment({ 
+      type: 'F', 
+      ticker: '', 
+      value: '', 
+      quantity: '', 
+      operation_date: new Date().toISOString().split('T')[0] 
     });
   };
 
   const handleAddEarning = async () => {
     if (!newEarning.ticker || !newEarning.amount) return;
-
+    
     await addEarning({
       ticker: newEarning.ticker.toUpperCase(),
       amount: parseFloat(newEarning.amount),
       type: newEarning.type,
       date: newEarning.date
     });
-
+    
     setIsEarningModalOpen(false);
     setNewEarning({
       ticker: '',
@@ -101,7 +99,7 @@ export default function Investments() {
     });
   };
 
-  const handleImportInvestments = async (data: { type?: string; ticker: string; value: string; quantity: string; operation_date?: string }[]) => {
+  const handleImportInvestments = async (data: any[]) => {
     for (const item of data) {
       // expected headers: type, ticker, value, quantity, date
       const typeMap: Record<string, string> = {
@@ -115,7 +113,7 @@ export default function Investments() {
       };
 
       await addInvestment({
-        type: typeMap[(item.type || '').toLowerCase()] || 'other',
+        type: typeMap[item.type.toLowerCase()] || 'other',
         ticker: item.ticker.toUpperCase(),
         value: parseFloat(item.value),
         quantity: parseFloat(item.quantity),
@@ -139,44 +137,35 @@ export default function Investments() {
     type: asset.faceroType,
   }));
 
-  const filteredTickerDetails = selectedCategory
+  const filteredTickerDetails = selectedCategory 
     ? tickerDetails?.filter(asset => asset.faceroType === selectedCategory)
     : tickerDetails;
 
-  const filteredAggregated = selectedCategory
+  const filteredAggregated = selectedCategory 
     ? aggregated.filter(asset => asset.faceroType === selectedCategory)
     : aggregated;
 
-  const summaryArray = (tickerDetails || []).map(item => ({
-    ticker: item.ticker,
-    totalValue: item.totalValue,
-    totalQuantity: item.totalQuantity,
-    averagePrice: item.averageCost,
-    unitPrice: item.unitPrice,
-    type: item.type
-  }));
-
   const BUFFS = [
-    {
-      name: 'Banquete Perpétuo',
-      desc: 'YoC > 0.8% a.m.',
-      active: true,
+    { 
+      name: 'Banquete Perpétuo', 
+      desc: 'YoC > 0.8% a.m.', 
+      active: true, 
       icon: Sparkles,
       color: 'text-yellow-500',
       bg: 'bg-yellow-50'
     },
-    {
-      name: 'Ponte de Bifröst',
-      desc: 'Exterior > 10%',
-      active: false,
+    { 
+      name: 'Ponte de Bifröst', 
+      desc: 'Exterior > 10%', 
+      active: false, 
       icon: Compass,
       color: 'text-blue-500',
       bg: 'bg-blue-50'
     },
-    {
-      name: 'Escudo de Ferro',
-      desc: 'Reserva > 6 meses',
-      active: true,
+    { 
+      name: 'Escudo de Ferro', 
+      desc: 'Reserva > 6 meses', 
+      active: true, 
       icon: Shield,
       color: 'text-gray-500',
       bg: 'bg-gray-50'
@@ -184,7 +173,7 @@ export default function Investments() {
   ];
 
   const getFaceroIcon = (type: string) => {
-    switch (type) {
+    switch(type) {
       case 'F': return <Swords className="w-4 h-4" />;
       case 'A': return <Wand2 className="w-4 h-4" />;
       case 'C': return <Zap className="w-4 h-4" />;
@@ -220,7 +209,7 @@ export default function Investments() {
       </div>
 
       <Header />
-
+      
       <main className="w-full px-4 sm:px-6 lg:px-8 py-6 pb-32 space-y-8 relative z-10">
         {/* [RESPONSIVIDADE] Título da Seção */}
         <header className="flex items-center justify-between">
@@ -229,28 +218,28 @@ export default function Investments() {
             <p className="text-sm text-[var(--color-text-muted)]">Onde seus rendimentos se transformam em poder</p>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <button 
               onClick={() => setIsPlanningModalOpen(true)}
               className="px-4 h-10 rounded-xl flex items-center gap-2 bg-[var(--color-bg-panel)] border border-[var(--color-border)] text-[var(--color-text-main)] shadow-sm font-bold text-sm transition-transform active:scale-95 hover:bg-[var(--color-bg-dark)] medieval-border"
             >
               <Target className="w-4 h-4" />
               <span className="hidden sm:inline">Planejamento</span>
             </button>
-            <button
+            <button 
               onClick={() => setIsImportModalOpen(true)}
               className="px-4 h-10 rounded-xl flex items-center gap-2 bg-[var(--color-bg-panel)] border border-[var(--color-border)] text-[var(--color-text-main)] shadow-sm font-bold text-sm transition-transform active:scale-95 hover:bg-[var(--color-bg-dark)] medieval-border"
             >
               <Upload className="w-4 h-4" />
               <span className="hidden sm:inline">Importar</span>
             </button>
-            <button
+            <button 
               onClick={() => setIsEarningModalOpen(true)}
               className="px-4 h-10 rounded-xl flex items-center gap-2 bg-amber-900/20 border border-amber-700/50 text-amber-500 shadow-sm font-bold text-sm transition-transform active:scale-95 hover:bg-amber-900/40 medieval-border"
             >
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">Proventos</span>
             </button>
-            <button
+            <button 
               onClick={() => setIsModalOpen(true)}
               className={cn("px-4 h-10 rounded-xl flex items-center gap-2 text-[var(--color-bg-dark)] shadow-sm font-bold text-sm transition-transform active:scale-95 medieval-border medieval-glow", "bg-[var(--color-primary)]")}
             >
@@ -261,8 +250,8 @@ export default function Investments() {
         </header>
 
         {/* ... rest of the component ... */}
-
-        <ImportModal
+        
+        <ImportModal 
           isOpen={isImportModalOpen}
           onClose={() => setIsImportModalOpen(false)}
           onImport={handleImportInvestments}
@@ -295,7 +284,7 @@ export default function Investments() {
                 Tem certeza que deseja excluir este investimento? Esta ação também removerá a transação financeira associada e não pode ser desfeita.
               </p>
             </div>
-
+            
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirmation({ isOpen: false, ids: null })}
@@ -319,236 +308,149 @@ export default function Investments() {
         </Modal>
 
 
-        {/* [RESPONSIVIDADE] Buffs Section - Scroll horizontal no mobile, flex wrap no desktop */}
-        <section className="space-y-4">
-          <h4 className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Habilidades Passivas (Buffs)</h4>
-          <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar md:flex-wrap">
-            {BUFFS.map((buff, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "flex items-center gap-3 p-3 rounded-2xl border shrink-0 transition-all md:w-auto medieval-border",
-                  buff.active ? "bg-[var(--color-bg-panel)] border-[var(--color-border)] shadow-sm" : "bg-[var(--color-bg-dark)] border-[var(--color-border)] opacity-50"
-                )}
-              >
-                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", buff.active ? "bg-amber-900/20 text-amber-500" : "bg-gray-800 text-gray-500")}>
-                  <buff.icon className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-[var(--color-text-main)] whitespace-nowrap">{buff.name}</p>
-                  <p className="text-[10px] text-[var(--color-text-muted)] whitespace-nowrap">{buff.desc}</p>
-                </div>
-                {buff.active && <div className={cn("w-2 h-2 rounded-full animate-pulse shrink-0", colors.primary)}></div>}
+      {/* [RESPONSIVIDADE] Buffs Section - Scroll horizontal no mobile, flex wrap no desktop */}
+      <section className="space-y-4">
+        <h4 className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Habilidades Passivas (Buffs)</h4>
+        <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar md:flex-wrap">
+          {BUFFS.map((buff, i) => (
+            <div 
+              key={i} 
+              className={cn(
+                "flex items-center gap-3 p-3 rounded-2xl border shrink-0 transition-all md:w-auto medieval-border",
+                buff.active ? "bg-[var(--color-bg-panel)] border-[var(--color-border)] shadow-sm" : "bg-[var(--color-bg-dark)] border-[var(--color-border)] opacity-50"
+              )}
+            >
+              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", buff.active ? "bg-amber-900/20 text-amber-500" : "bg-gray-800 text-gray-500")}>
+                <buff.icon className="w-6 h-6" />
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Seção de Resumo por Ticker */}
-        <section className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm medieval-border space-y-6">
-          <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Resumo por Ticker</h4>
-          <div className="space-y-4">
-            {summaryArray.length === 0 ? (
-              <div className="text-center py-8">
-                <TrendingUp className="w-12 h-12 text-[var(--color-text-muted)] mx-auto mb-4" />
-                <p className="text-[var(--color-text-muted)]">Nenhum investimento encontrado</p>
+              <div>
+                <p className="text-xs font-bold text-[var(--color-text-main)] whitespace-nowrap">{buff.name}</p>
+                <p className="text-[10px] text-[var(--color-text-muted)] whitespace-nowrap">{buff.desc}</p>
               </div>
-            ) : (
-              summaryArray.map((item) => (
-                <motion.div
-                  key={item.ticker}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-4 bg-[var(--color-bg-dark)] rounded-xl border border-[var(--color-border)]"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="font-bold text-lg text-[var(--color-text-main)]">{item.ticker}</h3>
-                      <p className="text-sm text-[var(--color-text-muted)] capitalize">{item.type.replace('_', ' ')}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-[var(--color-primary)]">{formatCurrency(item.totalValue)}</p>
-                      <p className="text-xs text-[var(--color-text-muted)]">Valor Total</p>
-                    </div>
-                  </div>
+              {buff.active && <div className={cn("w-2 h-2 rounded-full animate-pulse shrink-0", colors.primary)}></div>}
+            </div>
+          ))}
+        </div>
+      </section>
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Package className="w-4 h-4 text-[var(--color-text-muted)]" />
-                        <span className="text-xs text-[var(--color-text-muted)]">Quantidade</span>
-                      </div>
-                      <p className="font-bold text-[var(--color-text-main)]">{item.totalQuantity.toFixed(2)}</p>
-                    </div>
+      {/* [RESPONSIVIDADE] Grid principal: 1 coluna no mobile, 2 colunas no desktop (lg) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* [RESPONSIVIDADE] Coluna Esquerda (Ocupa 7 de 12 colunas no desktop) */}
+        <div className="lg:col-span-7 space-y-8">
+          {/* Consolidated F.A.C.E.R.O. Power Panel */}
+          <section className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm medieval-border space-y-8">
+            <h4 className="text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest">Painel de Poder F.A.C.E.R.O.</h4>
+            
+            {/* Equilíbrio Chart */}
+            <div className="h-64 sm:h-80 w-full">
+              {mounted && (
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                  <BarChart data={chartData} layout="vertical" margin={{ left: -20 }}>
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: 'var(--color-text-muted)' }} />
+                    <Tooltip 
+                      cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                      contentStyle={{ borderRadius: '12px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-panel)', color: 'var(--color-text-main)', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
+                    />
+                    <Bar dataKey="atual" fill="var(--color-primary)" radius={[0, 4, 4, 0]} name="Poder Atual %" onClick={(data: any) => setSelectedCategory(data.type === selectedCategory ? null : data.type)} />
+                    <Bar dataKey="alvo" fill="var(--color-border)" radius={[0, 4, 4, 0]} name="Poder Alvo %" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
 
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <DollarSign className="w-4 h-4 text-[var(--color-text-muted)]" />
-                        <span className="text-xs text-[var(--color-text-muted)]">Preço Médio</span>
-                      </div>
-                      <p className="font-bold text-[var(--color-text-main)]">{formatCurrency(item.averagePrice)}</p>
-                    </div>
-
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <TrendingUp className="w-4 h-4 text-[var(--color-text-muted)]" />
-                        <span className="text-xs text-[var(--color-text-muted)]">Valor Unitário</span>
-                      </div>
-                      <p className="font-bold text-[var(--color-text-main)]">{formatCurrency(item.totalValue / item.totalQuantity)}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))
-            )}
-          </div>
-        </section>
-
-
-        {/* [RESPONSIVIDADE] Grid principal: 1 coluna no mobile, 2 colunas no desktop (lg) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-          {/* [RESPONSIVIDADE] Coluna Esquerda (Ocupa 7 de 12 colunas no desktop) */}
-          <div className="lg:col-span-7 space-y-8">
-            {/* Consolidated F.A.C.E.R.O. Power Panel */}
-            <section className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm medieval-border space-y-8">
-              <h4 className="text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest">Painel de Poder F.A.C.E.R.O.</h4>
-
-              {/* Equilíbrio Chart */}
-              <div className="h-64 sm:h-80 w-full">
-                {mounted && (
-                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                    <BarChart data={chartData} layout="vertical" margin={{ left: -20 }}>
-                      <XAxis type="number" hide />
-                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: 'var(--color-text-muted)' }} />
-                      <Tooltip
-                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                        contentStyle={{ borderRadius: '12px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-panel)', color: 'var(--color-text-main)', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
-                      />
-                      <Bar dataKey="atual" fill="var(--color-primary)" radius={[0, 4, 4, 0]} name="Poder Atual %" onClick={(data: { type: string }) => setSelectedCategory(data.type === selectedCategory ? null : data.type)} />
-                      <Bar dataKey="alvo" fill="var(--color-border)" radius={[0, 4, 4, 0]} name="Poder Alvo %" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
+            {/* Planejamento de Próximo Aporte */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2">
+                <Compass className="w-5 h-5 text-[var(--color-primary)]" />
+                <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Planejamento de Próximo Aporte</h4>
+              </div>
+              
+              <div className="p-4 bg-[var(--color-bg-dark)] rounded-2xl border border-[var(--color-border)]">
+                <p className="text-xs font-bold text-[var(--color-primary)] uppercase tracking-widest mb-1">Valor Disponível</p>
+                <p className="text-2xl font-display font-bold text-[var(--color-text-main)]">{formatCurrency(totalValue * 0.05)}</p>
+                <p className="text-[10px] text-[var(--color-text-muted)] mt-1 italic">* Sugestão baseada em 5% do patrimônio atual</p>
               </div>
 
-              {/* Planejamento de Próximo Aporte */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-2">
-                  <Compass className="w-5 h-5 text-[var(--color-primary)]" />
-                  <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Planejamento de Próximo Aporte</h4>
-                </div>
-
-                <div className="p-4 bg-[var(--color-bg-dark)] rounded-2xl border border-[var(--color-border)]">
-                  <p className="text-xs font-bold text-[var(--color-primary)] uppercase tracking-widest mb-1">Valor Disponível</p>
-                  <p className="text-2xl font-display font-bold text-[var(--color-text-main)]">{formatCurrency(totalValue * 0.05)}</p>
-                  <p className="text-[10px] text-[var(--color-text-muted)] mt-1 italic">* Sugestão baseada em 5% do patrimônio atual</p>
-                </div>
-
-                <div className="space-y-3">
-                  <p className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Distribuição Sugerida (FACERO)</p>
-                  {filteredAggregated.map((asset, i) => {
-                    const suggestedAmount = (totalValue * 0.05) * asset.targetPercent;
-                    return (
-                      <div key={i} className="flex items-center justify-between p-3 bg-[var(--color-bg-dark)] rounded-xl border border-[var(--color-border)]">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-[var(--color-bg-panel)] rounded-lg flex items-center justify-center text-[var(--color-text-muted)] shadow-sm border border-[var(--color-border)]">
-                            {getFaceroIcon(asset.faceroType)}
-                          </div>
-                          <span className="text-sm font-medium text-[var(--color-text-main)]">{asset.name}</span>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-[var(--color-text-main)]">{formatCurrency(suggestedAmount)}</p>
-                          <p className="text-[10px] text-[var(--color-text-muted)]">{(asset.targetPercent * 100).toFixed(0)}% do aporte</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {/* [RESPONSIVIDADE] Coluna Direita (Ocupa 5 de 12 colunas no desktop) */}
-          <div className="lg:col-span-5 space-y-8">
-            {/* Asset List with Item Status */}
-            <section className="space-y-4">
-              <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Inventário de Ativos</h4>
-              {/* Movimentações de cada ativo */}
-              <div className="space-y-4">
-                {filteredTickerDetails?.map((asset: Asset & { totalQuantity: number }, i: number) => {
-                  // Filtrar transações de investimento correspondentes a este ticker
-                  const assetTransactions = transactions.filter(t =>
-                    t.type === 'investment' &&
-                    t.description.includes(asset.ticker)
-                  );
-
+              <div className="space-y-3">
+                <p className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Distribuição Sugerida (FACERO)</p>
+                {filteredAggregated.map((asset, i) => {
+                  const suggestedAmount = (totalValue * 0.05) * asset.targetPercent;
                   return (
-                    <div key={i} className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-4 shadow-sm medieval-border">
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="w-12 h-12 bg-[var(--color-bg-dark)] rounded-2xl flex items-center justify-center text-[var(--color-primary)] shrink-0 border border-[var(--color-border)]">
+                    <div key={i} className="flex items-center justify-between p-3 bg-[var(--color-bg-dark)] rounded-xl border border-[var(--color-border)]">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-[var(--color-bg-panel)] rounded-lg flex items-center justify-center text-[var(--color-text-muted)] shadow-sm border border-[var(--color-border)]">
                           {getFaceroIcon(asset.faceroType)}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-[var(--color-text-main)] truncate">{asset.ticker}</p>
-                          <p className="text-xs text-[var(--color-text-muted)] truncate">Qtd Total: {asset.totalQuantity.toLocaleString('pt-BR')}</p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-sm font-bold text-[var(--color-text-main)]">{formatCurrency(asset.totalValue)}</p>
-                          <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Preço Médio: {formatCurrency(asset.averageCost)}</p>
-                        </div>
+                        <span className="text-sm font-medium text-[var(--color-text-main)]">{asset.name}</span>
                       </div>
-
-                      {/* Movimentações deste ativo */}
-                      {assetTransactions.length > 0 && (
-                        <div className="space-y-2 mt-4 pt-4 border-t border-[var(--color-border)]">
-                          <p className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Movimentações</p>
-                          {assetTransactions.map((txn) => (
-                            <div key={txn.id} className="flex items-center justify-between text-xs p-2 bg-[var(--color-bg-dark)] rounded">
-                              <span className="text-[var(--color-text-muted)]">
-                                {new Date(txn.date || txn.created_at || '').toLocaleDateString('pt-BR')}
-                              </span>
-                              <span className="text-[var(--color-text-main)] font-bold">
-                                {formatCurrency(txn.amount)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <button
-                        onClick={() => setDeleteConfirmation({ isOpen: true, ids: asset.ids })}
-                        className="mt-4 w-full text-xs text-red-500 hover:text-red-700 font-bold py-2 hover:bg-red-900/10 rounded transition-colors"
-                      >
-                        Excluir Ativo
-                      </button>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-[var(--color-text-main)]">{formatCurrency(suggestedAmount)}</p>
+                        <p className="text-[10px] text-[var(--color-text-muted)]">{(asset.targetPercent * 100).toFixed(0)}% do aporte</p>
+                      </div>
                     </div>
                   );
                 })}
-                {(!tickerDetails || tickerDetails.length === 0) && (
-                  <div className="text-center py-8 text-[var(--color-text-muted)] text-sm bg-[var(--color-bg-panel)] rounded-2xl border border-[var(--color-border)]">
-                    <Package className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    Nenhum ativo no inventário.
-                  </div>
-                )}
               </div>
-            </section>
-          </div>
-
+            </div>
+          </section>
         </div>
+
+      {/* [RESPONSIVIDADE] Coluna Direita (Ocupa 5 de 12 colunas no desktop) */}
+        <div className="lg:col-span-5 space-y-8">
+          {/* Asset List with Item Status */}
+          <section className="space-y-4">
+            <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Inventário de Ativos</h4>
+            {/* [RESPONSIVIDADE] No mobile é 1 coluna, no tablet (sm) divide em 2 colunas, no desktop (lg) volta pra 1 coluna pois já está na coluna direita do grid principal */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+              {filteredTickerDetails?.map((asset: any, i: number) => (
+                <div key={i} className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-4 shadow-sm flex flex-col justify-between medieval-border">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-[var(--color-bg-dark)] rounded-2xl flex items-center justify-center text-[var(--color-primary)] shrink-0 border border-[var(--color-border)]">
+                      {getFaceroIcon(asset.faceroType)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-[var(--color-text-main)] truncate">{asset.ticker}</p>
+                      <p className="text-xs text-[var(--color-text-muted)] truncate">Qtd: {asset.totalQuantity.toLocaleString('pt-BR')}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold text-[var(--color-text-main)]">{formatCurrency(asset.totalValue)}</p>
+                      <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Custo Médio: {formatCurrency(asset.averageCost)}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setDeleteConfirmation({ isOpen: true, ids: asset.ids })}
+                    className="mt-2 text-xs text-red-500 hover:text-red-700 font-bold"
+                  >
+                    Excluir
+                  </button>
+                </div>
+              ))}
+              {(!tickerDetails || tickerDetails.length === 0) && (
+                <div className="text-center py-8 text-[var(--color-text-muted)] text-sm">
+                  Nenhum ativo no inventário.
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+
+      </div>
       </main>
 
       {/* Modal para Adicionar Proventos */}
-      <Modal
-        isOpen={isEarningModalOpen}
-        onClose={() => setIsEarningModalOpen(false)}
+      <Modal 
+        isOpen={isEarningModalOpen} 
+        onClose={() => setIsEarningModalOpen(false)} 
         title="Registrar Proventos"
       >
         <div className="space-y-4">
           <div>
             <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Ativo / Ticker</label>
-            <select
+            <select 
               value={newEarning.ticker}
-              onChange={(e) => setNewEarning({ ...newEarning, ticker: e.target.value })}
+              onChange={(e) => setNewEarning({...newEarning, ticker: e.target.value})}
               className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
             >
               <option value="">Selecione um ativo</option>
@@ -560,9 +462,9 @@ export default function Investments() {
 
           <div>
             <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Tipo de Provento</label>
-            <select
+            <select 
               value={newEarning.type}
-              onChange={(e) => setNewEarning({ ...newEarning, type: e.target.value as 'dividend' | 'jcp' | 'rent' | 'other' })}
+              onChange={(e) => setNewEarning({...newEarning, type: e.target.value as any})}
               className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
             >
               <option value="dividend">Dividendo</option>
@@ -577,27 +479,27 @@ export default function Investments() {
               <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Valor Recebido</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] font-bold">R$</span>
-                <input
+                <input 
                   type="number"
                   placeholder="0.00"
                   value={newEarning.amount}
-                  onChange={(e) => setNewEarning({ ...newEarning, amount: e.target.value })}
+                  onChange={(e) => setNewEarning({...newEarning, amount: e.target.value})}
                   className="w-full pl-12 pr-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-bold text-[var(--color-text-main)]"
                 />
               </div>
             </div>
             <div>
               <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Data</label>
-              <input
+              <input 
                 type="date"
                 value={newEarning.date}
-                onChange={(e) => setNewEarning({ ...newEarning, date: e.target.value })}
+                onChange={(e) => setNewEarning({...newEarning, date: e.target.value})}
                 className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
               />
             </div>
           </div>
 
-          <button
+          <button 
             onClick={handleAddEarning}
             disabled={!newEarning.ticker || !newEarning.amount}
             className={cn(
@@ -611,26 +513,26 @@ export default function Investments() {
       </Modal>
 
       {/* Modal para Adicionar Investimento */}
-      <Modal
-        isOpen={isModalOpen}
+      <Modal 
+        isOpen={isModalOpen} 
         onClose={() => {
           setIsModalOpen(false);
-          setNewInvestment({
-            type: 'F',
-            ticker: '',
-            value: '',
-            quantity: '',
-            operation_date: new Date().toISOString().split('T')[0]
+          setNewInvestment({ 
+            type: 'F', 
+            ticker: '', 
+            value: '', 
+            quantity: '', 
+            operation_date: new Date().toISOString().split('T')[0] 
           });
-        }}
+        }} 
         title="Novo Investimento"
       >
         <div className="space-y-4">
           <div>
             <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Categoria F.A.C.E.R.O.</label>
-            <select
+            <select 
               value={newInvestment.type}
-              onChange={(e) => setNewInvestment({ ...newInvestment, type: e.target.value })}
+              onChange={(e) => setNewInvestment({...newInvestment, type: e.target.value})}
               className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
             >
               <option value="F">Fundo Imobiliário</option>
@@ -641,14 +543,14 @@ export default function Investments() {
               <option value="O">Outros investimentos / Oportunidades</option>
             </select>
           </div>
-
+          
           <div>
             <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Ativo / Ticker</label>
-            <input
+            <input 
               type="text"
               placeholder="Ex: MXRF11, PETR4, BTC"
               value={newInvestment.ticker}
-              onChange={(e) => setNewInvestment({ ...newInvestment, ticker: e.target.value.toUpperCase() })}
+              onChange={(e) => setNewInvestment({...newInvestment, ticker: e.target.value})}
               className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
             />
           </div>
@@ -656,21 +558,21 @@ export default function Investments() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Quantidade</label>
-              <input
+              <input 
                 type="number"
                 step="0.00000001"
                 placeholder="0.00"
                 value={newInvestment.quantity}
-                onChange={(e) => setNewInvestment({ ...newInvestment, quantity: e.target.value })}
+                onChange={(e) => setNewInvestment({...newInvestment, quantity: e.target.value})}
                 className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
               />
             </div>
             <div>
               <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Data Operação</label>
-              <input
+              <input 
                 type="date"
                 value={newInvestment.operation_date}
-                onChange={(e) => setNewInvestment({ ...newInvestment, operation_date: e.target.value })}
+                onChange={(e) => setNewInvestment({...newInvestment, operation_date: e.target.value})}
                 className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
               />
             </div>
@@ -680,11 +582,11 @@ export default function Investments() {
             <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Valor Total Investido</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] font-bold">R$</span>
-              <input
+              <input 
                 type="number"
                 placeholder="0.00"
                 value={newInvestment.value}
-                onChange={(e) => setNewInvestment({ ...newInvestment, value: e.target.value })}
+                onChange={(e) => setNewInvestment({...newInvestment, value: e.target.value})}
                 className="w-full pl-12 pr-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-bold text-[var(--color-text-main)]"
               />
             </div>
@@ -697,7 +599,7 @@ export default function Investments() {
             </div>
           </div>
 
-          <button
+          <button 
             onClick={handleAddInvestment}
             disabled={!newInvestment.ticker || !newInvestment.value || !newInvestment.quantity}
             className={cn(

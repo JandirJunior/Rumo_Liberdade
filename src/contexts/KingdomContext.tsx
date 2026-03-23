@@ -1,9 +1,3 @@
-/**
- * Contexto do Reino (Multiplayer): Gerencia estado e operações relacionadas a reinos.
- * Fornece dados de reino atual, membros, convites, transações compartilhadas e permissões.
- * Implementa listeners em tempo real do Firestore para sincronização entre usuários.
- * Suporta funcionalidades de colaboração financeira em modo reino vs modo herói individual.
- */
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -23,12 +17,12 @@ import {
   runTransaction
 } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import {
-  Kingdom,
-  KingdomRole,
-  Transaction,
-  Asset,
-  ActivityLog,
+import { 
+  Kingdom, 
+  KingdomRole, 
+  Transaction, 
+  Asset, 
+  ActivityLog, 
   ContributionPlanning,
   CategoryEntity,
   BudgetEntity,
@@ -49,7 +43,7 @@ interface KingdomContextType {
   role: KingdomRole | null;
   memberId: string | null;
   loading: boolean;
-
+  
   // Data
   transactions: Transaction[];
   assets: Asset[];
@@ -61,49 +55,49 @@ interface KingdomContextType {
   receivables: AccountReceivable[];
   creditCards: any[];
   creditCardInvoices: CreditCardInvoice[];
-
+  
   // Computed
   getBudgetProgress: (month: number, year: number) => BudgetProgress[];
-
+  
   // Actions
   addTransaction: (data: Partial<Transaction>) => Promise<void>;
   updateTransaction: (id: string, data: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
-
+  
   addInvestment: (data: any) => Promise<void>;
   deleteInvestment: (ids: string | string[]) => Promise<void>;
-
+  
   addEarning: (data: any) => Promise<void>;
-
+  
   saveBudget: (category_id: string, amount: number) => Promise<void>;
-
+  
   addCategory: (category: any) => Promise<void>;
   updateCategory: (id: string, category: any) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
-
+  
   addPayable: (payable: any) => Promise<void>;
   updatePayable: (id: string, payable: any) => Promise<void>;
   payPayable: (id: string, paidAt: string) => Promise<void>;
   deletePayable: (id: string) => Promise<void>;
-
+  
   addReceivable: (receivable: any) => Promise<void>;
   updateReceivable: (id: string, receivable: any) => Promise<void>;
   receiveReceivable: (id: string, receivedAt: string) => Promise<void>;
   deleteReceivable: (id: string) => Promise<void>;
-
+  
   addCreditCard: (card: any) => Promise<void>;
   updateCreditCard: (id: string, card: any) => Promise<void>;
   deleteCreditCard: (id: string) => Promise<void>;
-
+  
   addCreditCardInvoice: (invoice: any) => Promise<void>;
   updateCreditCardInvoice: (id: string, invoice: any) => Promise<void>;
   payCreditCardInvoice: (id: string, paidAt: string) => Promise<void>;
   deleteCreditCardInvoice: (id: string) => Promise<void>;
-
+  
   members: any[];
   userInvites: any[];
   kingdomInvites: any[];
-
+  
   updateContributionPlanning: (percentages: any) => Promise<void>;
   joinKingdomByCode: (code: string) => Promise<void>;
 }
@@ -255,8 +249,8 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
         });
 
         unsubscribes.push(
-          unsubAssets, unsubTransactions, unsubLogs, unsubPlanning,
-          unsubCategories, unsubBudgets, unsubPayables, unsubReceivables,
+          unsubAssets, unsubTransactions, unsubLogs, unsubPlanning, 
+          unsubCategories, unsubBudgets, unsubPayables, unsubReceivables, 
           unsubCreditCards, unsubCreditCardInvoices, unsubMembers, unsubUserInvites, unsubKingdomInvites
         );
 
@@ -314,96 +308,30 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
     const batch = writeBatch(db);
     const invId = doc(collection(db, 'investments')).id;
     const txId = doc(collection(db, 'transactions')).id;
-
-    // Calcular investimento total = preço unitário * quantidade
-    const totalInvestedAmount = Number(data.value) * Number(data.quantity);
-
     batch.set(doc(db, 'investments', invId), {
       id: invId,
       ticker: data.ticker,
       quantity: data.quantity,
-      price: data.value, // preço unitário
-      invested_value: totalInvestedAmount, // valor total investido
+      invested_value: data.value,
       type: data.type,
-      faceroType: determineFaceroType(data.type),
       created_at: new Date(),
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid,
       transaction_id: txId
     });
-
     batch.set(doc(db, 'transactions', txId), {
       id: txId,
       type: 'investment',
-      amount: totalInvestedAmount,
-      category_id: 'investimentos',
+      amount: data.value,
+      category_id: 'investment',
       description: `Aporte em ${data.ticker}`,
       date: new Date(data.date),
       created_at: new Date(),
       user_id: auth.currentUser.uid,
-      userName: auth.currentUser.displayName || 'Usuário',
-      kingdom_id: kingdom.id,
-      created_by: auth.currentUser.uid
+      kingdom_id: kingdom.id
     });
     await batch.commit();
-    await addXP(auth.currentUser.uid, calculateXPFromInvestments(totalInvestedAmount));
-  };
-
-  // Migração de dados legados: garante que todos os investimentos tenham invested_value
-  const migrateInvestmentData = async (assetsData: Asset[], kingdomId: string) => {
-    if (!auth.currentUser) return;
-
-    const batch = writeBatch(db);
-    let hasUpdates = false;
-
-    for (const asset of assetsData) {
-      if (!asset.id) continue;
-
-      // Se não tem invested_value, precisa calcular
-      if (!asset.invested_value || asset.invested_value === 0) {
-        let calculatedValue = 0;
-
-        // Tentar calcular invested_value baseado nos campos disponíveis
-        if (asset.price && asset.quantity) {
-          calculatedValue = Number(asset.price) * Number(asset.quantity);
-        } else if (asset.value && asset.quantity) {
-          calculatedValue = Number(asset.value) * Number(asset.quantity);
-        } else if (asset.value) {
-          // Fallback: usar value como is (pode ser total ou unitário)
-          calculatedValue = Number(asset.value);
-        }
-
-        // Atualizar só se conseguir calcular um valor válido
-        if (calculatedValue > 0) {
-          batch.update(doc(db, 'investments', asset.id), {
-            invested_value: calculatedValue
-          });
-          hasUpdates = true;
-        }
-      }
-    }
-
-    // Executar atualizações em batch apenas se houver mudanças
-    if (hasUpdates && auth.currentUser.uid) {
-      try {
-        await batch.commit();
-        console.log('✅ Migração de investimentos concluída');
-      } catch (error) {
-        console.error('Erro ao migrar dados de investimentos:', error);
-      }
-    }
-  };
-
-  const determineFaceroType = (investmentType: string): string => {
-    const typeMap: Record<string, string> = {
-      'fii': 'F',
-      'stock': 'A',
-      'crypto': 'C',
-      'etf': 'E',
-      'fixed_income': 'R',
-      'other': 'O'
-    };
-    return typeMap[investmentType] || 'O';
+    await addXP(auth.currentUser.uid, calculateXPFromInvestments(data.value));
   };
 
   const deleteInvestment = async (ids: string | string[]) => {

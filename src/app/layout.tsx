@@ -1,9 +1,3 @@
-/**
- * Layout Raiz da Aplicação: Define a estrutura base de todas as páginas do Next.js.
- * Configura fontes globais (Inter e Space Grotesk), estilos CSS globais e provedores de contexto.
- * Inclui o ClientLayout que gerencia temas, autenticação e navegação responsiva.
- * Responsável por renderizar o layout comum a todas as rotas da aplicação.
- */
 import { Inter, Space_Grotesk } from 'next/font/google';
 import { ClientLayout } from '@/components/layout/ClientLayout';
 import './globals.css';
@@ -34,7 +28,7 @@ export default function RootLayout({
       className={`${inter.variable} ${spaceGrotesk.variable}`}
     >
       <body
-        className="text-[var(--color-text-main)] font-sans antialiased theme-bg"
+        className="bg-[var(--color-bg-dark)] text-[var(--color-text-main)] font-sans antialiased"
         suppressHydrationWarning
       >
         <ClientLayout>

@@ -12,7 +12,7 @@ import { THEMES } from '@/lib/themes';
 export function CategoryManagerPanel() {
   const { categories, loading, addCategory, updateCategory, deleteCategory } = useCategories();
   const { theme, gameMode } = useTheme();
-  const colors = THEMES[theme] || THEMES.ORBITA;
+  const colors = THEMES[theme] || THEMES.default;
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -112,7 +112,7 @@ export function CategoryManagerPanel() {
   // Agrupar categorias
   const profileType = gameMode === 'reino' ? 'MultiUsuario' : 'MonoUsuario';
   const filteredCategories = categories.filter(c => !c.allowed_profiles || c.allowed_profiles.includes(profileType));
-
+  
   const groupedCategories = filteredCategories.reduce((acc, cat) => {
     const group = cat.rpg_group || 'Outros';
     if (!acc[group]) {
@@ -148,7 +148,7 @@ export function CategoryManagerPanel() {
           <h4 className="text-sm font-bold text-[var(--color-text-main)] uppercase tracking-wider">
             {editingId ? 'Editar Categoria' : 'Nova Categoria'}
           </h4>
-
+          
           <div className="space-y-3">
             <div>
               <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-1 block">Nome da Subcategoria</label>
@@ -160,7 +160,7 @@ export function CategoryManagerPanel() {
                 placeholder="Ex: Salário, Aluguel, Supermercado"
               />
             </div>
-
+            
             <div>
               <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-1 block">Agrupador RPG</label>
               <select
@@ -169,7 +169,7 @@ export function CategoryManagerPanel() {
                   const group = e.target.value;
                   let flow_type: 'income' | 'expense' = 'expense';
                   let group_type: 'fixed' | 'variable' = 'variable';
-
+                  
                   if (group === '💎 Cofre do Reino (Receitas Fixas)') { flow_type = 'income'; group_type = 'fixed'; }
                   else if (group === '⚡ Saques de Missões (Receitas Variáveis)') { flow_type = 'income'; group_type = 'variable'; }
                   else if (group === '🛡️ Tributos do Reino (Despesas Fixas)') { flow_type = 'expense'; group_type = 'fixed'; }
@@ -206,7 +206,7 @@ export function CategoryManagerPanel() {
         {rpgGroups.map(groupName => {
           const groupCats = groupedCategories[groupName] || [];
           const { icon, color, text } = getRpgGroupDetails(groupName);
-
+          
           if (groupCats.length === 0) return null;
 
           return (
@@ -217,7 +217,7 @@ export function CategoryManagerPanel() {
                 </div>
                 <h4 className={cn("text-sm font-bold uppercase tracking-wider", text)}>{groupName}</h4>
               </div>
-
+              
               <div className="flex flex-col gap-3">
                 {groupCats.map(cat => (
                   <div key={cat.id} className="bg-[var(--color-bg-panel)] p-4 rounded-2xl border border-[var(--color-border)] shadow-sm flex items-center justify-between group hover:border-[var(--color-primary)] transition-colors medieval-border">
@@ -228,13 +228,13 @@ export function CategoryManagerPanel() {
                       </p>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
+                      <button 
                         onClick={() => handleEdit(cat)}
                         className="p-2 text-[var(--color-text-muted)] hover:text-blue-400 transition-colors rounded-lg hover:bg-[var(--color-bg-dark)]"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button
+                      <button 
                         onClick={() => deleteCategory(cat.id)}
                         className="p-2 text-[var(--color-text-muted)] hover:text-red-400 transition-colors rounded-lg hover:bg-[var(--color-bg-dark)]"
                       >

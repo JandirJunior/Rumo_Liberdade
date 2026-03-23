@@ -1,15 +1,7 @@
 /**
- * Logger de Auditoria: Sistema centralizado para registro de atividades do sistema.
- * Responsabilidades:
- * - Registrar todas as operações importantes (criação, edição, exclusão)
- * - Associar ações a usuários e reinos específicos
- * - Fornecer rastreamento completo para auditoria e debugging
- * - Usar Firestore para persistência com timestamps automáticos
- * Integração:
- * - Chamado por serviços (kingdomService, userService, etc.)
- * - Usa collection 'activityLogs' no Firestore
- * Contexto: Essencial para compliance, debugging e análise de uso do sistema.
+ * 📜 auditLogger
  */
+
 import { db } from '@/services/firebase';
 import { doc, setDoc, collection } from 'firebase/firestore';
 

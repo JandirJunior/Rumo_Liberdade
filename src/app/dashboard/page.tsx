@@ -1,9 +1,6 @@
 /**
- * Página do Dashboard (Herói/Reino): Central de comando e visão geral do usuário.
- * Exibe métricas financeiras principais (saldo total, receitas/despesas/investimentos),
- * hexágono de atributos F.A.C.E.R.O. (Festim, Arcano, Cache, Exodia, Reaver, Órbit),
- * quests ativas, progresso de metas e navegação para outras seções.
- * Suporta modo herói (individual) e reino (multiplayer) com dados filtrados por usuário/reino.
+ * Página do Dashboard (Herói/Reino): Central de comando do usuário.
+ * Exibe o saldo total, o hexágono de atributos F.A.C.E.R.O., quests ativas e progresso de metas.
  */
 'use client';
 
@@ -40,7 +37,7 @@ export default function Dashboard() {
   const router = useRouter();
   // Acessa o estado global e o tema atual através do contexto
   const { gameState, theme, gameMode, user, loading: authLoading } = useTheme();
-  const colors = THEMES[theme] || THEMES.ORBITA;
+  const colors = THEMES[theme] || THEMES.default;
   const { assets, transactions, loading: kingdomLoading, kingdom } = useKingdom();
   const { categories } = useCategories();
 
@@ -92,10 +89,10 @@ export default function Dashboard() {
   // Cálculos individuais do Herói
   const myAssets = assets.filter(a => a.userId === auth.currentUser?.uid);
   const { totalValue: myInvested } = financialEngine.calculateInvestmentPower(myAssets);
-
+  
   // Use financialEngine for transactions
   const myTransactions = transactions.filter(t => t.userId === auth.currentUser?.uid);
-  const { income: myIncome, expense: myExpenses } = financialEngine.calculateMonthlySummary(myTransactions, month, year);
+  const { income: myIncome, expense: myExpenses } = financialEngine.calculateMonthlySummary(myTransactions as any, month, year);
 
   const dominantMentor = getDominantMentor(assets);
 
@@ -108,7 +105,7 @@ export default function Dashboard() {
 
   // Identifica a próxima meta não concluída
   const nextGoal = MOCK_GOALS?.find(g => !g.completed);
-
+  
   // Função para calcular o percentual de cada atributo F.A.C.E.R.O.
   const getFaceroPercent = (type: string) => {
     const asset = assets.find(a => a.faceroType === type);
@@ -120,10 +117,10 @@ export default function Dashboard() {
   const radarData = [
     { subject: 'Festim', A: getFaceroPercent('F'), fullMark: 100 },
     { subject: 'Arcano', A: getFaceroPercent('A'), fullMark: 100 },
-    { subject: 'Cache', A: getFaceroPercent('C'), fullMark: 100 },
+    { subject: 'Cache',  A: getFaceroPercent('C'), fullMark: 100 },
     { subject: 'Exodia', A: getFaceroPercent('E'), fullMark: 100 },
     { subject: 'Reaver', A: getFaceroPercent('R'), fullMark: 100 },
-    { subject: 'Órbit', A: getFaceroPercent('O'), fullMark: 100 },
+    { subject: 'Órbit',  A: getFaceroPercent('O'), fullMark: 100 },
   ];
 
   // Estado para garantir que o gráfico só seja renderizado no cliente (evita erro de SSR do Recharts)
@@ -135,7 +132,7 @@ export default function Dashboard() {
 
   // Retorna o ícone correspondente ao arquétipo atual do herói
   const getArchetypeIcon = () => {
-    switch (gameState.archetype) {
+    switch(gameState.archetype) {
       case 'Paladino': return <Shield className="w-6 h-6" />;
       case 'Mago': return <Wand2 className="w-6 h-6" />;
       case 'Dwarf': return <HandCoins className="w-6 h-6" />;
@@ -191,7 +188,7 @@ export default function Dashboard() {
 
       {/* Cabeçalho superior */}
       <Header />
-
+      
       <main className="w-full px-4 sm:px-6 lg:px-8 py-6 pb-32 relative z-10">
         {/* [RESPONSIVIDADE] Título da Seção com margem inferior ajustada */}
         <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -200,8 +197,8 @@ export default function Dashboard() {
             <p className="text-sm text-[var(--color-text-muted)]">Seu centro de comando e progresso</p>
           </div>
           <div className="flex items-center gap-2">
-            <select
-              value={month}
+            <select 
+              value={month} 
               onChange={(e) => setMonth(parseInt(e.target.value))}
               className="text-sm border-[var(--color-border)] rounded-xl bg-[var(--color-bg-panel)] text-[var(--color-text-main)] focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] p-2 shadow-sm medieval-border"
             >
@@ -211,8 +208,8 @@ export default function Dashboard() {
                 </option>
               ))}
             </select>
-            <select
-              value={year}
+            <select 
+              value={year} 
               onChange={(e) => setYear(parseInt(e.target.value))}
               className="text-sm border-[var(--color-border)] rounded-xl bg-[var(--color-bg-panel)] text-[var(--color-text-main)] focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] p-2 shadow-sm medieval-border"
             >
@@ -225,7 +222,7 @@ export default function Dashboard() {
 
         {/* [RESPONSIVIDADE] Container principal usando CSS Grid. */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
+          
           {/* [RESPONSIVIDADE] Coluna Esquerda no Desktop (Ocupa 7 de 12 colunas) */}
           <div className="lg:col-span-7 space-y-8">
             {/* Card Principal de Saldo (Poder de Investimento) */}
@@ -244,7 +241,7 @@ export default function Dashboard() {
                 </div>
                 {/* [RESPONSIVIDADE] Texto responsivo: menor em telas muito pequenas, grande em telas normais */}
                 <h3 className="text-3xl sm:text-4xl medieval-title font-bold mb-8">R$ {totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
-
+                
                 {gameMode === 'reino' && (
                   <div className="mb-8 p-4 bg-black/10 rounded-2xl border border-black/20 backdrop-blur-sm">
                     <div className="flex items-center gap-2 mb-2">
@@ -310,9 +307,9 @@ export default function Dashboard() {
               <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 text-[var(--color-text-main)] relative overflow-hidden shadow-xl medieval-border">
                 {/* Imagem de Fundo do Vilão com opacidade reduzida e blend-mode para ficar clara/pastel */}
                 <div className="absolute inset-0 opacity-30">
-                  <Image
-                    src={nextCharacter.image}
-                    alt="Vilão da Masmorra"
+                  <Image 
+                    src={nextCharacter.image} 
+                    alt="Vilão da Masmorra" 
                     fill
                     className="object-cover"
                     unoptimized
@@ -332,8 +329,8 @@ export default function Dashboard() {
                 </div>
                 <div className="space-y-2 relative z-10">
                   <div className="h-2 w-full bg-[var(--color-bg-dark)]/60 rounded-full overflow-hidden backdrop-blur-sm shadow-inner border border-[var(--color-border)]">
-                    <div
-                      className="h-full bg-[var(--color-primary)] transition-all duration-1000 medieval-glow"
+                    <div 
+                      className="h-full bg-[var(--color-primary)] transition-all duration-1000 medieval-glow" 
                       style={{ width: `${Math.min(100, masmorraProgress)}%` }}
                     ></div>
                   </div>
@@ -362,14 +359,14 @@ export default function Dashboard() {
                   <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                     <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                       <PolarGrid stroke="var(--color-border)" strokeDasharray="3 3" />
-                      <PolarAngleAxis
-                        dataKey="subject"
-                        tick={{
-                          fontSize: 10,
-                          fontWeight: 'bold',
+                      <PolarAngleAxis 
+                        dataKey="subject" 
+                        tick={{ 
+                          fontSize: 10, 
+                          fontWeight: 'bold', 
                           fill: 'var(--color-text-muted)',
                           fontFamily: 'var(--font-sans)'
-                        }}
+                        }} 
                       />
                       <Radar
                         name="Poder"

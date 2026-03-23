@@ -1,20 +1,4 @@
 /**
- * Engine de Gamificação: Núcleo do sistema RPG financeiro.
- * Responsabilidades:
- * - Calcular XP baseado em ações financeiras (transações, orçamentos, investimentos)
- * - Gerenciar progressão de níveis e títulos RPG
- * - Determinar próximos desafios (villains) baseados no poder financeiro
- * - Integrar atributos F.A.C.E.R.O. com progresso do usuário
- * Regras:
- * - Toda lógica de XP deve estar centralizada aqui
- * - Níveis calculados por fórmula: floor(XP / 1000) + 1
- * - Títulos desbloqueados por marcos de XP específicos
- * Integração:
- * - Chamado por ThemeContext para atualizar estado de jogo
- * - Usa dados financeiros do financialEngine
- * Contexto: Transforma finanças pessoais em RPG envolvente.
- */
-/**
  * 🎮 gameEngine.ts
  *
  * RESPONSÁVEL:

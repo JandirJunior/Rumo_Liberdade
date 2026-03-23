@@ -15,16 +15,16 @@ import { useKingdom } from '@/hooks/useKingdom';
 
 export default function Villains() {
   const { theme } = useTheme();
-  const colors = THEMES[theme] || THEMES.ORBITA;
+  const colors = THEMES[theme] || THEMES.default;
   const { transactions, assets, loading } = useKingdom();
 
   const playerPower = useMemo(() => {
     if (loading) return 0;
 
     // Calculate player power based on financial data
-    const netWorth = financialEngine.calculateNetWorth(transactions, assets);
+    const netWorth = financialEngine.calculateNetWorth(transactions as any, assets as any);
     const { totalValue: totalInvested } = financialEngine.calculateInvestmentPower(assets);
-
+    
     // Mock scores for budget control and consistency for now
     const budgetControlScore = 1000;
     const consistencyScore = 500;
@@ -47,7 +47,7 @@ export default function Villains() {
       </div>
 
       <Header />
-
+      
       <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 relative z-10">
         <header className="space-y-2">
           <div className="flex items-center gap-3">
@@ -88,7 +88,7 @@ export default function Villains() {
             const isDefeated = currentHp <= 0;
 
             return (
-              <motion.div
+              <motion.div 
                 key={villain.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -128,7 +128,7 @@ export default function Villains() {
                     <span className="text-[var(--color-text-muted)]">{formatCurrency(currentHp)} / {formatCurrency(villain.hp)}</span>
                   </div>
                   <div className="h-3 bg-[var(--color-bg-dark)] rounded-full overflow-hidden medieval-border">
-                    <motion.div
+                    <motion.div 
                       initial={{ width: '100%' }}
                       animate={{ width: `${hpPercentage}%` }}
                       transition={{ duration: 1, ease: "easeOut" }}
