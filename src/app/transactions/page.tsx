@@ -286,7 +286,7 @@ function TransactionsContent() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://picsum.photos/seed/transactions/1920/1080"
+          src="https://ibb.co/FqwPCv9S"
           alt="Transactions Background"
           fill
           priority

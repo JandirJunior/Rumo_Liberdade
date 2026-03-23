@@ -146,7 +146,7 @@ export default function Tavern() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://picsum.photos/seed/tavern/1920/1080"
+          src="https://ibb.co/HDvDxRhv"
           alt="Tavern Background"
           fill
           priority

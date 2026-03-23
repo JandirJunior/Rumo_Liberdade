@@ -204,7 +204,7 @@ export default function Dashboard() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://picsum.photos/seed/dashboard/1920/1080"
+          src="https://ibb.co/rGjY8cyK"
           alt="Dashboard Background"
           fill
           priority

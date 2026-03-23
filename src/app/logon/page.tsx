@@ -68,7 +68,7 @@ export default function LoginPage() {
       {/* Camada de Fundo: Imagem ilustrativa de aventura RPG com overlay de gradiente */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="https://picsum.photos/seed/logon/1920/1080"
+          src="https://ibb.co/23jJ57gK"
           alt="RPG Adventure Background"
           fill
           priority
