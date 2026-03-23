@@ -1,38 +1,6 @@
-import { useState, useEffect } from 'react';
-import { auth, db } from '@/services/firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { handleFirestoreError, OperationType } from '@/services/firebaseUtils';
-import { onAuthStateChanged } from 'firebase/auth';
-import { UserEntity } from '@/types';
+import { useTheme } from '@/lib/ThemeContext';
 
 export function useUser() {
-  const [userData, setUserData] = useState<UserEntity | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        setUserData(null);
-        setLoading(false);
-        return;
-      }
-
-      const userRef = doc(db, 'users', user.uid);
-      const unsubscribeDoc = onSnapshot(userRef, (docSnap) => {
-        if (docSnap.exists()) {
-          setUserData(docSnap.data() as UserEntity);
-        }
-        setLoading(false);
-      }, (error) => {
-        handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
-        setLoading(false);
-      });
-
-      return () => unsubscribeDoc();
-    });
-
-    return () => unsubscribeAuth();
-  }, []);
-
+  const { userData, loading } = useTheme();
   return { userData, loading };
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 
@@ -11,6 +12,17 @@ type AmbientBackgroundProps = {
 
 export function AmbientBackground({ opacity = 0.05, blur = 8 }: AmbientBackgroundProps) {
   const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
   const colors = THEMES[theme] || THEMES.ORBITA;
 
   return (
@@ -23,7 +35,7 @@ export function AmbientBackground({ opacity = 0.05, blur = 8 }: AmbientBackgroun
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
         filter: `blur(${blur}px)`,
-        opacity,
+        opacity: Number(opacity),
       }}
     />
   );

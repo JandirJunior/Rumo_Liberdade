@@ -30,7 +30,8 @@ export function SpeedDial() {
   const { addReceivable } = useAccountsReceivable();
   const { addCreditCard } = useCreditCards();
   const { categories } = useCategories();
-  const { user: authUser, addTransaction, addInvestment } = useKingdom();
+  const { addTransaction, addInvestment } = useKingdom();
+  const { user: authUser } = useTheme();
 
   // Form states - Contas a Pagar/Receber
   const [description, setDescription] = useState('');
@@ -91,7 +92,7 @@ export function SpeedDial() {
         category_id: category_id || undefined,
         isRecurring,
         recurrenceRule: isRecurring ? recurrenceRule : undefined,
-        status: 'pendente',
+        status: 'pending',
       });
       resetForm();
       setActiveModal(null);
@@ -106,11 +107,11 @@ export function SpeedDial() {
       await addReceivable({
         description,
         amount: parseFloat(amount),
-        due_date: dueDate,
+        dueDate: dueDate,
         category_id: category_id || undefined,
         isRecurring,
         recurrenceRule: isRecurring ? recurrenceRule : undefined,
-        status: 'pendente',
+        status: 'pending',
       });
       resetForm();
       setActiveModal(null);

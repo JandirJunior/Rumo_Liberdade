@@ -7,7 +7,7 @@ export function useCreditCardInvoices() {
   const today = new Date().toISOString().split('T')[0];
   const updatedInvoices = creditCardInvoices.map(i => {
     if (i.status === 'open' && i.dueDate && i.dueDate < today) {
-      return { ...i, status: 'overdue' as const };
+      return { ...i, status: 'atrasado' as const };
     }
     return i;
   });

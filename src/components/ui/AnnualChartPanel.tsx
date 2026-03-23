@@ -20,7 +20,7 @@ export function AnnualChartPanel() {
     const profileType = gameMode === 'reino' ? 'MultiUsuario' : 'MonoUsuario';
 
     // Filter categories by game mode
-    const filteredCategories = categories.filter(c =>
+    const filteredCategories = categories.filter(c => 
       !c.allowed_profiles || c.allowed_profiles.includes(profileType)
     );
 
@@ -30,9 +30,9 @@ export function AnnualChartPanel() {
 
       const catTransactions = transactions.filter(t => {
         const d = new Date(t.date);
-        return d.getFullYear() === currentYear &&
-          d.getMonth() + 1 === currentMonth &&
-          (t.category_id === cat.id || (t as Transaction & { category?: string }).category === cat.name);
+        return d.getFullYear() === currentYear && 
+               d.getMonth() + 1 === currentMonth &&
+               (t.category_id === cat.id || (t as any).category === cat.name);
       });
       const realizado = catTransactions.reduce((sum, t) => sum + t.amount, 0);
 
@@ -63,20 +63,20 @@ export function AnnualChartPanel() {
           margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
         >
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-          <XAxis
-            dataKey="name"
+          <XAxis 
+            dataKey="name" 
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
             tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 12)}...` : value}
           />
-          <YAxis
+          <YAxis 
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
             tickFormatter={(value) => `R$ ${value >= 1000 ? value / 1000 + 'k' : value}`}
           />
-          <Tooltip
+          <Tooltip 
             formatter={(value: any) => formatCurrency(Number(value) || 0)}
             cursor={{ fill: 'var(--color-bg-dark)' }}
             contentStyle={{ borderRadius: '16px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-panel)', color: 'var(--color-text-main)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.5)' }}

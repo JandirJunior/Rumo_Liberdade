@@ -1,9 +1,6 @@
 /**
- * Definições de Tipos Centrais: Arquivo principal de tipos TypeScript da aplicação.
- * Define interfaces para entidades de negócio (transações, usuários, reinos, investimentos),
- * tipos enumerados (TransactionType, Archetype), e estruturas de dados compartilhadas.
- * Garante consistência de dados entre componentes, hooks, serviços e Firestore.
- * Inclui tipos para gamificação (UserGameState, FaceroStats) e funcionalidades SaaS.
+ * Definições de Tipos: Centraliza todas as interfaces e tipos utilizados na aplicação.
+ * Garante a consistência dos dados entre os componentes e a lógica de negócio.
  */
 
 // Tipos de transações financeiras
@@ -71,12 +68,12 @@ export interface ActivityLog {
   // Legacy fields
   user_name?: string;
   entity_type?:
-  | "transaction"
-  | "payable"
-  | "receivable"
-  | "asset"
-  | "member"
-  | "kingdom";
+    | "transaction"
+    | "payable"
+    | "receivable"
+    | "asset"
+    | "member"
+    | "kingdom";
   details?: any;
 }
 
@@ -128,13 +125,14 @@ export interface Asset {
   // Keep legacy fields for backward compatibility during transition
   segment?: string;
   value?: number;
+  invested_value?: number;
+  operation_date?: string;
   targetPercent?: number;
   faceroType?: "F" | "A" | "C" | "E" | "R" | "O";
   userId?: string;
   userName?: string;
   organizationId?: string;
   created_by?: string;
-  operation_date?: string;
   average_cost?: number;
 }
 
@@ -268,6 +266,7 @@ export type Archetype =
 export interface UserGameState {
   level: number;
   xp: number;
+  nextLevelXp: number;
   archetype: Archetype;
   stats: FaceroStats;
   completedQuests: string[];
@@ -310,6 +309,7 @@ export interface AccountPayable {
   nextRecurrenceDate?: string;
   // Keep legacy fields for backward compatibility
   userId?: string;
+  userName?: string;
   paymentMethod?: string;
   creditCardId?: string;
   installments?: number;
@@ -335,6 +335,7 @@ export interface AccountReceivable {
   nextRecurrenceDate?: string;
   // Keep legacy fields for backward compatibility
   userId?: string;
+  userName?: string;
   payer?: string;
   createdAt?: string;
   receivedAt?: string;

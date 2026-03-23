@@ -8,12 +8,12 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ThemeType, ARCHETYPE_THEME_MAP, applyTheme } from './themes';
-import { MOCK_GAME_STATE } from './data';
+import { MOCK_GAME_STATE, EMPTY_GAME_STATE } from './data';
 import { UserGameState } from '@/types';
 import { auth, db } from '@/services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
-import { handleFirestoreError, OperationType } from '@/services/firebaseUtils';
+import { calculatePlayerLevel } from './gameEngine';
 
 // =========================
 // TIPAGEM DO CONTEXTO
@@ -26,6 +26,7 @@ interface ThemeContextType {
   setGameState: (state: UserGameState) => void;
 
   user: User | null;
+  userData: any | null;
   loading: boolean;
 
   gameMode: 'heroi' | 'reino';
@@ -42,49 +43,50 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 // =========================
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [gameState, setGameState] = useState<UserGameState>(MOCK_GAME_STATE);
-  const [theme, setThemeState] = useState<ThemeType>('ORBITA');
+  const [theme, setThemeState] = useState<ThemeType>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('app_theme') as ThemeType) || 'ORBITA';
+    }
+    return 'ORBITA';
+  });
 
   const [user, setUser] = useState<User | null>(null);
+  const [userData, setUserData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [gameMode, setGameMode] = useState<'heroi' | 'reino'>('heroi');
+  const [gameMode, setGameMode] = useState<'heroi' | 'reino'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('app_game_mode') as 'heroi' | 'reino') || 'heroi';
+    }
+    return 'heroi';
+  });
 
   // =========================
-  // AUTH LISTENER
+  // PERSISTÊNCIA DE PREFERÊNCIAS LOCAIS
   // =========================
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('app_game_mode', gameMode);
+    }
+  }, [gameMode]);
+
+  // =========================
+  // AUTH & FIRESTORE LISTENER
+  // =========================
+  useEffect(() => {
+    let unsubscribeSnapshot: (() => void) | undefined;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
 
       if (currentUser) {
         const userRef = doc(db, 'users', currentUser.uid);
+
+        // Primeiro, verifica se o usuário existe para criá-lo se necessário
         const userSnap = await getDoc(userRef);
-
-        if (userSnap.exists()) {
-          const data = userSnap.data();
-
-          const loadedState: UserGameState = {
-            level: Math.floor(data.xp / 1000) + 1,
-            xp: data.xp,
-            archetype: data.archetype,
-            stats: data.stats,
-            completedQuests: data.completedQuests || [],
-          };
-
-          setGameState(loadedState);
-
-          const resolvedTheme =
-            data.theme ||
-            ARCHETYPE_THEME_MAP[data.archetype] ||
-            'ORBITA';
-
-          setThemeState(resolvedTheme);
-        } else {
-          // NOVO USUÁRIO
+        if (!userSnap.exists()) {
           const newState = { ...MOCK_GAME_STATE };
-
-          const newTheme =
-            ARCHETYPE_THEME_MAP[newState.archetype] || 'ORBITA';
+          const newTheme = ARCHETYPE_THEME_MAP[newState.archetype] || 'ORBITA';
 
           await setDoc(userRef, {
             uid: currentUser.uid,
@@ -96,72 +98,68 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             theme: newTheme,
             createdAt: new Date().toISOString(),
           });
-
-          setGameState(newState);
-          setThemeState(newTheme);
         }
+
+        // Configura o listener em tempo real
+        unsubscribeSnapshot = onSnapshot(
+          userRef,
+          (docSnap) => {
+            if (!docSnap.exists()) return;
+
+            const data = docSnap.data();
+            setUserData(data);
+            const newState = calculatePlayerLevel(data.xp || 0);
+
+            setGameState({
+              ...newState,
+              archetype: data.archetype,
+              stats: data.stats,
+              completedQuests: data.completedQuests || [],
+            });
+
+            const resolvedTheme =
+              data.theme ||
+              ARCHETYPE_THEME_MAP[data.archetype] ||
+              'ORBITA';
+
+            setThemeState(resolvedTheme);
+          },
+          (error) => {
+            console.error('Erro no onSnapshot do usuário:', error);
+          }
+        );
       } else {
-        setGameState(MOCK_GAME_STATE);
+        setGameState(EMPTY_GAME_STATE);
         setThemeState('ORBITA');
+        setUserData(null);
+        setGameMode('heroi');
+        if (unsubscribeSnapshot) {
+          unsubscribeSnapshot();
+          unsubscribeSnapshot = undefined;
+        }
       }
 
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeSnapshot) unsubscribeSnapshot();
+    };
   }, []);
-
-  // =========================
-  // LISTENER REALTIME FIRESTORE
-  // =========================
-  useEffect(() => {
-    if (!user) return;
-
-    const userRef = doc(db, 'users', user.uid);
-
-    const unsubscribe = onSnapshot(
-      userRef,
-      (docSnap) => {
-        if (!docSnap.exists()) return;
-
-        const data = docSnap.data();
-
-        setGameState({
-          level: Math.floor(data.xp / 1000) + 1,
-          xp: data.xp,
-          archetype: data.archetype,
-          stats: data.stats,
-          completedQuests: data.completedQuests || [],
-        });
-
-        const resolvedTheme =
-          data.theme ||
-          ARCHETYPE_THEME_MAP[data.archetype] ||
-          'ORBITA';
-
-        setThemeState(resolvedTheme);
-      },
-      (error) => {
-        handleFirestoreError(
-          error,
-          OperationType.GET,
-          `users/${user.uid}`
-        );
-      }
-    );
-
-    return () => unsubscribe();
-  }, [user]);
 
   // =========================
   // APLICAÇÃO DO TEMA
   // =========================
   useEffect(() => {
+    if (loading) return; // Aguarda o carregamento do usuário para aplicar o tema correto
+
     applyTheme(theme);
 
     // 🔥 Classe global no body (IMPORTANTE pro layout medieval)
     document.body.setAttribute('data-theme', theme);
-  }, [theme]);
+    localStorage.setItem('app_theme', theme);
+  }, [theme, loading]);
 
   // =========================
   // ALTERAÇÃO DE TEMA (COM FIRESTORE)
@@ -217,6 +215,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         gameState,
         setGameState: updateGameState,
         user,
+        userData,
         loading,
         gameMode,
         setGameMode,

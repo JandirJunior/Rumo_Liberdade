@@ -1,10 +1,10 @@
 export const IMAGES = {
-  FESTIN: "/assets/mentors/mentor_festin.webp",
-  ARCANO: "/assets/mentors/mentor_arcano.webp",
-  CACHE: "/assets/mentors/mentor_cache.webp",
-  EXODIA: "/assets/mentors/mentor_exodia.webp",
-  REAVER: "/assets/mentors/mentor_reaver.webp",
-  ORBIT: "/assets/mentors/mentor_orbit.webp",
+  FESTIN: "https://ibb.co/0yfXdrzL",
+  ARCANO: "https://ibb.co/PswJS3kz",
+  CACHE:  "https://ibb.co/4wKf2cLx",
+  EXODIA: "https://ibb.co/wXRKFxn",
+  REAVER: "https://ibb.co/GvsFj515",
+  ORBIT:  "https://ibb.co/YFyFnQgG",
 };
 
 export type ImageKey = keyof typeof IMAGES;
@@ -13,7 +13,7 @@ export const MENTORS = IMAGES;
 
 export const VILLAINS = Array.from({ length: 192 }, (_, i) => ({
   id: i + 1,
-  image: `/assets/villains/villain_${String(i + 1).padStart(3, "0")}.webp`
+  image: `https://picsum.photos/seed/villain_${String(i + 1).padStart(3, "0")}/400/400`
 }));
 
-export const USER_DEFAULT_AVATAR = "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix";
+export const USER_DEFAULT_AVATAR = "https://ibb.co/PswJS3kz";

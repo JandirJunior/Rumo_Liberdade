@@ -6,14 +6,31 @@ import { SpeedDial } from '@/components/ui/SpeedDial';
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary';
 import { AmbientEngine } from '@/components/game/AmbientEngine';
 import { AmbientBackground } from '@/components/game/AmbientBackground';
+import { NotificationManager } from '@/components/game/NotificationManager';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useEffect } from 'react';
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading } = useTheme();
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator && typeof window !== 'undefined') {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(
+          (registration) => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          },
+          (err) => {
+            console.log('ServiceWorker registration failed: ', err);
+          }
+        );
+      });
+    }
+  }, []);
   
   const isAuthPage = pathname === '/logon' || pathname === '/genesis';
   const showNav = !isAuthPage && user && !loading;
@@ -28,6 +45,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <main className="w-full min-h-screen relative overflow-x-hidden">
           {children}
           {showNav && <SpeedDial />}
+          {showNav && <NotificationManager />}
         </main>
       </div>
       {showNav && <BottomNav />}

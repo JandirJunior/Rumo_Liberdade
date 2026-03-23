@@ -3,9 +3,11 @@ import { useAccountsPayable } from '@/hooks/useAccountsPayable';
 import { useAccountsReceivable } from '@/hooks/useAccountsReceivable';
 import { useCreditCardInvoices } from '@/hooks/useCreditCardInvoices';
 import { useKingdom } from '@/hooks/useKingdom';
-import { formatCurrency, cn } from '@/lib/utils';
+import { formatCurrency, cn, getColorClass } from '@/lib/utils';
 import { Calendar, ArrowUpRight, ArrowDownRight, CreditCard, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
+
+import Link from 'next/link';
 
 interface QuestItem {
   id: string;
@@ -35,35 +37,35 @@ export function ActiveQuestsBoard() {
         type: 'payable' as const,
         title: p.description,
         amount: p.amount,
-        dueDate: p.dueDate,
+        dueDate: p.due_date || p.dueDate,
         status: p.status || 'pendente',
         originalData: p
       })),
     ...receivables
-      .filter(r => r.status === 'pendente' || r.status === 'inadimplente')
+      .filter(r => r.status === 'pendente' || r.status === 'inadimplente' || r.status === 'atrasado')
       .map(r => ({
         id: `r_${r.id}`,
         type: 'receivable' as const,
         title: r.description,
         amount: r.amount,
-        dueDate: r.dueDate,
+        dueDate: r.due_date || r.dueDate,
         status: r.status || 'pendente',
         originalData: r
       })),
     ...invoices
-      .filter(i => i.status === 'open')
+      .filter(i => i.status === 'open' || i.status === 'overdue')
       .map(i => ({
         id: `i_${i.id}`,
         type: 'invoice' as const,
-        title: `Fatura Cartão`, // Could be improved if we fetch card name
+        title: `Fatura Cartão`,
         amount: i.total_amount,
         dueDate: i.dueDate,
-        status: i.status || 'open',
+        status: i.status === 'overdue' ? 'atrasado' : (i.status || 'open'),
         originalData: i
       }))
   ].sort((a, b) => {
-    const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0;
-    const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0;
+    const dateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+    const dateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
     return dateA - dateB;
   });
 
@@ -131,13 +133,16 @@ export function ActiveQuestsBoard() {
 
   if (activeQuests.length === 0) {
     return (
-      <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 border border-[var(--color-border)] shadow-sm text-center medieval-border">
-        <div className="w-12 h-12 bg-[var(--color-bg-dark)] rounded-full flex items-center justify-center mx-auto mb-3">
-          <CheckCircle2 className="w-6 h-6 text-[var(--color-text-muted)]" />
+      <Link href="/attributes" className="block group">
+        <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 border border-[var(--color-border)] shadow-sm text-center medieval-border group-hover:border-[var(--color-primary)] transition-all">
+          <div className="w-12 h-12 bg-[var(--color-bg-dark)] rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+            <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+          </div>
+          <h3 className="text-lg medieval-title font-bold text-[var(--color-text-main)] mb-1">Todas as Quests Concluídas!</h3>
+          <p className="text-sm text-[var(--color-text-muted)]">Você não tem obrigações financeiras próximas.</p>
+          <p className="text-[10px] font-bold text-[var(--color-primary)] uppercase tracking-widest mt-4 opacity-0 group-hover:opacity-100 transition-opacity">Gerenciar Recorrências →</p>
         </div>
-        <h3 className="text-lg medieval-title font-bold text-[var(--color-text-main)] mb-1">Todas as Quests Concluídas!</h3>
-        <p className="text-sm text-[var(--color-text-muted)]">Você não tem obrigações financeiras próximas.</p>
-      </div>
+      </Link>
     );
   }
 
@@ -241,7 +246,7 @@ export function ActiveQuestsBoard() {
                 <div className="text-right">
                   <p className={cn(
                     "text-sm font-bold",
-                    isReceivable ? "text-emerald-400" : "text-[var(--color-text-main)]"
+                    getColorClass(isReceivable ? quest.amount : -quest.amount)
                   )}>
                     {isReceivable ? '+' : '-'}{formatCurrency(quest.amount)}
                   </p>

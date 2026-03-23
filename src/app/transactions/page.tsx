@@ -13,7 +13,7 @@ import { Search, Filter, ArrowUpRight, ArrowDownLeft, Wallet, Plus, Sparkles, Ed
 import { Header } from '@/components/layout/Header';
 import { Modal } from '@/components/ui/Modal';
 import { ImportModal } from '@/components/ui/ImportModal';
-import { formatCurrency, cn } from '@/lib/utils';
+import { formatCurrency, cn, getColorClass } from '@/lib/utils';
 import { Transaction, TransactionType } from '@/types';
 
 import { useTheme } from '@/lib/ThemeContext';
@@ -24,8 +24,9 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { financialEngine } from '@/lib/financialEngine';
 
 function TransactionsContent() {
-  const { theme, user, gameMode } = useTheme();
+  const { theme, user, gameMode, loading: authLoading } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
+
   const { transactions, addTransaction, updateTransaction, deleteTransaction, addInvestment, loading: transactionsLoading } = useKingdom();
   const { categories, loading: categoriesLoading } = useCategories();
 
@@ -66,6 +67,19 @@ function TransactionsContent() {
     quantity: '',
     operation_date: new Date().toISOString().split('T')[0]
   });
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-dark)]">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-[var(--color-text-muted)] font-medium">Carregando Quests...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   if (transactionsLoading || categoriesLoading) {
     return (
@@ -272,7 +286,7 @@ function TransactionsContent() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="/assets/background/transactions.jpg"
+          src="https://ibb.co/FqwPCv9S"
           alt="Transactions Background"
           fill
           priority
@@ -330,7 +344,7 @@ function TransactionsContent() {
               </div>
               <div>
                 <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1">Saldo para o Inventário</p>
-                <h3 className="text-3xl font-display font-bold">{formatCurrency(surplus)}</h3>
+                <h3 className={cn("text-3xl font-display font-bold", getColorClass(surplus))}>{formatCurrency(surplus)}</h3>
               </div>
               <p className="text-white/60 text-xs max-w-[200px]">
                 Este é o valor disponível para ser investido no Inventário este mês.
@@ -346,8 +360,8 @@ function TransactionsContent() {
                 type="text"
                 placeholder="Buscar transação..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all text-[var(--color-text-main)] medieval-border"
+                onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
+                className="w-full pl-12 pr-4 py-4 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all text-[var(--color-text-main)] medieval-border uppercase"
               />
             </div>
 
@@ -416,7 +430,7 @@ function TransactionsContent() {
                     <div className="text-right flex flex-col items-end gap-1">
                       <p className={cn(
                         "text-sm font-bold",
-                        t.type === 'income' ? "text-emerald-500" : "text-[var(--color-text-main)]"
+                        getColorClass(t.type === 'income' ? t.amount : -t.amount)
                       )}>
                         {t.type === 'income' ? '+' : '-'} {formatCurrency(t.amount)}
                       </p>
@@ -498,8 +512,8 @@ function TransactionsContent() {
                     type="text"
                     placeholder="Ex: MXRF11, PETR4, BTC"
                     value={newTransaction.ticker}
-                    onChange={(e) => setNewTransaction({ ...newTransaction, ticker: e.target.value })}
-                    className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
+                    onChange={(e) => setNewTransaction({ ...newTransaction, ticker: e.target.value.toUpperCase() })}
+                    className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)] uppercase"
                   />
                 </div>
 
@@ -547,8 +561,8 @@ function TransactionsContent() {
                     type="text"
                     placeholder="Ex: Almoço, Salário, Aporte FII"
                     value={newTransaction.description}
-                    onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
-                    className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)]"
+                    onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value.toUpperCase() })}
+                    className="w-full p-4 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-2xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--color-text-main)] uppercase"
                   />
                 </div>
                 <div>

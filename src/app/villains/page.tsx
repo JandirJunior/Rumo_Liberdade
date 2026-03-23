@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 import { Shield, Sword, Skull, Trophy, Flame } from 'lucide-react';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Header } from '@/components/layout/Header';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency, getColorClass } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { FINANCIAL_VILLAINS, calculateVillainDamage } from '@/lib/financialVillains';
@@ -14,30 +14,38 @@ import { financialEngine } from '@/lib/financialEngine';
 import { useKingdom } from '@/hooks/useKingdom';
 
 export default function Villains() {
-  const { theme } = useTheme();
+  const { theme, user, loading: authLoading } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
-  const { transactions, assets, loading } = useKingdom();
+
+  const { assets, loading } = useKingdom();
 
   const playerPower = useMemo(() => {
     if (loading) return 0;
 
-    // Calculate player power based on financial data
-    const netWorth = financialEngine.calculateNetWorth(transactions, assets);
+    // O Poder de Combate é baseado diretamente no valor total investido
     const { totalValue: totalInvested } = financialEngine.calculateInvestmentPower(assets);
+    return totalInvested;
+  }, [assets, loading]);
 
-    // Mock scores for budget control and consistency for now
-    const budgetControlScore = 1000;
-    const consistencyScore = 500;
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-dark)]">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-[var(--color-text-muted)] font-medium">Entrando na Masmorra...</p>
+        </div>
+      </div>
+    );
+  }
 
-    return financialEngine.calculatePlayerPower(netWorth, totalInvested, budgetControlScore, consistencyScore);
-  }, [transactions, assets, loading]);
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-dark)] text-[var(--color-text-main)] transition-colors duration-500 pb-32 relative overflow-hidden">
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="/assets/background/villains.jpg"
+          src="https://ibb.co/N2B8VM7s"
           alt="Villains Background"
           fill
           priority
@@ -47,7 +55,7 @@ export default function Villains() {
       </div>
 
       <Header />
-
+      
       <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 relative z-10">
         <header className="space-y-2">
           <div className="flex items-center gap-3">
@@ -69,7 +77,7 @@ export default function Villains() {
             </div>
             <div>
               <p className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Poder de Combate</p>
-              <h3 className="text-2xl font-display font-bold text-[var(--color-text-main)]">{formatCurrency(playerPower)}</h3>
+              <h3 className={cn("text-2xl font-display font-bold", getColorClass(playerPower))}>{formatCurrency(playerPower)}</h3>
             </div>
           </div>
           <div className="text-right">
@@ -88,7 +96,7 @@ export default function Villains() {
             const isDefeated = currentHp <= 0;
 
             return (
-              <motion.div
+              <motion.div 
                 key={villain.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -125,10 +133,12 @@ export default function Villains() {
                     <span className={isDefeated ? "text-emerald-500" : "text-red-500"}>
                       {isDefeated ? 'Derrotado!' : 'HP do Vilão'}
                     </span>
-                    <span className="text-[var(--color-text-muted)]">{formatCurrency(currentHp)} / {formatCurrency(villain.hp)}</span>
+                    <span className="text-[var(--color-text-muted)]">
+                      <span className={getColorClass(currentHp)}>{formatCurrency(currentHp)}</span> / {formatCurrency(villain.hp)}
+                    </span>
                   </div>
                   <div className="h-3 bg-[var(--color-bg-dark)] rounded-full overflow-hidden medieval-border">
-                    <motion.div
+                    <motion.div 
                       initial={{ width: '100%' }}
                       animate={{ width: `${hpPercentage}%` }}
                       transition={{ duration: 1, ease: "easeOut" }}

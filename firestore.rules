@@ -125,16 +125,19 @@ service cloud.firestore {
 
       allow read: if isViewer(resource.data.kingdom_id);
       allow create: if isMember(request.resource.data.kingdom_id) && isValidTransaction();
-      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id) && isValidTransaction();
+      allow update: if isMember(resource.data.kingdom_id) && 
+                      (request.resource.data.kingdom_id == null || isMember(request.resource.data.kingdom_id)) && 
+                      isValidTransaction();
       allow delete: if isMember(resource.data.kingdom_id);
     }
 
     // Accounts Payable
     match /accounts_payable/{payableId} {
       function isValidPayable() {
-        return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'dueDate', 'status']) &&
+        return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'status']) &&
+               (hasRequiredFields(['dueDate']) || hasRequiredFields(['due_date'])) &&
                isValidNumber('amount', 0) &&
-               request.resource.data.status in ['pending', 'paid', 'overdue'];
+               request.resource.data.status in ['pendente', 'pago', 'atrasado', 'pending', 'paid', 'overdue'];
       }
 
       allow read: if isViewer(resource.data.kingdom_id);
@@ -146,9 +149,10 @@ service cloud.firestore {
     // Accounts Receivable
     match /accounts_receivable/{receivableId} {
       function isValidReceivable() {
-        return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'dueDate', 'status']) &&
+        return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'status']) &&
+               (hasRequiredFields(['dueDate']) || hasRequiredFields(['due_date'])) &&
                isValidNumber('amount', 0) &&
-               request.resource.data.status in ['pending', 'received', 'overdue'];
+               request.resource.data.status in ['pendente', 'recebido', 'atrasado', 'inadimplente', 'pending', 'received', 'overdue', 'defaulted'];
       }
 
       allow read: if isViewer(resource.data.kingdom_id);
@@ -185,7 +189,8 @@ service cloud.firestore {
     match /investments/{investmentId} {
       allow read: if isViewer(resource.data.kingdom_id);
       allow create: if isMember(request.resource.data.kingdom_id);
-      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id);
+      allow update: if isMember(resource.data.kingdom_id) && 
+                      (request.resource.data.kingdom_id == null || isMember(request.resource.data.kingdom_id));
       allow delete: if isMember(resource.data.kingdom_id);
     }
 
@@ -200,7 +205,8 @@ service cloud.firestore {
     match /contribution_planning/{planningId} {
       allow read: if isViewer(resource.data.kingdom_id);
       allow create: if isMember(request.resource.data.kingdom_id);
-      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id);
+      allow update: if isMember(resource.data.kingdom_id) && 
+                      (request.resource.data.kingdom_id == null || isMember(request.resource.data.kingdom_id));
       allow delete: if isMember(resource.data.kingdom_id);
     }
 

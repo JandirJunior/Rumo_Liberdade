@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
-import { formatCurrency, cn } from '@/lib/utils';
+import { formatCurrency, cn, getColorClass } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { TrendingUp, TrendingDown, Settings2, X, Target } from 'lucide-react';
@@ -15,11 +15,13 @@ import { BudgetProgressPanel } from '@/components/ui/BudgetProgressPanel';
 import { CategoryManagerPanel } from '@/components/ui/CategoryManagerPanel';
 import { AnnualChartPanel } from '@/components/ui/AnnualChartPanel';
 import { RecurringAccountsPanel } from '@/components/ui/RecurringAccountsPanel';
+import { OverviewListPanel } from '@/components/ui/OverviewListPanel';
 
 function AttributesContent() {
-  const { theme } = useTheme();
+  const { theme, user, loading: authLoading } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
-  const { transactions } = useKingdom();
+
+  const { transactions, payables, receivables, creditCards, deletePayable, deleteReceivable, deleteCreditCard } = useKingdom();
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'Visão Geral' | 'Orçamento' | 'Recorrências'>('Visão Geral');
@@ -29,6 +31,32 @@ function AttributesContent() {
   const [year, setYear] = useState(today.getFullYear());
 
   const { budgetProgress } = useBudgets(month, year);
+
+  const handleEdit = (item: any) => {
+    console.log('Edit item:', item);
+    // TODO: Implement edit modal
+  };
+
+  const handleDelete = (item: any) => {
+    if (confirm('Tem certeza que deseja excluir este registro?')) {
+      if (item.type === 'payable') deletePayable(item.id);
+      else if (item.type === 'receivable') deleteReceivable(item.id);
+      else if (item.type === 'card') deleteCreditCard(item.id);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-dark)]">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-[var(--color-text-muted)] font-medium">Consultando Atributos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   const cofreReino = budgetProgress
     .filter(b => b.rpg_group === '💎 Cofre do Reino (Receitas Fixas)')
@@ -42,17 +70,17 @@ function AttributesContent() {
   const aventurasHeroi = budgetProgress
     .filter(b => b.rpg_group === '⚔️ Aventuras do Herói (Despesas Variáveis)')
     .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
-
+  
   // Filter out the specified expense categories from the progress panel
   const expenseCategoriesToRemove = ['Previdência privada', 'Seguros', 'Aluguel/Financiamento', 'Impostos e taxas'];
   const filteredBudgetProgress = budgetProgress.filter(b => !expenseCategoriesToRemove.includes(b.category_name));
-
+  
   return (
     <div className={cn("min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)] relative overflow-hidden")}>
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="/assets/background/attributes.jpg"
+          src="https://ibb.co/0yYwRDgp"
           alt="Attributes Background"
           fill
           priority
@@ -62,7 +90,7 @@ function AttributesContent() {
       </div>
 
       <Header />
-
+      
       <main className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 pb-32 relative z-10">
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -91,7 +119,7 @@ function AttributesContent() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Coluna de Receitas */}
           <div className="space-y-4">
-
+            
             <Link href="/transactions?search=Cofre do Reino" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">💎</span>
@@ -105,7 +133,7 @@ function AttributesContent() {
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
                   <p className={cn(
                     "text-lg font-bold",
-                    (cofreReino.realizado || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                    getColorClass(cofreReino.realizado || 0)
                   )}>
                     {formatCurrency(cofreReino.realizado || 0)}
                   </p>
@@ -134,7 +162,7 @@ function AttributesContent() {
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
                   <p className={cn(
                     "text-lg font-bold",
-                    (saquesMissoes.realizado || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                    getColorClass(saquesMissoes.realizado || 0)
                   )}>
                     {formatCurrency(saquesMissoes.realizado || 0)}
                   </p>
@@ -153,7 +181,7 @@ function AttributesContent() {
 
           {/* Coluna de Despesas */}
           <div className="space-y-4">
-
+            
             <Link href="/transactions?search=Tributos do Reino" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">🛡️</span>
@@ -167,7 +195,7 @@ function AttributesContent() {
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
                   <p className={cn(
                     "text-lg font-bold",
-                    (tributosReino.realizado || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                    getColorClass(-(tributosReino.realizado || 0))
                   )}>
                     {formatCurrency(tributosReino.realizado || 0)}
                   </p>
@@ -196,7 +224,7 @@ function AttributesContent() {
                   <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
                   <p className={cn(
                     "text-lg font-bold",
-                    (aventurasHeroi.realizado || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                    getColorClass(-(aventurasHeroi.realizado || 0))
                   )}>
                     {formatCurrency(aventurasHeroi.realizado || 0)}
                   </p>
@@ -217,14 +245,14 @@ function AttributesContent() {
         {/* Painéis de Detalhe com Abas */}
         <section className="bg-[var(--color-bg-panel)] rounded-2xl border border-[var(--color-border)] shadow-sm medieval-border overflow-hidden">
           <div className="flex border-b border-[var(--color-border)]">
-            {['Visão Geral', 'Orçamento', 'Recorrências'].map((tab) => (
+            {['Visão Geral', 'Recorrências', 'Orçamento'].map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab as 'Visão Geral' | 'Orçamento' | 'Recorrências')}
+                onClick={() => setActiveTab(tab as any)}
                 className={cn(
                   "px-6 py-4 text-sm font-bold transition-colors border-b-2",
-                  activeTab === tab
-                    ? "border-[var(--color-primary)] text-[var(--color-text-main)]"
+                  activeTab === tab 
+                    ? "border-[var(--color-primary)] text-[var(--color-text-main)]" 
                     : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
                 )}
               >
@@ -232,14 +260,14 @@ function AttributesContent() {
               </button>
             ))}
           </div>
-
+          
           <div className="p-6">
-            {activeTab === 'Visão Geral' && <AnnualChartPanel />}
+            {activeTab === 'Visão Geral' && <OverviewListPanel payables={payables} receivables={receivables} creditCards={creditCards} onEdit={handleEdit} onDelete={handleDelete} />}
             {activeTab === 'Orçamento' && (
-              <BudgetProgressPanel
-                month={today.getMonth() + 1}
-                year={today.getFullYear()}
-                hideSelectors={true}
+              <BudgetProgressPanel 
+                month={today.getMonth() + 1} 
+                year={today.getFullYear()} 
+                hideSelectors={true} 
               />
             )}
             {activeTab === 'Recorrências' && <RecurringAccountsPanel />}
@@ -277,7 +305,7 @@ function AttributesContent() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
+              
               <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
                 <BudgetProgressPanel hideSelectors={true} isPlanningMode={true} />
               </div>
@@ -315,7 +343,7 @@ function AttributesContent() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
+              
               <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
                 <CategoryManagerPanel />
               </div>

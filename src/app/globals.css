@@ -19,7 +19,7 @@
   --color-text-muted: #78350F;
   --color-shadow: rgba(212, 175, 55, 0.1);
   --color-glow: 0 0 10px rgba(212, 175, 55, 0.3);
-  --bg-texture: url('/textures/parchment.webp');
+  --bg-texture: #1A1005;
   --font-medieval: 'Cinzel', serif;
   --font-uncial: 'Uncial Antiqua', cursive;
 }

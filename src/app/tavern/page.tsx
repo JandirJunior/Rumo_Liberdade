@@ -78,7 +78,7 @@ const ARCHETYPES: { type: Archetype; name: string; desc: string; icon: any; colo
 ];
 
 export default function Tavern() {
-  const { gameState, setGameState, setTheme, theme, gameMode, setGameMode } = useTheme();
+  const { gameState, setGameState, setTheme, theme, gameMode, setGameMode, user, loading } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
   const { assets } = useKingdom();
 
@@ -128,12 +128,25 @@ export default function Tavern() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[var(--color-bg-dark)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-indigo-400 font-bold medieval-title">Entrando na Taberna...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
   return (
     <div className="min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)] relative overflow-hidden">
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="/assets/background/tavern.jpg"
+          src="https://ibb.co/HDvDxRhv"
           alt="Tavern Background"
           fill
           priority

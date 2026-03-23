@@ -125,7 +125,7 @@ export default function GenesisQuiz() {
     <div className="min-h-screen bg-[var(--color-bg-dark)] text-[var(--color-text-main)] p-8 flex flex-col items-center justify-center overflow-y-auto relative">
       <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
         <Image 
-          src="/assets/background/genesis.jpg" 
+          src="https://ibb.co/23jJ57gK" 
           alt="Background" 
           fill
           priority

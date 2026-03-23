@@ -41,7 +41,7 @@ export const THEMES: Record<ThemeType, ThemeColors> = {
     textMuted: '#78350F',
     shadow: 'rgba(212,175,55,0.1)',
     glow: '0 0 10px rgba(212,175,55,0.3)',
-    texture: '/textures/parchment.webp',
+    texture: 'https://picsum.photos/seed/parchment/1920/1080',
   },
 
   ARCANO: {
@@ -108,7 +108,7 @@ export const THEMES: Record<ThemeType, ThemeColors> = {
     textMuted: '#7F1D1D',
     shadow: 'rgba(127,29,29,0.1)',
     glow: '0 0 10px rgba(127,29,29,0.3)',
-    texture: '/textures/parchment.webp',
+    texture: 'https://picsum.photos/seed/parchment/1920/1080',
   },
 
 };
@@ -129,8 +129,6 @@ export function applyTheme(themeName: ThemeType) {
   const theme = THEMES[themeName] || THEMES.ORBITA;
   const root = document.documentElement;
 
-  console.log('🎨 Aplicando tema:', themeName, 'bgDark:', theme.bgDark);
-
   Object.entries(theme).forEach(([key, value]) => {
     if (key === 'texture') {
       if (!value || value === 'none') {
@@ -142,7 +140,10 @@ export function applyTheme(themeName: ThemeType) {
     }
 
     if (value === undefined || value === null) return;
-    root.style.setProperty(`--color-${key}`, value);
+
+    // Converte camelCase para kebab-case (ex: bgDark -> bg-dark)
+    const cssVarName = key.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+    root.style.setProperty(`--color-${cssVarName}`, value);
   });
 
   // Caso a propriedade texture não exista no tema, garanta reset para evitar traces de tema anterior
