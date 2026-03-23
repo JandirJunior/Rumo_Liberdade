@@ -55,6 +55,7 @@ export const THEMES: Record<ThemeType, ThemeColors> = {
     textMuted: '#A78BFA',
     shadow: 'rgba(124,58,237,0.3)',
     glow: '0 0 20px rgba(124,58,237,0.6)',
+    // sem textura: fundo escuro liso
   },
 
   CACHE: {
@@ -107,6 +108,7 @@ export const THEMES: Record<ThemeType, ThemeColors> = {
     textMuted: '#7F1D1D',
     shadow: 'rgba(127,29,29,0.1)',
     glow: '0 0 10px rgba(127,29,29,0.3)',
+    texture: '/textures/parchment.webp',
   },
 
 };
@@ -130,11 +132,21 @@ export function applyTheme(themeName: ThemeType) {
   console.log('🎨 Aplicando tema:', themeName, 'bgDark:', theme.bgDark);
 
   Object.entries(theme).forEach(([key, value]) => {
-    if (!value) return;
+    if (key === 'texture') {
+      if (!value || value === 'none') {
+        root.style.setProperty('--bg-texture', 'none');
+      } else {
+        root.style.setProperty('--bg-texture', `url(${value})`);
+      }
+      return;
+    }
+
+    if (value === undefined || value === null) return;
     root.style.setProperty(`--color-${key}`, value);
   });
 
-  if (theme.texture) {
-    root.style.setProperty('--bg-texture', `url(${theme.texture})`);
+  // Caso a propriedade texture não exista no tema, garanta reset para evitar traces de tema anterior
+  if (theme.texture === undefined) {
+    root.style.setProperty('--bg-texture', 'none');
   }
 }

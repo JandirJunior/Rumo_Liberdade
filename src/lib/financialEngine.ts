@@ -51,14 +51,14 @@ export function parseDate(date: any): Date {
   return new Date();
 }
 
-export function calculateInvestmentPower(assets: Asset[]) {
+export function calculateInvestmentPower(assets: Asset[], planning?: { F: number; A: number; C: number; E: number; R: number; O: number }) {
   if (!Array.isArray(assets)) return { totalValue: 0, aggregated: [], tickerDetails: [] };
-  const totalValue = assets.reduce((acc, curr) => acc + Number(curr.value || curr.total || 0), 0);
+  const totalValue = assets.reduce((acc, curr) => acc + Number(curr.invested_value || curr.value || curr.total || 0), 0);
 
   const aggregated = Object.keys(FACERO_TARGETS).map(key => {
     const typeAssets = assets.filter(a => a.faceroType === key || a.investment_category_id === key);
-    const value = typeAssets.reduce((acc, curr) => acc + Number(curr.value || curr.total || 0), 0);
-    const targetPercent = FACERO_TARGETS[key];
+    const value = typeAssets.reduce((acc, curr) => acc + Number(curr.invested_value || curr.value || curr.total || 0), 0);
+    const targetPercent = planning ? planning[key as keyof typeof planning] / 100 : FACERO_TARGETS[key];
     const currentPercent = totalValue > 0 ? value / totalValue : 0;
 
     return {
@@ -85,8 +85,31 @@ export function calculateInvestmentPower(assets: Asset[]) {
         ids: []
       };
     }
-    tickerGroups[ticker].totalValue += Number(asset.value || asset.total || 0);
-    tickerGroups[ticker].totalQuantity += Number(asset.quantity || 0);
+
+    // Calcular o valor total investido
+    let totalInvestedValue = 0;
+    const quantity = Number(asset.quantity || 0);
+
+    if (asset.invested_value) {
+      // Novos dados têm invested_value (valor total já calculado)
+      totalInvestedValue = Number(asset.invested_value);
+    } else if (asset.price && quantity > 0) {
+      // Compatibilidade: se tem price e quantity, calcular total
+      totalInvestedValue = Number(asset.price) * quantity;
+    } else if (asset.value && quantity > 0) {
+      // Compatibilidade com dados antigos: value era o preço unitário
+      totalInvestedValue = Number(asset.value) * quantity;
+    } else if (asset.value) {
+      // Fallback para value se não houver quantity
+      totalInvestedValue = Number(asset.value);
+    } else if (asset.total) {
+      // Fallback final
+      totalInvestedValue = Number(asset.total);
+    }
+
+    tickerGroups[ticker].totalValue += totalInvestedValue;
+    tickerGroups[ticker].totalQuantity += quantity;
+
     if (asset.id) {
       tickerGroups[ticker].ids.push(asset.id);
     }
@@ -97,6 +120,7 @@ export function calculateInvestmentPower(assets: Asset[]) {
     totalValue: data.totalValue,
     totalQuantity: data.totalQuantity,
     averageCost: data.totalQuantity > 0 ? data.totalValue / data.totalQuantity : 0,
+    unitPrice: data.totalQuantity > 0 ? data.totalValue / data.totalQuantity : 0,
     type: data.type,
     faceroType: data.faceroType,
     ids: data.ids

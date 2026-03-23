@@ -184,7 +184,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // UPDATE GAME STATE
   // =========================
   const updateGameState = async (newState: UserGameState) => {
+    const resolvedTheme =
+      ARCHETYPE_THEME_MAP[newState.archetype] || 'ORBITA';
+
     setGameState(newState);
+    setThemeState(resolvedTheme);
 
     if (user) {
       const userRef = doc(db, 'users', user.uid);
@@ -195,9 +199,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           archetype: newState.archetype,
           xp: newState.xp,
           stats: newState.stats,
-          theme:
-            ARCHETYPE_THEME_MAP[newState.archetype] ||
-            'ORBITA',
+          theme: resolvedTheme,
         },
         { merge: true }
       );

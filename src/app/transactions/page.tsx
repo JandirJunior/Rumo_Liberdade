@@ -384,7 +384,7 @@ function TransactionsContent() {
                 const categoryObj = categories.find(c => c.id === t.category_id);
                 let categoryName = categoryObj ? categoryObj.name : 'Sem Categoria';
 
-                if (t.type === 'investment' && t.category_id === 'investment') {
+                if (t.type === 'investment' && (t.category_id === 'investment' || t.category_id === 'investimentos')) {
                   categoryName = 'Aporte em Investimento';
                 }
 

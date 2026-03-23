@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Header } from '@/components/layout/Header';
 import { formatCurrency, cn } from '@/lib/utils';
-import { Info, TrendingUp, AlertCircle, Sparkles, Zap, Shield, Swords, Compass, Wand2, Plus, Upload, Target } from 'lucide-react';
+import { Info, TrendingUp, AlertCircle, Sparkles, Zap, Shield, Swords, Compass, Wand2, Plus, Upload, Target, Package, DollarSign, TrendingDown } from 'lucide-react';
 import { PlanningModal } from '@/components/investments/PlanningModal';
 import { ContributionComparison } from '@/components/investments/ContributionComparison';
 
@@ -22,11 +22,11 @@ import { financialEngine } from '@/lib/financialEngine';
 export default function Investments() {
   const { theme } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
-  const { assets, loading: kingdomLoading, addInvestment, addEarning, deleteInvestment, contributionPlanning, updateContributionPlanning } = useKingdom();
+  const { assets, loading: kingdomLoading, transactions, addInvestment, addEarning, deleteInvestment, contributionPlanning, updateContributionPlanning, addTransaction } = useKingdom();
 
   const { totalValue, aggregated, tickerDetails } = useMemo(() =>
-    financialEngine.calculateInvestmentPower(assets),
-    [assets]
+    financialEngine.calculateInvestmentPower(assets, contributionPlanning?.percentages),
+    [assets, contributionPlanning]
   );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -62,13 +62,15 @@ export default function Investments() {
       'O': 'other'
     };
 
-    await addInvestment({
+    const investmentData = {
       type: typeMap[newInvestment.type],
       ticker: newInvestment.ticker.toUpperCase(),
       value: parseFloat(newInvestment.value),
       quantity: parseFloat(newInvestment.quantity),
       date: newInvestment.operation_date
-    });
+    };
+
+    await addInvestment(investmentData);
 
     setIsModalOpen(false);
     setNewInvestment({
@@ -144,6 +146,15 @@ export default function Investments() {
   const filteredAggregated = selectedCategory
     ? aggregated.filter(asset => asset.faceroType === selectedCategory)
     : aggregated;
+
+  const summaryArray = (tickerDetails || []).map(item => ({
+    ticker: item.ticker,
+    totalValue: item.totalValue,
+    totalQuantity: item.totalQuantity,
+    averagePrice: item.averageCost,
+    unitPrice: item.unitPrice,
+    type: item.type
+  }));
 
   const BUFFS = [
     {
@@ -333,6 +344,66 @@ export default function Investments() {
           </div>
         </section>
 
+        {/* Seção de Resumo por Ticker */}
+        <section className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm medieval-border space-y-6">
+          <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Resumo por Ticker</h4>
+          <div className="space-y-4">
+            {summaryArray.length === 0 ? (
+              <div className="text-center py-8">
+                <TrendingUp className="w-12 h-12 text-[var(--color-text-muted)] mx-auto mb-4" />
+                <p className="text-[var(--color-text-muted)]">Nenhum investimento encontrado</p>
+              </div>
+            ) : (
+              summaryArray.map((item) => (
+                <motion.div
+                  key={item.ticker}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 bg-[var(--color-bg-dark)] rounded-xl border border-[var(--color-border)]"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="font-bold text-lg text-[var(--color-text-main)]">{item.ticker}</h3>
+                      <p className="text-sm text-[var(--color-text-muted)] capitalize">{item.type.replace('_', ' ')}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-[var(--color-primary)]">{formatCurrency(item.totalValue)}</p>
+                      <p className="text-xs text-[var(--color-text-muted)]">Valor Total</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <Package className="w-4 h-4 text-[var(--color-text-muted)]" />
+                        <span className="text-xs text-[var(--color-text-muted)]">Quantidade</span>
+                      </div>
+                      <p className="font-bold text-[var(--color-text-main)]">{item.totalQuantity.toFixed(2)}</p>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <DollarSign className="w-4 h-4 text-[var(--color-text-muted)]" />
+                        <span className="text-xs text-[var(--color-text-muted)]">Preço Médio</span>
+                      </div>
+                      <p className="font-bold text-[var(--color-text-main)]">{formatCurrency(item.averagePrice)}</p>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <TrendingUp className="w-4 h-4 text-[var(--color-text-muted)]" />
+                        <span className="text-xs text-[var(--color-text-muted)]">Valor Unitário</span>
+                      </div>
+                      <p className="font-bold text-[var(--color-text-main)]">{formatCurrency(item.totalValue / item.totalQuantity)}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </div>
+        </section>
+
+
         {/* [RESPONSIVIDADE] Grid principal: 1 coluna no mobile, 2 colunas no desktop (lg) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
@@ -402,33 +473,60 @@ export default function Investments() {
             {/* Asset List with Item Status */}
             <section className="space-y-4">
               <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Inventário de Ativos</h4>
-              {/* [RESPONSIVIDADE] No mobile é 1 coluna, no tablet (sm) divide em 2 colunas, no desktop (lg) volta pra 1 coluna pois já está na coluna direita do grid principal */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-                {filteredTickerDetails?.map((asset: Asset & { totalQuantity: number }, i: number) => (
-                  <div key={i} className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-4 shadow-sm flex flex-col justify-between medieval-border">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 bg-[var(--color-bg-dark)] rounded-2xl flex items-center justify-center text-[var(--color-primary)] shrink-0 border border-[var(--color-border)]">
-                        {getFaceroIcon(asset.faceroType)}
+              {/* Movimentações de cada ativo */}
+              <div className="space-y-4">
+                {filteredTickerDetails?.map((asset: Asset & { totalQuantity: number }, i: number) => {
+                  // Filtrar transações de investimento correspondentes a este ticker
+                  const assetTransactions = transactions.filter(t =>
+                    t.type === 'investment' &&
+                    t.description.includes(asset.ticker)
+                  );
+
+                  return (
+                    <div key={i} className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-4 shadow-sm medieval-border">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-[var(--color-bg-dark)] rounded-2xl flex items-center justify-center text-[var(--color-primary)] shrink-0 border border-[var(--color-border)]">
+                          {getFaceroIcon(asset.faceroType)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-[var(--color-text-main)] truncate">{asset.ticker}</p>
+                          <p className="text-xs text-[var(--color-text-muted)] truncate">Qtd Total: {asset.totalQuantity.toLocaleString('pt-BR')}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-bold text-[var(--color-text-main)]">{formatCurrency(asset.totalValue)}</p>
+                          <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Preço Médio: {formatCurrency(asset.averageCost)}</p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-[var(--color-text-main)] truncate">{asset.ticker}</p>
-                        <p className="text-xs text-[var(--color-text-muted)] truncate">Qtd: {asset.totalQuantity.toLocaleString('pt-BR')}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-[var(--color-text-main)]">{formatCurrency(asset.totalValue)}</p>
-                        <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Custo Médio: {formatCurrency(asset.averageCost)}</p>
-                      </div>
+
+                      {/* Movimentações deste ativo */}
+                      {assetTransactions.length > 0 && (
+                        <div className="space-y-2 mt-4 pt-4 border-t border-[var(--color-border)]">
+                          <p className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Movimentações</p>
+                          {assetTransactions.map((txn) => (
+                            <div key={txn.id} className="flex items-center justify-between text-xs p-2 bg-[var(--color-bg-dark)] rounded">
+                              <span className="text-[var(--color-text-muted)]">
+                                {new Date(txn.date || txn.created_at || '').toLocaleDateString('pt-BR')}
+                              </span>
+                              <span className="text-[var(--color-text-main)] font-bold">
+                                {formatCurrency(txn.amount)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => setDeleteConfirmation({ isOpen: true, ids: asset.ids })}
+                        className="mt-4 w-full text-xs text-red-500 hover:text-red-700 font-bold py-2 hover:bg-red-900/10 rounded transition-colors"
+                      >
+                        Excluir Ativo
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setDeleteConfirmation({ isOpen: true, ids: asset.ids })}
-                      className="mt-2 text-xs text-red-500 hover:text-red-700 font-bold"
-                    >
-                      Excluir
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
                 {(!tickerDetails || tickerDetails.length === 0) && (
-                  <div className="text-center py-8 text-[var(--color-text-muted)] text-sm">
+                  <div className="text-center py-8 text-[var(--color-text-muted)] text-sm bg-[var(--color-bg-panel)] rounded-2xl border border-[var(--color-border)]">
+                    <Package className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     Nenhum ativo no inventário.
                   </div>
                 )}
@@ -550,7 +648,7 @@ export default function Investments() {
               type="text"
               placeholder="Ex: MXRF11, PETR4, BTC"
               value={newInvestment.ticker}
-              onChange={(e) => setNewInvestment({ ...newInvestment, ticker: e.target.value })}
+              onChange={(e) => setNewInvestment({ ...newInvestment, ticker: e.target.value.toUpperCase() })}
               className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
             />
           </div>

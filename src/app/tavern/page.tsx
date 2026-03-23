@@ -78,7 +78,7 @@ const ARCHETYPES: { type: Archetype; name: string; desc: string; icon: any; colo
 ];
 
 export default function Tavern() {
-  const { gameState, setGameState, theme, gameMode, setGameMode } = useTheme();
+  const { gameState, setGameState, setTheme, theme, gameMode, setGameMode } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
   const { assets } = useKingdom();
 
@@ -111,7 +111,9 @@ export default function Tavern() {
    */
   const handleArchetypeChange = (newArchetype: Archetype) => {
     const newState = { ...gameState, archetype: newArchetype };
+    const newTheme = ARCHETYPE_THEME_MAP[newArchetype] || 'ORBITA';
     setGameState(newState);
+    setTheme(newTheme);
   };
 
   // Busca os dados completos do arquétipo atualmente selecionado para exibir informações detalhadas (como o nome do Mentor).
