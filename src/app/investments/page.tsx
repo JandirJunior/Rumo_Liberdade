@@ -566,7 +566,7 @@ export default function Investments() {
                                 onClick={() => {
                                   setEditingInvestment({
                                     ...asset,
-                                    value: asset.invested_value || asset.total || (asset.price * asset.quantity) || 0,
+                                    value: asset.invested_value || asset.total || ((asset.price || 0) * (asset.quantity || 0)) || 0,
                                     type: asset.type === 'fii' ? 'F' : 
                                           asset.type === 'stock' ? 'A' :
                                           asset.type === 'crypto' ? 'C' :

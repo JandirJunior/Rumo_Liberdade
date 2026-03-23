@@ -413,7 +413,7 @@ export function RecurringAccountsPanel() {
           </div>
         ))}
 
-        {activeTab === 'receivable' && [...receivables].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10).map(item => (
+        {activeTab === 'receivable' && [...receivables].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 10).map(item => (
           <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-panel)] hover:border-[var(--color-primary)] transition-colors">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-emerald-950/30 text-emerald-500 border border-emerald-900/50 flex items-center justify-center">

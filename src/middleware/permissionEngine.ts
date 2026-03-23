@@ -1,7 +1,7 @@
 // src/middleware/permissionEngine.ts
 import { getAuth } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/services/firebase";
 
 export type Role = "Admin" | "Member" | "Viewer";
 

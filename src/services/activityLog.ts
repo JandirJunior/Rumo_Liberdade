@@ -1,6 +1,6 @@
 // src/services/activityLog.ts
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/services/firebase";
 
 export async function logActivity(
   kingdomId: string,

@@ -125,13 +125,14 @@ export interface Asset {
   // Keep legacy fields for backward compatibility during transition
   segment?: string;
   value?: number;
+  invested_value?: number;
+  operation_date?: string;
   targetPercent?: number;
   faceroType?: "F" | "A" | "C" | "E" | "R" | "O";
   userId?: string;
   userName?: string;
   organizationId?: string;
   created_by?: string;
-  operation_date?: string;
   average_cost?: number;
 }
 
@@ -308,6 +309,7 @@ export interface AccountPayable {
   nextRecurrenceDate?: string;
   // Keep legacy fields for backward compatibility
   userId?: string;
+  userName?: string;
   paymentMethod?: string;
   creditCardId?: string;
   installments?: number;
@@ -333,6 +335,7 @@ export interface AccountReceivable {
   nextRecurrenceDate?: string;
   // Keep legacy fields for backward compatibility
   userId?: string;
+  userName?: string;
   payer?: string;
   createdAt?: string;
   receivedAt?: string;

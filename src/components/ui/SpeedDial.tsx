@@ -30,7 +30,8 @@ export function SpeedDial() {
   const { addReceivable } = useAccountsReceivable();
   const { addCreditCard } = useCreditCards();
   const { categories } = useCategories();
-  const { user: authUser, addTransaction, addInvestment } = useKingdom();
+  const { addTransaction, addInvestment } = useKingdom();
+  const { user: authUser } = useTheme();
 
   // Form states - Contas a Pagar/Receber
   const [description, setDescription] = useState('');

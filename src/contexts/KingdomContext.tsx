@@ -392,7 +392,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
       await batch.commit();
       await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_INVESTMENT', invId);
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, 'investments/transactions');
+      handleFirestoreError(error, OperationType.CREATE, 'investments/transactions');
     }
   };
 

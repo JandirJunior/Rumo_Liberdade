@@ -31,29 +31,29 @@ export function ActiveQuestsBoard() {
   // Combine and sort all active quests
   const allQuests: QuestItem[] = [
     ...payables
-      .filter(p => p.status === 'pendente' || p.status === 'atrasado' || p.status === 'pending' || p.status === 'overdue')
+      .filter(p => p.status === 'pendente' || p.status === 'atrasado')
       .map(p => ({
         id: `p_${p.id}`,
         type: 'payable' as const,
         title: p.description,
         amount: p.amount,
         dueDate: p.dueDate,
-        status: p.status === 'pending' ? 'pendente' : p.status === 'overdue' ? 'atrasado' : (p.status || 'pendente'),
+        status: p.status || 'pendente',
         originalData: p
       })),
     ...receivables
-      .filter(r => r.status === 'pendente' || r.status === 'inadimplente' || r.status === 'pending' || r.status === 'overdue')
+      .filter(r => r.status === 'pendente' || r.status === 'inadimplente' || r.status === 'atrasado')
       .map(r => ({
         id: `r_${r.id}`,
         type: 'receivable' as const,
         title: r.description,
         amount: r.amount,
         dueDate: r.dueDate,
-        status: r.status === 'pending' ? 'pendente' : r.status === 'overdue' ? 'atrasado' : (r.status || 'pendente'),
+        status: r.status || 'pendente',
         originalData: r
       })),
     ...invoices
-      .filter(i => i.status === 'open' || i.status === 'overdue' || i.status === 'atrasado')
+      .filter(i => i.status === 'open' || i.status === 'overdue')
       .map(i => ({
         id: `i_${i.id}`,
         type: 'invoice' as const,
