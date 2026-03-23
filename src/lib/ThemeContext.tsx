@@ -1,8 +1,9 @@
 /**
- * Contexto de Tema e Estado do Jogo: Gerencia o estado global do usuário e a aparência do app.
- * Sincroniza o arquétipo do herói com o esquema de cores (tema) correspondente.
+ * Contexto de Tema e Estado do Jogo: Gerencia estado global do usuário, autenticação e aparência.
+ * Sincroniza arquétipo do herói com esquema de cores (tema), gerencia estado de jogo (XP, stats),
+ * implementa listeners de autenticação Firebase e sincronização com Firestore.
+ * Responsável por onboarding de novos usuários, aplicação de temas e modo herói/reino.
  */
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -41,7 +42,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 // =========================
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [gameState, setGameState] = useState<UserGameState>(MOCK_GAME_STATE);
-  const [theme, setThemeState] = useState<ThemeType>('default');
+  const [theme, setThemeState] = useState<ThemeType>('ORBITA');
 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,7 +76,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           const resolvedTheme =
             data.theme ||
             ARCHETYPE_THEME_MAP[data.archetype] ||
-            'default';
+            'ORBITA';
 
           setThemeState(resolvedTheme);
         } else {
@@ -83,7 +84,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           const newState = { ...MOCK_GAME_STATE };
 
           const newTheme =
-            ARCHETYPE_THEME_MAP[newState.archetype] || 'default';
+            ARCHETYPE_THEME_MAP[newState.archetype] || 'ORBITA';
 
           await setDoc(userRef, {
             uid: currentUser.uid,
@@ -101,7 +102,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         setGameState(MOCK_GAME_STATE);
-        setThemeState('default');
+        setThemeState('ORBITA');
       }
 
       setLoading(false);
@@ -136,7 +137,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const resolvedTheme =
           data.theme ||
           ARCHETYPE_THEME_MAP[data.archetype] ||
-          'default';
+          'ORBITA';
 
         setThemeState(resolvedTheme);
       },
@@ -196,7 +197,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           stats: newState.stats,
           theme:
             ARCHETYPE_THEME_MAP[newState.archetype] ||
-            'default',
+            'ORBITA',
         },
         { merge: true }
       );

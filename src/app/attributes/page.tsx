@@ -18,7 +18,7 @@ import { RecurringAccountsPanel } from '@/components/ui/RecurringAccountsPanel';
 
 function AttributesContent() {
   const { theme } = useTheme();
-  const colors = THEMES[theme] || THEMES.default;
+  const colors = THEMES[theme] || THEMES.ORBITA;
   const { transactions } = useKingdom();
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
@@ -42,11 +42,11 @@ function AttributesContent() {
   const aventurasHeroi = budgetProgress
     .filter(b => b.rpg_group === '⚔️ Aventuras do Herói (Despesas Variáveis)')
     .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
-  
+
   // Filter out the specified expense categories from the progress panel
   const expenseCategoriesToRemove = ['Previdência privada', 'Seguros', 'Aluguel/Financiamento', 'Impostos e taxas'];
   const filteredBudgetProgress = budgetProgress.filter(b => !expenseCategoriesToRemove.includes(b.category_name));
-  
+
   return (
     <div className={cn("min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)] relative overflow-hidden")}>
       {/* Imagem de Fundo Sugestiva */}
@@ -62,7 +62,7 @@ function AttributesContent() {
       </div>
 
       <Header />
-      
+
       <main className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 pb-32 relative z-10">
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -91,7 +91,7 @@ function AttributesContent() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Coluna de Receitas */}
           <div className="space-y-4">
-            
+
             <Link href="/transactions?search=Cofre do Reino" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">💎</span>
@@ -153,7 +153,7 @@ function AttributesContent() {
 
           {/* Coluna de Despesas */}
           <div className="space-y-4">
-            
+
             <Link href="/transactions?search=Tributos do Reino" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">🛡️</span>
@@ -220,11 +220,11 @@ function AttributesContent() {
             {['Visão Geral', 'Orçamento', 'Recorrências'].map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab as any)}
+                onClick={() => setActiveTab(tab as 'Visão Geral' | 'Orçamento' | 'Recorrências')}
                 className={cn(
                   "px-6 py-4 text-sm font-bold transition-colors border-b-2",
-                  activeTab === tab 
-                    ? "border-[var(--color-primary)] text-[var(--color-text-main)]" 
+                  activeTab === tab
+                    ? "border-[var(--color-primary)] text-[var(--color-text-main)]"
                     : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
                 )}
               >
@@ -232,15 +232,14 @@ function AttributesContent() {
               </button>
             ))}
           </div>
-          
+
           <div className="p-6">
             {activeTab === 'Visão Geral' && <AnnualChartPanel />}
             {activeTab === 'Orçamento' && (
-              <BudgetProgressPanel 
-                month={today.getMonth() + 1} 
-                year={today.getFullYear()} 
-                hideSelectors={true} 
-                budgetProgress={filteredBudgetProgress} 
+              <BudgetProgressPanel
+                month={today.getMonth() + 1}
+                year={today.getFullYear()}
+                hideSelectors={true}
               />
             )}
             {activeTab === 'Recorrências' && <RecurringAccountsPanel />}
@@ -278,7 +277,7 @@ function AttributesContent() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              
+
               <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
                 <BudgetProgressPanel hideSelectors={true} isPlanningMode={true} />
               </div>
@@ -316,7 +315,7 @@ function AttributesContent() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              
+
               <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
                 <CategoryManagerPanel />
               </div>

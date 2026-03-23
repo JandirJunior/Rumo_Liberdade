@@ -6,25 +6,25 @@ import { formatCurrency, cn } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 
-export function BudgetProgressPanel({ 
-  month: initialMonth, 
+export function BudgetProgressPanel({
+  month: initialMonth,
   year: initialYear,
   hideSelectors = false,
   isPlanningMode = false
-}: { 
-  month?: number, 
+}: {
+  month?: number,
   year?: number,
   hideSelectors?: boolean,
   isPlanningMode?: boolean
 } = {}) {
   const { theme } = useTheme();
-  const colors = THEMES[theme] || THEMES.default;
-  
+  const colors = THEMES[theme] || THEMES.ORBITA;
+
   const today = new Date();
   const [month, setMonth] = useState(initialMonth || today.getMonth() + 1);
   const [year, setYear] = useState(initialYear || today.getFullYear());
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('expense');
-  
+
   const { budgetProgress, loading, saveBudget } = useBudgets(month, year);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState<string>('');
@@ -99,8 +99,8 @@ export function BudgetProgressPanel({
         </div>
         {!hideSelectors && (
           <div className="flex items-center gap-2">
-            <select 
-              value={month} 
+            <select
+              value={month}
               onChange={(e) => setMonth(parseInt(e.target.value))}
               className="text-sm border-[var(--color-border)] rounded-xl bg-[var(--color-bg-panel)] text-[var(--color-text-main)] focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] p-2 shadow-sm medieval-border"
             >
@@ -110,8 +110,8 @@ export function BudgetProgressPanel({
                 </option>
               ))}
             </select>
-            <select 
-              value={year} 
+            <select
+              value={year}
               onChange={(e) => setYear(parseInt(e.target.value))}
               className="text-sm border-[var(--color-border)] rounded-xl bg-[var(--color-bg-panel)] text-[var(--color-text-main)] focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] p-2 shadow-sm medieval-border"
             >
@@ -140,7 +140,7 @@ export function BudgetProgressPanel({
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-[var(--color-text-muted)]">R$</span>
-                        <input 
+                        <input
                           type="number"
                           defaultValue={item.orcado || ''}
                           onBlur={(e) => {
@@ -193,14 +193,14 @@ export function BudgetProgressPanel({
                       <div className="text-right flex flex-col items-end gap-1">
                         {isEditing ? (
                           <div className="flex items-center gap-2">
-                            <input 
-                              type="number" 
+                            <input
+                              type="number"
                               value={editAmount}
                               onChange={(e) => setEditAmount(e.target.value)}
                               className="w-24 px-2 py-1 text-sm border-[var(--color-border)] bg-[var(--color-bg-dark)] text-[var(--color-text-main)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                               autoFocus
                             />
-                            <button 
+                            <button
                               onClick={() => handleSave(item.category_id)}
                               className="text-xs bg-[var(--color-primary)] text-[var(--color-bg-dark)] px-2 py-1 rounded-lg font-bold"
                             >
@@ -208,7 +208,7 @@ export function BudgetProgressPanel({
                             </button>
                           </div>
                         ) : (
-                          <div 
+                          <div
                             className="cursor-pointer group text-right"
                             onClick={() => handleEdit(item.category_id, item.orcado)}
                           >
@@ -229,7 +229,7 @@ export function BudgetProgressPanel({
 
                     {/* Barra de Progresso RPG */}
                     <div className="relative h-3 w-full bg-[var(--color-bg-dark)] rounded-full overflow-hidden shadow-inner mt-4 border border-[var(--color-border)]">
-                      <motion.div 
+                      <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${item.progresso}%` }}
                         transition={{ duration: 1, ease: "easeOut" }}
@@ -243,7 +243,7 @@ export function BudgetProgressPanel({
                         <div className="absolute top-0 left-0 h-full w-full border-r-2 border-red-700/50" style={{ width: '100%' }}></div>
                       )}
                     </div>
-                    
+
                     <div className="flex justify-between mt-2">
                       <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{item.progresso.toFixed(0)}%</span>
                       <span className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-widest">+{item.xp_reward} XP</span>

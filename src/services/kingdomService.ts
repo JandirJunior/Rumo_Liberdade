@@ -1,3 +1,16 @@
+/**
+ * Serviço de Reinos (Multiplayer): Gerencia operações CRUD de reinos e seus membros.
+ * Responsabilidades:
+ * - Criar e atualizar reinos (create, update)
+ * - Gerenciar membros do reino (convites, aceitação, remoção)
+ * - Auditar alterações via logActivity
+ * - Gerar e validar códigos de convite
+ * Integração:
+ * - Usa Firestore para persistência (db)
+ * - Sincroniza com auditLogger para rastreamento
+ * - Trabalha com tipos: Kingdom, KingdomMember, KingdomInvite, KingdomRole
+ * Contexto: Suporta funcionalidade de reinos colaborativos no RPG financeiro.
+ */
 import { db, auth } from '@/services/firebase';
 import { collection, doc, getDoc, getDocs, query, where, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { Kingdom, KingdomMember, KingdomInvite, KingdomRole } from '@/types';
@@ -7,7 +20,7 @@ export const kingdomService = {
   async createKingdom(name: string, ownerId: string): Promise<Kingdom> {
     const kingdomRef = doc(collection(db, 'kingdoms'));
     const inviteCode = `KNG-${Math.floor(1000 + Math.random() * 9000)}`;
-    
+
     const newKingdom: Kingdom = {
       id: kingdomRef.id,
       name,
@@ -37,18 +50,18 @@ export const kingdomService = {
     const membersRef = collection(db, 'kingdom_members');
     const q = query(membersRef, where('user_id', '==', userId));
     const snapshot = await getDocs(q);
-    
+
     if (snapshot.empty) return [];
 
     const kingdomIds = snapshot.docs.map(doc => doc.data().kingdom_id);
-    
+
     // Fetch kingdoms
     const kingdoms: Kingdom[] = [];
     for (const id of kingdomIds) {
       const k = await this.getKingdom(id);
       if (k) kingdoms.push(k);
     }
-    
+
     return kingdoms;
   },
 
@@ -56,7 +69,7 @@ export const kingdomService = {
     const kingdomsRef = collection(db, 'kingdoms');
     const q = query(kingdomsRef, where('invite_code', '==', inviteCode));
     const snapshot = await getDocs(q);
-    
+
     if (!snapshot.empty) {
       return snapshot.docs[0].data() as Kingdom;
     }
@@ -74,11 +87,11 @@ export const kingdomService = {
       joined_at: new Date().toISOString()
     };
     await setDoc(memberRef, newMember);
-    
+
     if (auth.currentUser) {
       await logActivity(kingdomId, auth.currentUser.uid, 'USER_JOINED', userId, { role });
     }
-    
+
     return newMember;
   },
 
@@ -110,9 +123,9 @@ export const kingdomService = {
     const membersRef = collection(db, 'kingdom_members');
     const q = query(membersRef, where('kingdom_id', '==', kingdomId));
     const snapshot = await getDocs(q);
-    
+
     const members = snapshot.docs.map(doc => doc.data() as KingdomMember);
-    
+
     // Fetch user details (name, email) for each member
     for (const member of members) {
       const userDoc = await getDoc(doc(db, 'users', member.user_id));
@@ -122,7 +135,7 @@ export const kingdomService = {
         member.user_email = userData.email;
       }
     }
-    
+
     return members;
   },
 
@@ -138,11 +151,11 @@ export const kingdomService = {
       created_at: new Date().toISOString()
     };
     await setDoc(inviteRef, newInvite);
-    
+
     if (auth.currentUser) {
       await logActivity(kingdomId, auth.currentUser.uid, 'INVITE_SENT', inviteRef.id, { email, role });
     }
-    
+
     return newInvite;
   },
 
@@ -150,14 +163,14 @@ export const kingdomService = {
     const invitesRef = collection(db, 'kingdom_invites');
     const q = query(invitesRef, where('email', '==', email), where('status', '==', 'pending'));
     const snapshot = await getDocs(q);
-    
+
     const invites = snapshot.docs.map(doc => doc.data() as KingdomInvite);
-    
+
     for (const invite of invites) {
       const k = await this.getKingdom(invite.kingdom_id);
       if (k) invite.kingdom_name = k.name;
     }
-    
+
     return invites;
   },
 
@@ -169,12 +182,12 @@ export const kingdomService = {
     const inviteRef = doc(db, 'kingdom_invites', inviteId);
     const inviteSnap = await getDoc(inviteRef);
     if (!inviteSnap.exists()) throw new Error('Invite not found');
-    
+
     const inviteData = inviteSnap.data() as KingdomInvite;
-    
+
     // Update invite status
     await this.updateInviteStatus(inviteId, 'accepted');
-    
+
     // Add member to kingdom
     await this.addMember(inviteData.kingdom_id, userId, inviteData.role);
   },

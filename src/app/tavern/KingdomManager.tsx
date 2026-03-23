@@ -12,7 +12,7 @@ import { KingdomRole } from '@/types';
 import { ActivityFeed } from '@/components/game/ActivityFeed';
 
 
-export function KingdomManager({ colors }: { colors: any }) {
+export function KingdomManager({ colors }: { colors: Record<string, string> }) {
   const { kingdom, role, loading: kingdomLoading, activityLogs } = useKingdom();
   const { members, loading: membersLoading } = useKingdomMembers();
   const { invites, loading: invitesLoading } = useUserInvites();
@@ -58,7 +58,7 @@ export function KingdomManager({ colors }: { colors: any }) {
       showStatus('error', 'Transfira a liderança antes de sair ou remova todos os membros.');
       return;
     }
-    
+
     try {
       await kingdomService.removeMember(myMemberId);
       window.location.reload(); // Reload to trigger kingdom creation or join
@@ -71,7 +71,7 @@ export function KingdomManager({ colors }: { colors: any }) {
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!kingdom || !auth.currentUser || !inviteEmail) return;
-    
+
     setIsInviting(true);
     try {
       await kingdomService.createInvite(kingdom.id, inviteEmail, inviteRole, auth.currentUser.uid);
@@ -144,9 +144,10 @@ export function KingdomManager({ colors }: { colors: any }) {
       alert('Você entrou no Reino com sucesso!');
       setJoinCode('');
       window.location.reload();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao entrar no reino:', error);
-      alert(error.message || 'Erro ao entrar no reino. Verifique o código.');
+      const message = error instanceof Error ? error.message : 'Erro desconhecido';
+      alert(message || 'Erro ao entrar no reino. Verifique o código.');
     } finally {
       setIsJoining(false);
     }
@@ -208,7 +209,7 @@ export function KingdomManager({ colors }: { colors: any }) {
               <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Código de Convite do Reino</p>
               <p className="text-lg font-mono font-bold text-gray-900">{kingdom.invite_code}</p>
             </div>
-            <button 
+            <button
               onClick={copyInviteCode}
               className="p-2 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors"
               title="Copiar Código"
@@ -235,7 +236,7 @@ export function KingdomManager({ colors }: { colors: any }) {
                     <p className="text-xs text-gray-500">{member.user_email}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-3">
                   {role === 'admin' && member.user_id !== auth.currentUser?.uid ? (
                     <select
@@ -257,7 +258,7 @@ export function KingdomManager({ colors }: { colors: any }) {
                   )}
 
                   {role === 'admin' && member.user_id !== auth.currentUser?.uid && (
-                    <button 
+                    <button
                       onClick={() => handleRemoveMember(member.id)}
                       className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                       title="Remover Membro"

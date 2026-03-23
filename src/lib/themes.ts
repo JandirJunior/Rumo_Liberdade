@@ -8,9 +8,7 @@ export type ThemeType =
   | 'CACHE'
   | 'EXODIA'
   | 'REAVER'
-  | 'ORBITA'
-  | 'PAPER'
-  | 'default';
+  | 'ORBITA';
 
 export interface ThemeColors {
   primary: string;
@@ -111,32 +109,6 @@ export const THEMES: Record<ThemeType, ThemeColors> = {
     glow: '0 0 10px rgba(127,29,29,0.3)',
   },
 
-  PAPER: {
-    primary: '#5D4037',
-    accent: '#8D6E63',
-    bgDark: '#F5F2ED',
-    bgPanel: '#FFFFFF',
-    bgOverlay: 'rgba(255,255,255,0.5)',
-    border: '#D7CCC8',
-    textMain: '#3E2723',
-    textMuted: '#795548',
-    shadow: 'rgba(93,64,55,0.1)',
-    glow: 'none',
-    texture: '/textures/paper.webp',
-  },
-
-  default: {
-    primary: '#F59E0B',
-    accent: '#FCD34D',
-    bgDark: '#1A1005',
-    bgPanel: '#2D1D0A',
-    bgOverlay: 'rgba(0,0,0,0.6)',
-    border: '#78350F',
-    textMain: '#FFFBEB',
-    textMuted: '#FBBF24',
-    shadow: 'rgba(245,158,11,0.2)',
-    glow: '0 0 20px rgba(245,158,11,0.6)',
-  },
 };
 
 export const ARCHETYPE_THEME_MAP: Record<string, ThemeType> = {
@@ -146,14 +118,16 @@ export const ARCHETYPE_THEME_MAP: Record<string, ThemeType> = {
   Elfo: 'EXODIA',
   Ladino: 'REAVER',
   Hobbit: 'ORBITA',
-  Iniciante: 'default',
+  Iniciante: 'ORBITA',
 };
 
 export function applyTheme(themeName: ThemeType) {
   if (typeof document === 'undefined') return;
 
-  const theme = THEMES[themeName] || THEMES.default;
+  const theme = THEMES[themeName] || THEMES.ORBITA;
   const root = document.documentElement;
+
+  console.log('🎨 Aplicando tema:', themeName, 'bgDark:', theme.bgDark);
 
   Object.entries(theme).forEach(([key, value]) => {
     if (!value) return;

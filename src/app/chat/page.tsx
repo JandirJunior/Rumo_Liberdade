@@ -22,7 +22,7 @@ import { THEMES } from '@/lib/themes';
 export default function AIChat() {
   // Acessa o estado global e o tema atual através do contexto
   const { gameState, theme } = useTheme();
-  const colors = THEMES[theme] || THEMES.default;
+  const colors = THEMES[theme] || THEMES.ORBITA;
 
   // Mapeamento de nomes de mentores baseados no arquétipo do usuário
   const MENTOR_NAMES: Record<string, string> = {
@@ -64,7 +64,7 @@ export default function AIChat() {
     try {
       // Inicializa o cliente do Gemini
       const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY! });
-      
+
       // Definição do contexto (System Instruction) para a IA
       const getPersonality = (archetype: string) => {
         switch (archetype) {
@@ -117,9 +117,9 @@ export default function AIChat() {
     <div className="flex flex-col h-screen bg-[var(--color-bg-dark)] text-[var(--color-text-main)] transition-colors duration-500">
       {/* Cabeçalho superior */}
       <Header />
-      
+
       {/* Área de Chat com rolagem */}
-      <div 
+      <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-48 w-full max-w-7xl mx-auto"
       >
@@ -156,8 +156,8 @@ export default function AIChat() {
                 {/* Balão de Mensagem */}
                 <div className={cn(
                   "p-4 rounded-2xl shadow-sm text-sm leading-relaxed medieval-border",
-                  msg.role === 'user' 
-                    ? "bg-[var(--color-primary)] text-[var(--color-bg-dark)] rounded-tr-none medieval-glow font-medium" 
+                  msg.role === 'user'
+                    ? "bg-[var(--color-primary)] text-[var(--color-bg-dark)] rounded-tr-none medieval-glow font-medium"
                     : "bg-[var(--color-bg-panel)] text-[var(--color-text-main)] rounded-tl-none"
                 )}>
                   {msg.text}

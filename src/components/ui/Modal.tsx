@@ -1,5 +1,8 @@
 /**
- * Componente de Modal reutilizável para diálogos e formulários.
+ * Componente Modal Reutilizável: Base para diálogos, formulários e painéis flutuantes.
+ * Implementa animações suaves com Framer Motion, overlay escuro, fechamento por clique fora
+ * ou tecla ESC, e acessibilidade com foco automático. Utilizado em todo o app para
+ * modais de ajuda, edição, importação e confirmações.
  */
 'use client';
 
@@ -27,7 +30,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             onClick={onClose}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
           />
-          
+
           {/* Modal Content */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -37,7 +40,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
           >
             <div className="p-6 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-bg-dark)]">
               <h3 className="text-xl font-bold text-[var(--color-text-main)] medieval-title">{title}</h3>
-              <button 
+              <button
                 onClick={onClose}
                 className="w-10 h-10 rounded-full bg-[var(--color-bg-panel)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors border border-[var(--color-border)]"
               >
