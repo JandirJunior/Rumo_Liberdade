@@ -1,10 +1,17 @@
+/**
+ * Engine Financeira: Núcleo de cálculos e lógica de negócio financeira.
+ * Implementa funções para análise de transações, cálculo de patrimônio líquido,
+ * poder de investimento, resumos mensais, validações e métricas gamificadas.
+ * Utiliza dados de transações, ativos e orçamentos para gerar insights e progresso.
+ * Integrado com sistema de XP e atributos F.A.C.E.R.O. para gamificação financeira.
+ */
 import { collection, doc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/services/firebase';
-import { 
-  BudgetProgress, 
-  CategoryEntity, 
-  UserEntity, 
-  Transaction, 
+import {
+  BudgetProgress,
+  CategoryEntity,
+  UserEntity,
+  Transaction,
   Asset,
   AccountPayable,
   AccountReceivable,
@@ -47,13 +54,13 @@ export function parseDate(date: any): Date {
 export function calculateInvestmentPower(assets: Asset[]) {
   if (!Array.isArray(assets)) return { totalValue: 0, aggregated: [], tickerDetails: [] };
   const totalValue = assets.reduce((acc, curr) => acc + Number(curr.value || curr.total || 0), 0);
-  
+
   const aggregated = Object.keys(FACERO_TARGETS).map(key => {
     const typeAssets = assets.filter(a => a.faceroType === key || a.investment_category_id === key);
     const value = typeAssets.reduce((acc, curr) => acc + Number(curr.value || curr.total || 0), 0);
     const targetPercent = FACERO_TARGETS[key];
     const currentPercent = totalValue > 0 ? value / totalValue : 0;
-    
+
     return {
       faceroType: key as 'F' | 'A' | 'C' | 'E' | 'R' | 'O',
       name: FACERO_LABELS[key],
@@ -65,15 +72,15 @@ export function calculateInvestmentPower(assets: Asset[]) {
   });
 
   const tickerGroups: Record<string, { totalValue: number, totalQuantity: number, type: string, faceroType: string, ids: string[] }> = {};
-  
+
   assets.forEach(asset => {
     if (!asset) return;
     const ticker = asset.ticker || asset.segment || 'OUTROS';
     if (!tickerGroups[ticker]) {
-      tickerGroups[ticker] = { 
-        totalValue: 0, 
-        totalQuantity: 0, 
-        type: asset.type || 'other', 
+      tickerGroups[ticker] = {
+        totalValue: 0,
+        totalQuantity: 0,
+        type: asset.type || 'other',
         faceroType: (asset.faceroType || asset.investment_category_id || 'O') as string,
         ids: []
       };
@@ -139,14 +146,14 @@ export function calculateBudgetProgressData(
   return categories.map(cat => {
     const budget = budgets.find(b => b.category_id === cat.id);
     const orcado = budget ? (budget.budget_amount || budget.quantidade || 0) : 0;
-    
+
     const gasto_real = transactions
       .filter(t => {
         const d = parseDate(t.date);
-        return t.type === cat.flow_type && 
-               t.category_id === cat.id && 
-               d.getMonth() + 1 === month && 
-               d.getFullYear() === year;
+        return t.type === cat.flow_type &&
+          t.category_id === cat.id &&
+          d.getMonth() + 1 === month &&
+          d.getFullYear() === year;
       })
       .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
@@ -155,20 +162,20 @@ export function calculateBudgetProgressData(
       const payablesAmount = payables
         .filter(p => {
           const d = parseDate(p.due_date || p.dueDate);
-          return p.category_id === cat.id && 
-                 d.getMonth() + 1 === month && 
-                 d.getFullYear() === year &&
-                 p.status !== 'pago';
+          return p.category_id === cat.id &&
+            d.getMonth() + 1 === month &&
+            d.getFullYear() === year &&
+            p.status !== 'pago';
         })
         .reduce((sum, p) => sum + Number(p.amount || 0), 0);
-      
+
       const creditCardAmount = creditCards
         .filter(cc => {
           const d = parseDate(cc.dueDate || cc.month + '-01');
-          return cat.name.toLowerCase().includes('cartão') && 
-                 d.getMonth() + 1 === month && 
-                 d.getFullYear() === year &&
-                 cc.status !== 'paid';
+          return cat.name.toLowerCase().includes('cartão') &&
+            d.getMonth() + 1 === month &&
+            d.getFullYear() === year &&
+            cc.status !== 'paid';
         })
         .reduce((sum, cc) => sum + Number(cc.total_amount || 0), 0);
 
@@ -177,18 +184,18 @@ export function calculateBudgetProgressData(
       const receivablesAmount = receivables
         .filter(r => {
           const d = parseDate(r.due_date || r.dueDate);
-          return r.category_id === cat.id && 
-                 d.getMonth() + 1 === month && 
-                 d.getFullYear() === year &&
-                 r.status !== 'recebido';
+          return r.category_id === cat.id &&
+            d.getMonth() + 1 === month &&
+            d.getFullYear() === year &&
+            r.status !== 'recebido';
         })
         .reduce((sum, r) => sum + Number(r.amount || 0), 0);
-      
+
       previsto += receivablesAmount;
     }
 
     const progresso = orcado > 0 ? Math.min(100, (gasto_real / orcado) * 100) : (gasto_real > 0 ? 100 : 0);
-    const status = cat.flow_type === 'expense' 
+    const status = cat.flow_type === 'expense'
       ? (gasto_real > orcado ? 'orçamento excedido' : 'controle mantido')
       : (gasto_real >= orcado ? 'controle mantido' : 'orçamento excedido');
 

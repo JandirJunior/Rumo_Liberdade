@@ -14,7 +14,7 @@ export function SpeedDial() {
   const { theme } = useTheme();
   const { userData, loading } = useUser();
   const router = useRouter();
-  const colors = THEMES[theme] || THEMES.default;
+  const colors = THEMES[theme] || THEMES.ORBITA;
 
   if (loading || !userData) return null;
 

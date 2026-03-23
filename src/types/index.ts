@@ -1,6 +1,9 @@
 /**
- * Definições de Tipos: Centraliza todas as interfaces e tipos utilizados na aplicação.
- * Garante a consistência dos dados entre os componentes e a lógica de negócio.
+ * Definições de Tipos Centrais: Arquivo principal de tipos TypeScript da aplicação.
+ * Define interfaces para entidades de negócio (transações, usuários, reinos, investimentos),
+ * tipos enumerados (TransactionType, Archetype), e estruturas de dados compartilhadas.
+ * Garante consistência de dados entre componentes, hooks, serviços e Firestore.
+ * Inclui tipos para gamificação (UserGameState, FaceroStats) e funcionalidades SaaS.
  */
 
 // Tipos de transações financeiras
@@ -68,12 +71,12 @@ export interface ActivityLog {
   // Legacy fields
   user_name?: string;
   entity_type?:
-    | "transaction"
-    | "payable"
-    | "receivable"
-    | "asset"
-    | "member"
-    | "kingdom";
+  | "transaction"
+  | "payable"
+  | "receivable"
+  | "asset"
+  | "member"
+  | "kingdom";
   details?: any;
 }
 

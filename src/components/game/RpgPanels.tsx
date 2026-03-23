@@ -22,13 +22,13 @@ interface KingdomStats {
 
 export function KingdomLevelPanel({ stats }: { stats: KingdomStats }) {
   const { theme } = useTheme();
-  const colors = THEMES[theme] || THEMES.default;
+  const colors = THEMES[theme] || THEMES.ORBITA;
   const progress = (stats.xp / stats.nextLevelXp) * 100;
 
   return (
     <div className="bg-[var(--color-bg-panel)] rounded-[2.5rem] p-6 border border-[var(--color-border)] shadow-sm relative overflow-hidden medieval-border">
       <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--color-primary)] rounded-full -mr-16 -mt-16 blur-2xl opacity-20"></div>
-      
+
       <div className="flex items-center gap-4 mb-6 relative z-10">
         <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-[var(--color-bg-dark)] shadow-lg bg-[var(--color-primary)]")}>
           <Crown className="w-8 h-8" />
@@ -45,7 +45,7 @@ export function KingdomLevelPanel({ stats }: { stats: KingdomStats }) {
           <span>Próximo Nível: {stats.nextLevelXp.toLocaleString()}</span>
         </div>
         <div className="h-3 w-full bg-[var(--color-bg-dark)] rounded-full overflow-hidden shadow-inner border border-[var(--color-border)]">
-          <motion.div 
+          <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             className={cn("h-full rounded-full bg-[var(--color-primary)] medieval-glow")}
@@ -127,16 +127,16 @@ export function MemberRankingPanel({ members }: { members: KingdomStats['members
         <h3 className="text-sm font-bold text-[var(--color-text-main)]">Ranking de Heróis</h3>
         <Users className="w-4 h-4 text-[var(--color-text-muted)]" />
       </div>
-      
+
       <div className="space-y-3">
         {members.sort((a, b) => b.xp - a.xp).map((member, index) => (
           <div key={member.id} className="flex items-center justify-between p-3 bg-[var(--color-bg-dark)] rounded-2xl border border-[var(--color-border)] medieval-border">
             <div className="flex items-center gap-3">
               <div className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
-                index === 0 ? "bg-[var(--color-primary)] text-[var(--color-bg-dark)] shadow-sm medieval-glow" : 
-                index === 1 ? "bg-slate-300 text-slate-800" :
-                "bg-orange-800 text-orange-200"
+                index === 0 ? "bg-[var(--color-primary)] text-[var(--color-bg-dark)] shadow-sm medieval-glow" :
+                  index === 1 ? "bg-slate-300 text-slate-800" :
+                    "bg-orange-800 text-orange-200"
               )}>
                 {index + 1}
               </div>

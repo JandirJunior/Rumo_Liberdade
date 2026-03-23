@@ -1,3 +1,9 @@
+/**
+ * Contexto do Reino (Multiplayer): Gerencia estado e operações relacionadas a reinos.
+ * Fornece dados de reino atual, membros, convites, transações compartilhadas e permissões.
+ * Implementa listeners em tempo real do Firestore para sincronização entre usuários.
+ * Suporta funcionalidades de colaboração financeira em modo reino vs modo herói individual.
+ */
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -17,12 +23,12 @@ import {
   runTransaction
 } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { 
-  Kingdom, 
-  KingdomRole, 
-  Transaction, 
-  Asset, 
-  ActivityLog, 
+import {
+  Kingdom,
+  KingdomRole,
+  Transaction,
+  Asset,
+  ActivityLog,
   ContributionPlanning,
   CategoryEntity,
   BudgetEntity,
@@ -43,7 +49,7 @@ interface KingdomContextType {
   role: KingdomRole | null;
   memberId: string | null;
   loading: boolean;
-  
+
   // Data
   transactions: Transaction[];
   assets: Asset[];
@@ -55,49 +61,49 @@ interface KingdomContextType {
   receivables: AccountReceivable[];
   creditCards: any[];
   creditCardInvoices: CreditCardInvoice[];
-  
+
   // Computed
   getBudgetProgress: (month: number, year: number) => BudgetProgress[];
-  
+
   // Actions
   addTransaction: (data: Partial<Transaction>) => Promise<void>;
   updateTransaction: (id: string, data: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
-  
+
   addInvestment: (data: any) => Promise<void>;
   deleteInvestment: (ids: string | string[]) => Promise<void>;
-  
+
   addEarning: (data: any) => Promise<void>;
-  
+
   saveBudget: (category_id: string, amount: number) => Promise<void>;
-  
+
   addCategory: (category: any) => Promise<void>;
   updateCategory: (id: string, category: any) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
-  
+
   addPayable: (payable: any) => Promise<void>;
   updatePayable: (id: string, payable: any) => Promise<void>;
   payPayable: (id: string, paidAt: string) => Promise<void>;
   deletePayable: (id: string) => Promise<void>;
-  
+
   addReceivable: (receivable: any) => Promise<void>;
   updateReceivable: (id: string, receivable: any) => Promise<void>;
   receiveReceivable: (id: string, receivedAt: string) => Promise<void>;
   deleteReceivable: (id: string) => Promise<void>;
-  
+
   addCreditCard: (card: any) => Promise<void>;
   updateCreditCard: (id: string, card: any) => Promise<void>;
   deleteCreditCard: (id: string) => Promise<void>;
-  
+
   addCreditCardInvoice: (invoice: any) => Promise<void>;
   updateCreditCardInvoice: (id: string, invoice: any) => Promise<void>;
   payCreditCardInvoice: (id: string, paidAt: string) => Promise<void>;
   deleteCreditCardInvoice: (id: string) => Promise<void>;
-  
+
   members: any[];
   userInvites: any[];
   kingdomInvites: any[];
-  
+
   updateContributionPlanning: (percentages: any) => Promise<void>;
   joinKingdomByCode: (code: string) => Promise<void>;
 }
@@ -249,8 +255,8 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
         });
 
         unsubscribes.push(
-          unsubAssets, unsubTransactions, unsubLogs, unsubPlanning, 
-          unsubCategories, unsubBudgets, unsubPayables, unsubReceivables, 
+          unsubAssets, unsubTransactions, unsubLogs, unsubPlanning,
+          unsubCategories, unsubBudgets, unsubPayables, unsubReceivables,
           unsubCreditCards, unsubCreditCardInvoices, unsubMembers, unsubUserInvites, unsubKingdomInvites
         );
 

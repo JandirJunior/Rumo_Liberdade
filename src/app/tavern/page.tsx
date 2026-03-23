@@ -27,50 +27,50 @@ import { financialEngine } from '@/lib/financialEngine';
 
 // Definição das classes disponíveis com seus nomes, descrições, ícones e imagens ilustrativas.
 const ARCHETYPES: { type: Archetype; name: string; desc: string; icon: any; color: string; illustration: string }[] = [
-  { 
-    type: 'Paladino', 
-    name: 'FESTIM', 
-    desc: 'Foco em Fundos Imobiliários e Fundos de papeis e Fiagros viver de Rendimentos (Aluguéis).', 
+  {
+    type: 'Paladino',
+    name: 'FESTIM',
+    desc: 'Foco em Fundos Imobiliários e Fundos de papeis e Fiagros viver de Rendimentos (Aluguéis).',
     icon: Shield,
     color: 'bg-amber-600',
     illustration: ARCHETYPE_IMAGES['Paladino']
   },
-  { 
-    type: 'Mago', 
-    name: 'ARCANO', 
-    desc: 'Foco em Ações e viver de Dividendos (Cotas de Empresas).', 
+  {
+    type: 'Mago',
+    name: 'ARCANO',
+    desc: 'Foco em Ações e viver de Dividendos (Cotas de Empresas).',
     icon: Wand2,
     color: 'bg-purple-600',
     illustration: ARCHETYPE_IMAGES['Mago']
   },
-  { 
-    type: 'Dwarf', 
-    name: 'CACHE', 
-    desc: 'Foco em Cripto Ativos e Moedas Digitais.', 
+  {
+    type: 'Dwarf',
+    name: 'CACHE',
+    desc: 'Foco em Cripto Ativos e Moedas Digitais.',
     icon: HandCoins,
     color: 'bg-emerald-600',
     illustration: ARCHETYPE_IMAGES['Dwarf']
   },
-  { 
-    type: 'Elfo', 
-    name: 'EXODIA', 
-    desc: 'Foco em Ações e Fundos e Variação Cambial, investimentos fora do Brasil.', 
+  {
+    type: 'Elfo',
+    name: 'EXODIA',
+    desc: 'Foco em Ações e Fundos e Variação Cambial, investimentos fora do Brasil.',
     icon: Compass,
     color: 'bg-blue-600',
     illustration: ARCHETYPE_IMAGES['Elfo']
   },
-  { 
-    type: 'Ladino', 
-    name: 'REAVER', 
-    desc: 'Foco em CDBs e também em Previdencia privada VGBL e tesouro selic e tesouro direto.', 
+  {
+    type: 'Ladino',
+    name: 'REAVER',
+    desc: 'Foco em CDBs e também em Previdencia privada VGBL e tesouro selic e tesouro direto.',
     icon: VenetianMask,
     color: 'bg-slate-700',
     illustration: ARCHETYPE_IMAGES['Ladino']
   },
-  { 
-    type: 'Hobbit', 
-    name: 'ORBIT', 
-    desc: 'Foco em todos os outros tipos de investimentos não citados acima.', 
+  {
+    type: 'Hobbit',
+    name: 'ORBIT',
+    desc: 'Foco em todos os outros tipos de investimentos não citados acima.',
     icon: Home,
     color: 'bg-rose-600',
     illustration: ARCHETYPE_IMAGES['Hobbit']
@@ -79,7 +79,7 @@ const ARCHETYPES: { type: Archetype; name: string; desc: string; icon: any; colo
 
 export default function Tavern() {
   const { gameState, setGameState, theme, gameMode, setGameMode } = useTheme();
-  const colors = THEMES[theme] || THEMES.default;
+  const colors = THEMES[theme] || THEMES.ORBITA;
   const { assets } = useKingdom();
 
   const { totalValue: totalInvested } = financialEngine.calculateInvestmentPower(assets);
@@ -141,7 +141,7 @@ export default function Tavern() {
       </div>
 
       <Header />
-      
+
       <main className="w-full px-4 sm:px-6 lg:px-8 py-6 pb-32 space-y-8 relative z-10">
         {/* [RESPONSIVIDADE] Título da Seção */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -149,38 +149,38 @@ export default function Tavern() {
             <h2 className="text-2xl medieval-title font-bold text-[var(--color-text-main)]">A Taberna</h2>
             <p className="text-sm text-[var(--color-text-muted)]">Personalize seu herói financeiro</p>
           </div>
-          
+
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={handleLogout}
               className="px-4 py-2 bg-red-900/50 text-red-500 border border-red-700/50 rounded-xl text-sm font-bold hover:bg-red-900/80 transition-colors medieval-border"
             >
               Sair do Sistema
             </button>
-            
+
             {/* Toggle Modo de Jogo */}
             <div className="flex items-center gap-3 bg-[var(--color-bg-panel)] p-2 rounded-2xl shadow-sm border border-[var(--color-border)] self-start medieval-border">
-            <button 
-              onClick={() => setGameMode('heroi')}
-              className={cn(
-                "px-4 py-2 rounded-xl text-sm font-bold transition-all medieval-border",
-                gameMode === 'heroi' ? "bg-indigo-900/50 text-indigo-400 border-indigo-500/50" : "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-dark)] border-transparent"
-              )}
-            >
-              Herói (Solo)
-            </button>
-            <button 
-              onClick={() => setGameMode('reino')}
-              className={cn(
-                "px-4 py-2 rounded-xl text-sm font-bold transition-all medieval-border",
-                gameMode === 'reino' ? "bg-amber-900/50 text-amber-400 border-amber-500/50" : "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-dark)] border-transparent"
-              )}
-            >
-              Reino (Multi)
-            </button>
+              <button
+                onClick={() => setGameMode('heroi')}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-sm font-bold transition-all medieval-border",
+                  gameMode === 'heroi' ? "bg-indigo-900/50 text-indigo-400 border-indigo-500/50" : "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-dark)] border-transparent"
+                )}
+              >
+                Herói (Solo)
+              </button>
+              <button
+                onClick={() => setGameMode('reino')}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-sm font-bold transition-all medieval-border",
+                  gameMode === 'reino' ? "bg-amber-900/50 text-amber-400 border-amber-500/50" : "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-dark)] border-transparent"
+                )}
+              >
+                Reino (Multi)
+              </button>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
         {/* 
           [RESPONSIVIDADE] Character Preview (Perfil do Herói)
@@ -232,17 +232,17 @@ export default function Tavern() {
                   <div key={stat} className="space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className="font-bold text-[var(--color-text-main)]">
-                        {stat === 'F' ? 'Fundos Imobiliários' : 
-                         stat === 'A' ? 'Ações' : 
-                         stat === 'C' ? 'Criptomoedas' : 
-                         stat === 'E' ? 'Exterior' : 
-                         stat === 'R' ? 'Renda Fixa' : 'Outros'}
+                        {stat === 'F' ? 'Fundos Imobiliários' :
+                          stat === 'A' ? 'Ações' :
+                            stat === 'C' ? 'Criptomoedas' :
+                              stat === 'E' ? 'Exterior' :
+                                stat === 'R' ? 'Renda Fixa' : 'Outros'}
                       </span>
                       <span className="font-bold text-[var(--color-text-main)]">{percent.toFixed(1)}%</span>
                     </div>
                     <div className="h-2 w-full bg-[var(--color-bg-dark)] rounded-full overflow-hidden border border-[var(--color-border)]">
-                      <div 
-                        className={cn("h-full rounded-full transition-all duration-1000", barColor)} 
+                      <div
+                        className={cn("h-full rounded-full transition-all duration-1000", barColor)}
                         style={{ width: `${percent}%` }}
                       ></div>
                     </div>
@@ -269,12 +269,12 @@ export default function Tavern() {
             {STATIC_CHARACTERS.slice(0, 6).map((character) => {
               const unlocked = totalPower >= character.requiredInvestment;
               return (
-                <div 
+                <div
                   key={character.id}
                   className={cn(
                     "flex flex-col items-center justify-center p-4 rounded-2xl border text-center transition-all relative overflow-hidden medieval-border",
-                    unlocked 
-                      ? cn("bg-[var(--color-bg-panel)] border-[var(--color-primary)]", colors.shadow) 
+                    unlocked
+                      ? cn("bg-[var(--color-bg-panel)] border-[var(--color-primary)]", colors.shadow)
                       : "bg-[var(--color-bg-dark)] border-[var(--color-border)] opacity-50 grayscale"
                   )}
                 >
@@ -309,7 +309,7 @@ export default function Tavern() {
                 onClick={() => handleArchetypeChange(arch.type)}
                 className={cn(
                   "p-0 rounded-2xl border text-left transition-all flex flex-col overflow-hidden group relative medieval-border",
-                  gameState.archetype === arch.type 
+                  gameState.archetype === arch.type
                     ? cn("bg-[var(--color-bg-panel)] border-[var(--color-primary)]", colors.shadow)
                     : "bg-[var(--color-bg-dark)] border-[var(--color-border)] hover:bg-[var(--color-bg-panel)] hover:border-[var(--color-primary)]"
                 )}
@@ -354,10 +354,10 @@ export default function Tavern() {
           <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 border border-[var(--color-border)] shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6 medieval-border">
             <div className="flex items-center justify-between md:flex-col md:items-start md:gap-4">
               <span className="text-sm font-medium text-[var(--color-text-main)]">Notificações de Quest</span>
-              <button 
+              <button
                 onClick={() => setNotifications(!notifications)}
                 className={cn(
-                  "w-12 h-6 rounded-full relative transition-colors border border-[var(--color-border)]", 
+                  "w-12 h-6 rounded-full relative transition-colors border border-[var(--color-border)]",
                   notifications ? colors.primary : "bg-[var(--color-bg-dark)]"
                 )}
               >
@@ -369,10 +369,10 @@ export default function Tavern() {
             </div>
             <div className="flex items-center justify-between md:flex-col md:items-start md:gap-4">
               <span className="text-sm font-medium text-[var(--color-text-main)]">Modo Imersivo (RPG)</span>
-              <button 
+              <button
                 onClick={() => setImmersiveMode(!immersiveMode)}
                 className={cn(
-                  "w-12 h-6 rounded-full relative transition-colors border border-[var(--color-border)]", 
+                  "w-12 h-6 rounded-full relative transition-colors border border-[var(--color-border)]",
                   immersiveMode ? colors.primary : "bg-[var(--color-bg-dark)]"
                 )}
               >
@@ -384,10 +384,10 @@ export default function Tavern() {
             </div>
             <div className="flex items-center justify-between md:flex-col md:items-start md:gap-4">
               <span className="text-sm font-medium text-[var(--color-text-main)]">Visibilidade do Ranking</span>
-              <button 
+              <button
                 onClick={() => setRankingVisible(!rankingVisible)}
                 className={cn(
-                  "w-12 h-6 rounded-full relative transition-colors border border-[var(--color-border)]", 
+                  "w-12 h-6 rounded-full relative transition-colors border border-[var(--color-border)]",
                   rankingVisible ? colors.primary : "bg-[var(--color-bg-dark)]"
                 )}
               >
