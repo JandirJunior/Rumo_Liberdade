@@ -1,0 +1,23 @@
+{
+  "name": "Rumo à Liberdade",
+  "short_name": "Liberdade",
+  "description": "Transforme sua vida financeira em uma jornada épica.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0502",
+  "theme_color": "#f27d26",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/liberdade-icon-192/192/192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://picsum.photos/seed/liberdade-icon-512/512/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

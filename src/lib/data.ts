@@ -15,6 +15,15 @@ export const MOCK_GAME_STATE: UserGameState = {
   completedQuests: [],
 };
 
+export const EMPTY_GAME_STATE: UserGameState = {
+  level: 0,
+  xp: 0,
+  nextLevelXp: 0,
+  archetype: 'Iniciante',
+  stats: { F: 0, A: 0, C: 0, E: 0, R: 0, O: 0 },
+  completedQuests: [],
+};
+
 // =========================
 // 🎯 GOALS (METAS)
 // =========================

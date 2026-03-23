@@ -19,10 +19,25 @@ export function OverviewListPanel({
   const pageSize = 10;
 
   const allItems = [
-    ...payables.map(p => ({ ...p, type: 'payable', date: new Date(p.createdAt || p.created_at || 0), userName: p.userName || 'Desconhecido' })),
-    ...receivables.map(r => ({ ...r, type: 'receivable', date: new Date(r.createdAt || r.created_at || 0), userName: r.userName || 'Desconhecido' })),
-    ...creditCards.map(c => ({ ...c, type: 'card', date: new Date(c.created_at || 0), userName: c.userName || 'Desconhecido' }))
-  ].sort((a, b) => b.date.getTime() - a.date.getTime());
+    ...payables.map(p => ({ 
+      ...p, 
+      type: 'payable', 
+      date: new Date(p.due_date || p.dueDate || p.createdAt || p.created_at || 0), 
+      userName: p.userName || 'Desconhecido' 
+    })),
+    ...receivables.map(r => ({ 
+      ...r, 
+      type: 'receivable', 
+      date: new Date(r.due_date || r.dueDate || r.createdAt || r.created_at || 0), 
+      userName: r.userName || 'Desconhecido' 
+    })),
+    ...creditCards.map(c => ({ 
+      ...c, 
+      type: 'card', 
+      date: new Date(c.created_at || 0), 
+      userName: c.userName || 'Desconhecido' 
+    }))
+  ].sort((a, b) => a.date.getTime() - b.date.getTime());
 
   const pageCount = Math.ceil(allItems.length / pageSize);
   const paginatedItems = allItems.slice(currentPage * pageSize, (currentPage + 1) * pageSize);

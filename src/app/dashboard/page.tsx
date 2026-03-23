@@ -39,6 +39,13 @@ export default function Dashboard() {
   // Acessa o estado global e o tema atual através do contexto
   const { gameState, theme, gameMode, user, loading: authLoading } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/logon');
+    }
+  }, [user, authLoading, router]);
+
   const { 
     assets, 
     transactions, 
@@ -62,6 +69,12 @@ export default function Dashboard() {
   const { receivables } = useAccountsReceivable();
   const { invoices } = useCreditCardInvoices();
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/logon');
@@ -77,6 +90,19 @@ export default function Dashboard() {
     });
     return () => unsubscribe();
   }, [kingdom?.id]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-dark)]">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-[var(--color-text-muted)] font-medium">Entrando no Reino...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   const cofreReino = budgetProgress
     .filter(b => b.rpg_group === '💎 Cofre do Reino (Receitas Fixas)')
@@ -134,13 +160,6 @@ export default function Dashboard() {
   ];
 
   // Estado para garantir que o gráfico só seja renderizado no cliente (evita erro de SSR do Recharts)
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
-
-  // Retorna o ícone correspondente ao arquétipo atual do herói
   const getArchetypeIcon = () => {
     switch(gameState.archetype) {
       case 'Paladino': return <Shield className="w-6 h-6" />;

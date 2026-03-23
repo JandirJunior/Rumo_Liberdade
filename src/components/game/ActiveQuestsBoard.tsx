@@ -37,7 +37,7 @@ export function ActiveQuestsBoard() {
         type: 'payable' as const,
         title: p.description,
         amount: p.amount,
-        dueDate: p.dueDate,
+        dueDate: p.due_date || p.dueDate,
         status: p.status || 'pendente',
         originalData: p
       })),
@@ -48,7 +48,7 @@ export function ActiveQuestsBoard() {
         type: 'receivable' as const,
         title: r.description,
         amount: r.amount,
-        dueDate: r.dueDate,
+        dueDate: r.due_date || r.dueDate,
         status: r.status || 'pendente',
         originalData: r
       })),
@@ -64,8 +64,8 @@ export function ActiveQuestsBoard() {
         originalData: i
       }))
   ].sort((a, b) => {
-    const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0;
-    const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0;
+    const dateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+    const dateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
     return dateA - dateB;
   });
 

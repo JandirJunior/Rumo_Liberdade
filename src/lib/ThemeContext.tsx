@@ -8,7 +8,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ThemeType, ARCHETYPE_THEME_MAP, applyTheme } from './themes';
-import { MOCK_GAME_STATE } from './data';
+import { MOCK_GAME_STATE, EMPTY_GAME_STATE } from './data';
 import { UserGameState } from '@/types';
 import { auth, db } from '@/services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -54,7 +54,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [userData, setUserData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [gameMode, setGameMode] = useState<'heroi' | 'reino'>('heroi');
+  const [gameMode, setGameMode] = useState<'heroi' | 'reino'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('app_game_mode') as 'heroi' | 'reino') || 'heroi';
+    }
+    return 'heroi';
+  });
+
+  // =========================
+  // PERSISTÊNCIA DE PREFERÊNCIAS LOCAIS
+  // =========================
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('app_game_mode', gameMode);
+    }
+  }, [gameMode]);
 
   // =========================
   // AUTH & FIRESTORE LISTENER
@@ -115,9 +129,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           }
         );
       } else {
-        setGameState(MOCK_GAME_STATE);
+        setGameState(EMPTY_GAME_STATE);
         setThemeState('ORBITA');
         setUserData(null);
+        setGameMode('heroi');
         if (unsubscribeSnapshot) {
           unsubscribeSnapshot();
           unsubscribeSnapshot = undefined;

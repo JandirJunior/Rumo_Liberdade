@@ -21,8 +21,9 @@ import { financialEngine } from '@/lib/financialEngine';
 import { parseDate } from '@/services/firebaseUtils';
 
 export default function Investments() {
-  const { theme } = useTheme();
+  const { theme, user, loading: authLoading } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
+
   const { assets, loading: kingdomLoading, transactions, addInvestment, updateInvestment, addEarning, deleteInvestment, contributionPlanning, updateContributionPlanning, addTransaction } = useKingdom();
 
   const { totalValue, aggregated, tickerDetails } = useMemo(() =>
@@ -52,6 +53,25 @@ export default function Investments() {
     type: 'dividend' as 'dividend' | 'jcp' | 'rent' | 'other',
     date: new Date().toISOString().split('T')[0]
   });
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-dark)]">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-[var(--color-text-muted)] font-medium">Carregando Inventário...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   const handleAddInvestment = async () => {
     if (!newInvestment.ticker || !newInvestment.value || !newInvestment.quantity) return;
@@ -155,12 +175,6 @@ export default function Investments() {
   };
 
   // Estado para garantir que o gráfico só seja renderizado no cliente (evita erro de SSR do Recharts)
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
-
   const chartData = aggregated.map(asset => ({
     name: asset.name,
     atual: asset.currentPercent * 100,

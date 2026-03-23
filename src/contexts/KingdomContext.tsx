@@ -174,6 +174,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let unsubscribes: (() => void)[] = [];
+    let isCancelled = false;
 
     const loadKingdomData = async () => {
       if (!user) {
@@ -198,7 +199,10 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
       }
 
       try {
+        setLoading(true);
         const kingdoms = await kingdomService.getUserKingdoms(user.uid);
+        if (isCancelled) return;
+
         let currentKingdom = kingdoms[0];
 
         if (!currentKingdom) {
@@ -208,6 +212,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
           );
         }
 
+        if (isCancelled) return;
         setKingdom(currentKingdom);
 
         // Member listener
@@ -218,6 +223,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
         );
 
         const unsubscribeMember = onSnapshot(memberQuery, (snap) => {
+          if (isCancelled) return;
           if (!snap.empty) {
             setRole(snap.docs[0].data().role);
             setMemberId(snap.docs[0].id);
@@ -229,10 +235,12 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
         const kId = currentKingdom.id;
 
         const unsubAssets = onSnapshot(getCollectionByKingdom('investments', kId), (snap) => {
+          if (isCancelled) return;
           setAssets(snap.docs.map(d => ({ id: d.id, ...d.data() } as Asset)));
         });
 
         const unsubTransactions = onSnapshot(query(getCollectionByKingdom('transactions', kId), orderBy('created_at', 'desc')), (snap) => {
+          if (isCancelled) return;
           setTransactions(snap.docs.map(d => ({
             id: d.id,
             ...d.data(),
@@ -242,6 +250,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
         });
 
         const unsubLogs = onSnapshot(query(getCollectionByKingdom('activity_logs', kId), orderBy('created_at', 'desc')), (snap) => {
+          if (isCancelled) return;
           setActivityLogs(snap.docs.map(d => ({
             id: d.id,
             ...d.data(),
@@ -250,11 +259,13 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
         });
 
         const unsubPlanning = onSnapshot(getCollectionByKingdom('contribution_planning', kId), (snap) => {
+          if (isCancelled) return;
           if (!snap.empty) setContributionPlanning(snap.docs[0].data() as ContributionPlanning);
           else setContributionPlanning(null);
         });
 
         const unsubCategories = onSnapshot(getCollectionByKingdom('categories', kId), (snap) => {
+          if (isCancelled) return;
           setCategories(snap.docs.map(d => ({
             id: d.id,
             ...d.data(),
@@ -263,34 +274,42 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
         });
 
         const unsubBudgets = onSnapshot(getCollectionByKingdom('budgets', kId), (snap) => {
+          if (isCancelled) return;
           setBudgets(snap.docs.map(d => ({ id: d.id, ...d.data() } as BudgetEntity)));
         });
 
         const unsubPayables = onSnapshot(getCollectionByKingdom('accounts_payable', kId), (snap) => {
+          if (isCancelled) return;
           setPayables(snap.docs.map(d => ({ id: d.id, ...d.data() } as AccountPayable)));
         });
 
         const unsubReceivables = onSnapshot(getCollectionByKingdom('accounts_receivable', kId), (snap) => {
+          if (isCancelled) return;
           setReceivables(snap.docs.map(d => ({ id: d.id, ...d.data() } as AccountReceivable)));
         });
 
         const unsubCreditCards = onSnapshot(getCollectionByKingdom('credit_cards', kId), (snap) => {
+          if (isCancelled) return;
           setCreditCards(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         });
 
         const unsubCreditCardInvoices = onSnapshot(getCollectionByKingdom('credit_card_invoices', kId), (snap) => {
+          if (isCancelled) return;
           setCreditCardInvoices(snap.docs.map(d => ({ id: d.id, ...d.data() } as CreditCardInvoice)));
         });
 
         const unsubMembers = onSnapshot(query(collection(db, 'kingdom_members'), where('kingdom_id', '==', kId)), (snap) => {
+          if (isCancelled) return;
           setMembers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         });
 
         const unsubUserInvites = onSnapshot(query(collection(db, 'kingdom_invites'), where('email', '==', user.email), where('status', '==', 'pending')), (snap) => {
+          if (isCancelled) return;
           setUserInvites(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         });
 
         const unsubKingdomInvites = onSnapshot(query(collection(db, 'kingdom_invites'), where('kingdom_id', '==', kId)), (snap) => {
+          if (isCancelled) return;
           setKingdomInvites(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         });
 
@@ -301,15 +320,16 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
         );
 
       } catch (err) {
-        console.error(err);
+        if (!isCancelled) console.error(err);
       } finally {
-        setLoading(false);
+        if (!isCancelled) setLoading(false);
       }
     };
 
     loadKingdomData();
 
     return () => {
+      isCancelled = true;
       unsubscribes.forEach(u => u && u());
     };
   }, [user]);

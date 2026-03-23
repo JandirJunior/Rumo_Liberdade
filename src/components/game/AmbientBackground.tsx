@@ -15,6 +15,7 @@ export function AmbientBackground({ opacity = 0.05, blur = 8 }: AmbientBackgroun
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

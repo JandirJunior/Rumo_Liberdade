@@ -18,12 +18,19 @@ import { RecurringAccountsPanel } from '@/components/ui/RecurringAccountsPanel';
 import { OverviewListPanel } from '@/components/ui/OverviewListPanel';
 
 function AttributesContent() {
-  const { theme } = useTheme();
+  const { theme, user, loading: authLoading } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
+
   const { transactions, payables, receivables, creditCards, deletePayable, deleteReceivable, deleteCreditCard } = useKingdom();
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'Visão Geral' | 'Orçamento' | 'Recorrências'>('Visão Geral');
+
+  const today = new Date();
+  const [month, setMonth] = useState(today.getMonth() + 1);
+  const [year, setYear] = useState(today.getFullYear());
+
+  const { budgetProgress } = useBudgets(month, year);
 
   const handleEdit = (item: any) => {
     console.log('Edit item:', item);
@@ -38,11 +45,18 @@ function AttributesContent() {
     }
   };
 
-  const today = new Date();
-  const [month, setMonth] = useState(today.getMonth() + 1);
-  const [year, setYear] = useState(today.getFullYear());
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-dark)]">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-[var(--color-text-muted)] font-medium">Consultando Atributos...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const { budgetProgress } = useBudgets(month, year);
+  if (!user) return null;
 
   const cofreReino = budgetProgress
     .filter(b => b.rpg_group === '💎 Cofre do Reino (Receitas Fixas)')

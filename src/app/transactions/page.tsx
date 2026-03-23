@@ -24,8 +24,9 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { financialEngine } from '@/lib/financialEngine';
 
 function TransactionsContent() {
-  const { theme, user, gameMode } = useTheme();
+  const { theme, user, gameMode, loading: authLoading } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
+
   const { transactions, addTransaction, updateTransaction, deleteTransaction, addInvestment, loading: transactionsLoading } = useKingdom();
   const { categories, loading: categoriesLoading } = useCategories();
 
@@ -66,6 +67,19 @@ function TransactionsContent() {
     quantity: '',
     operation_date: new Date().toISOString().split('T')[0]
   });
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-dark)]">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-[var(--color-text-muted)] font-medium">Carregando Quests...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   if (transactionsLoading || categoriesLoading) {
     return (
