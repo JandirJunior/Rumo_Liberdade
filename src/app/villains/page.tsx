@@ -12,6 +12,7 @@ import { THEMES } from '@/lib/themes';
 import { FINANCIAL_VILLAINS, calculateVillainDamage } from '@/lib/financialVillains';
 import { financialEngine } from '@/lib/financialEngine';
 import { useKingdom } from '@/hooks/useKingdom';
+import { PAGE_BACKGROUNDS } from '@/constants/images';
 
 export default function Villains() {
   const { theme, user, loading: authLoading } = useTheme();
@@ -45,7 +46,7 @@ export default function Villains() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://ibb.co/N2B8VM7s"
+          src={PAGE_BACKGROUNDS.VILLAINS}
           alt="Villains Background"
           fill
           priority
@@ -55,7 +56,7 @@ export default function Villains() {
       </div>
 
       <Header />
-      
+
       <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 relative z-10">
         <header className="space-y-2">
           <div className="flex items-center gap-3">
@@ -96,7 +97,7 @@ export default function Villains() {
             const isDefeated = currentHp <= 0;
 
             return (
-              <motion.div 
+              <motion.div
                 key={villain.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -138,7 +139,7 @@ export default function Villains() {
                     </span>
                   </div>
                   <div className="h-3 bg-[var(--color-bg-dark)] rounded-full overflow-hidden medieval-border">
-                    <motion.div 
+                    <motion.div
                       initial={{ width: '100%' }}
                       animate={{ width: `${hpPercentage}%` }}
                       transition={{ duration: 1, ease: "easeOut" }}

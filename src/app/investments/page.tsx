@@ -16,6 +16,7 @@ import { useKingdom } from '@/hooks/useKingdom';
 
 import { Modal } from '@/components/ui/Modal';
 import { ImportModal } from '@/components/ui/ImportModal';
+import { PAGE_BACKGROUNDS } from '@/constants/images';
 
 import { financialEngine } from '@/lib/financialEngine';
 import { parseDate } from '@/services/firebaseUtils';
@@ -104,7 +105,7 @@ export default function Investments() {
       operation_date: new Date().toISOString().split('T')[0]
     });
   };
-  
+
   const handleUpdateInvestment = async () => {
     if (!editingInvestment || !editingInvestment.ticker || !editingInvestment.value || !editingInvestment.quantity) return;
 
@@ -266,7 +267,7 @@ export default function Investments() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://ibb.co/hJLhyhfp"
+          src={PAGE_BACKGROUNDS.INVESTMENTS}
           alt="Investments Background"
           fill
           priority
@@ -490,8 +491,8 @@ export default function Investments() {
                       onClick={() => setSelectedCategory(isSelected ? null : asset.faceroType)}
                       className={cn(
                         "w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left",
-                        isSelected 
-                          ? "bg-[var(--color-primary)]/10 border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/5" 
+                        isSelected
+                          ? "bg-[var(--color-primary)]/10 border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/5"
                           : "bg-[var(--color-bg-dark)] border-[var(--color-border)] hover:border-[var(--color-primary)]/50"
                       )}
                     >
@@ -581,11 +582,11 @@ export default function Investments() {
                                   setEditingInvestment({
                                     ...asset,
                                     value: asset.invested_value || asset.total || ((asset.price || 0) * (asset.quantity || 0)) || 0,
-                                    type: asset.type === 'fii' ? 'F' : 
-                                          asset.type === 'stock' ? 'A' :
-                                          asset.type === 'crypto' ? 'C' :
+                                    type: asset.type === 'fii' ? 'F' :
+                                      asset.type === 'stock' ? 'A' :
+                                        asset.type === 'crypto' ? 'C' :
                                           asset.type === 'etf' ? 'E' :
-                                          asset.type === 'fixed_income' ? 'R' : 'O'
+                                            asset.type === 'fixed_income' ? 'R' : 'O'
                                   });
                                   setIsEditModalOpen(true);
                                 }}

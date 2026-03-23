@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { Header } from '@/components/layout/Header';
 import { useKingdom } from '@/hooks/useKingdom';
 import { KingdomManager } from './KingdomManager';
+import { PAGE_BACKGROUNDS } from '@/constants/images';
 import { auth } from '@/services/firebase';
 import { signOut } from 'firebase/auth';
 
@@ -146,7 +147,7 @@ export default function Tavern() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://ibb.co/HDvDxRhv"
+          src={PAGE_BACKGROUNDS.TAVERN}
           alt="Tavern Background"
           fill
           priority

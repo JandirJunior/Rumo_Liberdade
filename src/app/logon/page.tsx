@@ -13,6 +13,7 @@ import { auth } from '@/services/firebase';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { useTheme } from '@/lib/ThemeContext';
 import { userService } from '@/services/userService';
+import { PAGE_BACKGROUNDS } from '@/constants/images';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -68,7 +69,7 @@ export default function LoginPage() {
       {/* Camada de Fundo: Imagem ilustrativa de aventura RPG com overlay de gradiente */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="https://ibb.co/23jJ57gK"
+          src={PAGE_BACKGROUNDS.LOGIN}
           alt="RPG Adventure Background"
           fill
           priority
@@ -96,7 +97,7 @@ export default function LoginPage() {
         {/* Formulário de Login com efeito de Glassmorphism */}
         <form onSubmit={handleLogin} className="space-y-6 bg-[var(--color-bg-panel)]/80 backdrop-blur-md p-8 rounded-[2.5rem] border border-[var(--color-border)] shadow-xl flex flex-col items-center medieval-border">
           {error && <p className="text-red-500 text-sm font-bold">{error}</p>}
-          
+
           <button
             type="submit"
             className="w-full py-4 bg-[var(--color-primary)] hover:brightness-110 text-[var(--color-bg-dark)] font-black rounded-2xl shadow-lg transition-all active:scale-95 uppercase tracking-widest flex items-center justify-center gap-2 medieval-border medieval-glow"

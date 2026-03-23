@@ -28,7 +28,7 @@ export function NotificationManager() {
       const result = await Notification.requestPermission();
       setPermission(result);
       setShowPrompt(false);
-      
+
       if (result === 'granted') {
         new Notification('Mensageiro do Reino', {
           body: 'Saudações, herói! Agora você receberá avisos sobre suas quests.',
@@ -47,7 +47,6 @@ export function NotificationManager() {
             body,
             icon: 'https://picsum.photos/seed/liberdade-icon-192/192/192',
             badge: 'https://picsum.photos/seed/liberdade-icon-192/192/192',
-            vibrate: [200, 100, 200],
             tag: `quest-${title}-${body}` // Avoid duplicate notifications
           });
         });
@@ -65,7 +64,7 @@ export function NotificationManager() {
       const today = new Date();
       const tomorrow = new Date(today);
       tomorrow.setDate(today.getDate() + 1);
-      
+
       const todayStr = today.toISOString().split('T')[0];
       const tomorrowStr = tomorrow.toISOString().split('T')[0];
 

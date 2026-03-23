@@ -16,6 +16,7 @@ import { BudgetProgressPanel } from '@/components/ui/BudgetProgressPanel';
 import { useKingdom } from '@/hooks/useKingdom';
 import { useTheme } from '@/lib/ThemeContext';
 import { PlanningModal } from '@/components/investments/PlanningModal';
+import { PAGE_BACKGROUNDS } from '@/constants/images';
 
 // Banco de questões do quiz com pontuação para cada atributo F.A.C.E.R.O.
 const QUESTIONS = [
@@ -124,9 +125,9 @@ export default function GenesisQuiz() {
   return (
     <div className="min-h-screen bg-[var(--color-bg-dark)] text-[var(--color-text-main)] p-8 flex flex-col items-center justify-center overflow-y-auto relative">
       <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
-        <Image 
-          src="https://ibb.co/23jJ57gK" 
-          alt="Background" 
+        <Image
+          src={PAGE_BACKGROUNDS.LOGIN}
+          alt="Background"
           fill
           priority
           className="object-cover"
@@ -151,7 +152,7 @@ export default function GenesisQuiz() {
                 <Sparkles className="w-5 h-5 text-[var(--color-primary)]" />
               </div>
               <div className="h-1 w-full bg-[var(--color-bg-panel)] rounded-full overflow-hidden medieval-border">
-                <motion.div 
+                <motion.div
                   className="h-full bg-[var(--color-primary)] medieval-glow"
                   initial={{ width: 0 }}
                   animate={{ width: `${((step + 1) / 5) * 100}%` }}
@@ -282,7 +283,7 @@ export default function GenesisQuiz() {
                   <Avatar character={ARCHETYPE_IMAGES[archetype] || ARCHETYPE_IMAGES['Iniciante']} size={128} />
                 </div>
               </div>
-              <motion.div 
+              <motion.div
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ repeat: Infinity, duration: 2 }}
                 className="absolute -top-2 -right-2 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center medieval-border medieval-glow"

@@ -22,6 +22,7 @@ import { useKingdom } from '@/hooks/useKingdom';
 import { useCategories } from '@/hooks/useCategories';
 import { GoogleGenAI, Type } from '@google/genai';
 import { financialEngine } from '@/lib/financialEngine';
+import { PAGE_BACKGROUNDS } from '@/constants/images';
 
 function TransactionsContent() {
   const { theme, user, gameMode, loading: authLoading } = useTheme();
@@ -286,7 +287,7 @@ function TransactionsContent() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://ibb.co/FqwPCv9S"
+          src={PAGE_BACKGROUNDS.QUESTS}
           alt="Transactions Background"
           fill
           priority
