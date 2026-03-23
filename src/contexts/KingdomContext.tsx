@@ -314,30 +314,96 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
     const batch = writeBatch(db);
     const invId = doc(collection(db, 'investments')).id;
     const txId = doc(collection(db, 'transactions')).id;
+
+    // Calcular investimento total = preço unitário * quantidade
+    const totalInvestedAmount = Number(data.value) * Number(data.quantity);
+
     batch.set(doc(db, 'investments', invId), {
       id: invId,
       ticker: data.ticker,
       quantity: data.quantity,
-      invested_value: data.value,
+      price: data.value, // preço unitário
+      invested_value: totalInvestedAmount, // valor total investido
       type: data.type,
+      faceroType: determineFaceroType(data.type),
       created_at: new Date(),
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid,
       transaction_id: txId
     });
+
     batch.set(doc(db, 'transactions', txId), {
       id: txId,
       type: 'investment',
-      amount: data.value,
-      category_id: 'investment',
+      amount: totalInvestedAmount,
+      category_id: 'investimentos',
       description: `Aporte em ${data.ticker}`,
       date: new Date(data.date),
       created_at: new Date(),
       user_id: auth.currentUser.uid,
-      kingdom_id: kingdom.id
+      userName: auth.currentUser.displayName || 'Usuário',
+      kingdom_id: kingdom.id,
+      created_by: auth.currentUser.uid
     });
     await batch.commit();
-    await addXP(auth.currentUser.uid, calculateXPFromInvestments(data.value));
+    await addXP(auth.currentUser.uid, calculateXPFromInvestments(totalInvestedAmount));
+  };
+
+  // Migração de dados legados: garante que todos os investimentos tenham invested_value
+  const migrateInvestmentData = async (assetsData: Asset[], kingdomId: string) => {
+    if (!auth.currentUser) return;
+
+    const batch = writeBatch(db);
+    let hasUpdates = false;
+
+    for (const asset of assetsData) {
+      if (!asset.id) continue;
+
+      // Se não tem invested_value, precisa calcular
+      if (!asset.invested_value || asset.invested_value === 0) {
+        let calculatedValue = 0;
+
+        // Tentar calcular invested_value baseado nos campos disponíveis
+        if (asset.price && asset.quantity) {
+          calculatedValue = Number(asset.price) * Number(asset.quantity);
+        } else if (asset.value && asset.quantity) {
+          calculatedValue = Number(asset.value) * Number(asset.quantity);
+        } else if (asset.value) {
+          // Fallback: usar value como is (pode ser total ou unitário)
+          calculatedValue = Number(asset.value);
+        }
+
+        // Atualizar só se conseguir calcular um valor válido
+        if (calculatedValue > 0) {
+          batch.update(doc(db, 'investments', asset.id), {
+            invested_value: calculatedValue
+          });
+          hasUpdates = true;
+        }
+      }
+    }
+
+    // Executar atualizações em batch apenas se houver mudanças
+    if (hasUpdates && auth.currentUser.uid) {
+      try {
+        await batch.commit();
+        console.log('✅ Migração de investimentos concluída');
+      } catch (error) {
+        console.error('Erro ao migrar dados de investimentos:', error);
+      }
+    }
+  };
+
+  const determineFaceroType = (investmentType: string): string => {
+    const typeMap: Record<string, string> = {
+      'fii': 'F',
+      'stock': 'A',
+      'crypto': 'C',
+      'etf': 'E',
+      'fixed_income': 'R',
+      'other': 'O'
+    };
+    return typeMap[investmentType] || 'O';
   };
 
   const deleteInvestment = async (ids: string | string[]) => {
