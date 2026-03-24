@@ -382,8 +382,13 @@ export interface Budget {
   id: string;
   kingdom_id: string;
   category_id: string;
-  quantidade: number;
-  mês: string; // YYYY-MM
+  quantidade?: number;
+  mês?: string; // YYYY-MM
+  budget_amount?: number;
+  user_id?: string;
+  created_by?: string;
+  created_at?: any;
+  updated_at?: any;
   // Legacy fields
   amount?: number;
   month?: string;
@@ -407,6 +412,8 @@ export interface ContributionPlanning {
     R: number;
     O: number;
   };
+  created_at?: any;
+  updated_at?: any;
 }
 
 export interface InvestmentProvent {

@@ -8,7 +8,6 @@ import { Header } from '@/components/layout/Header';
 import { formatCurrency, cn, getColorClass } from '@/lib/utils';
 import { Info, TrendingUp, AlertCircle, Sparkles, Zap, Shield, Swords, Compass, Wand2, Plus, Upload, Target, Package, DollarSign, TrendingDown, Edit2, Trash2 } from 'lucide-react';
 import { PlanningModal } from '@/components/investments/PlanningModal';
-import { ContributionComparison } from '@/components/investments/ContributionComparison';
 
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
@@ -31,6 +30,51 @@ export default function Investments() {
     financialEngine.calculateInvestmentPower(assets, contributionPlanning?.percentages),
     [assets, contributionPlanning]
   );
+
+  const historyAssets = useMemo(() => {
+    return [...assets].sort((a, b) => {
+      const dateA = new Date(a.date || a.operation_date || 0).getTime();
+      const dateB = new Date(b.date || b.operation_date || 0).getTime();
+      return dateB - dateA;
+    });
+  }, [assets]);
+
+  const groupedConsolidated = useMemo(() => {
+    const groups: Record<string, any[]> = {
+      'F': [], 'A': [], 'C': [], 'E': [], 'R': [], 'O': []
+    };
+    (tickerDetails || []).forEach(item => {
+      const fType = item.faceroType || 'O';
+      if (!groups[fType]) groups[fType] = [];
+      
+      // Mock current price (using averageCost for now, to be updated by API later)
+      const currentPrice = item.averageCost; 
+      const correctedTotal = currentPrice * item.totalQuantity;
+      const profitValue = correctedTotal - item.totalValue;
+      const profitPercent = item.totalValue > 0 ? (profitValue / item.totalValue) * 100 : 0;
+
+      groups[fType].push({
+        ...item,
+        currentPrice,
+        correctedTotal,
+        profitValue,
+        profitPercent
+      });
+    });
+    return groups;
+  }, [tickerDetails]);
+
+  const highestDeficit = useMemo(() => {
+    if (!aggregated || aggregated.length === 0) return null;
+    return aggregated.reduce((prev, current) => (prev.deficit > current.deficit) ? prev : current);
+  }, [aggregated]);
+
+  const dominantCategory = useMemo(() => {
+    if (!aggregated || aggregated.length === 0) return null;
+    return aggregated.reduce((prev, current) => (prev.currentPercent > current.currentPercent) ? prev : current);
+  }, [aggregated]);
+
+  const totalTickers = tickerDetails?.length || 0;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -178,6 +222,7 @@ export default function Investments() {
   // Estado para garantir que o gráfico só seja renderizado no cliente (evita erro de SSR do Recharts)
   const chartData = aggregated.map(asset => ({
     name: asset.name,
+    shortName: asset.shortName,
     atual: asset.currentPercent * 100,
     alvo: asset.targetPercent * 100,
     valor: asset.value,
@@ -200,33 +245,6 @@ export default function Investments() {
     unitPrice: item.unitPrice,
     type: item.type
   }));
-
-  const BUFFS = [
-    {
-      name: 'Banquete Perpétuo',
-      desc: 'YoC > 0.8% a.m.',
-      active: true,
-      icon: Sparkles,
-      color: 'text-yellow-500',
-      bg: 'bg-yellow-50'
-    },
-    {
-      name: 'Ponte de Bifröst',
-      desc: 'Exterior > 10%',
-      active: false,
-      icon: Compass,
-      color: 'text-blue-500',
-      bg: 'bg-blue-50'
-    },
-    {
-      name: 'Escudo de Ferro',
-      desc: 'Reserva > 6 meses',
-      active: true,
-      icon: Shield,
-      color: 'text-gray-500',
-      bg: 'bg-gray-50'
-    }
-  ];
 
   const getFaceroIcon = (type: string) => {
     switch (type) {
@@ -280,12 +298,12 @@ export default function Investments() {
 
       <main className="w-full px-4 sm:px-6 lg:px-8 py-6 pb-32 space-y-8 relative z-10">
         {/* [RESPONSIVIDADE] Título da Seção */}
-        <header className="flex items-center justify-between">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl medieval-title font-bold text-[var(--color-text-main)]">Inventário</h2>
-            <p className="text-sm text-[var(--color-text-muted)]">Onde seus rendimentos se transformam em poder</p>
+            <h2 className="text-3xl medieval-title font-bold text-[var(--color-text-main)]">Tesouro Real</h2>
+            <p className="text-sm text-[var(--color-text-muted)]">Gerencie seus ativos e expanda seu domínio financeiro</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setIsPlanningModalOpen(true)}
               className="px-4 h-10 rounded-xl flex items-center gap-2 bg-[var(--color-bg-panel)] border border-[var(--color-border)] text-[var(--color-text-main)] shadow-sm font-bold text-sm transition-transform active:scale-95 hover:bg-[var(--color-bg-dark)] medieval-border"
@@ -317,8 +335,6 @@ export default function Investments() {
           </div>
         </header>
 
-        {/* ... rest of the component ... */}
-
         <ImportModal
           isOpen={isImportModalOpen}
           onClose={() => setIsImportModalOpen(false)}
@@ -332,11 +348,6 @@ export default function Investments() {
           onClose={() => setIsPlanningModalOpen(false)}
           onSave={updateContributionPlanning}
           initialPlanning={contributionPlanning}
-        />
-
-        <ContributionComparison
-          planning={contributionPlanning}
-          assets={assets}
         />
 
         {/* Modal de Confirmação de Exclusão */}
@@ -375,249 +386,261 @@ export default function Investments() {
           </div>
         </Modal>
 
-
-        {/* [RESPONSIVIDADE] Buffs Section - Scroll horizontal no mobile, flex wrap no desktop */}
-        <section className="space-y-4">
-          <h4 className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Habilidades Passivas (Buffs)</h4>
-          <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar md:flex-wrap">
-            {BUFFS.map((buff, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "flex items-center gap-3 p-3 rounded-2xl border shrink-0 transition-all md:w-auto medieval-border",
-                  buff.active ? "bg-[var(--color-bg-panel)] border-[var(--color-border)] shadow-sm" : "bg-[var(--color-bg-dark)] border-[var(--color-border)] opacity-50"
-                )}
-              >
-                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", buff.active ? "bg-amber-900/20 text-amber-500" : "bg-gray-800 text-gray-500")}>
-                  <buff.icon className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-[var(--color-text-main)] whitespace-nowrap">{buff.name}</p>
-                  <p className="text-[10px] text-[var(--color-text-muted)] whitespace-nowrap">{buff.desc}</p>
-                </div>
-                {buff.active && <div className={cn("w-2 h-2 rounded-full animate-pulse shrink-0", colors.primary)}></div>}
+        {/* Gráfico Comparativo (Alinhamento Estratégico) */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm medieval-border space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-xl medieval-title font-bold text-[var(--color-text-main)]">Alinhamento Estratégico F.A.C.E.R.O.</h4>
+                <p className="text-sm text-[var(--color-text-muted)]">Comparativo entre o percentual investido e o percentual planejado</p>
               </div>
-            ))}
+              <div className="hidden md:flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[var(--color-primary)]"></div>
+                  <span className="text-xs font-bold text-[var(--color-text-muted)] uppercase">Investido</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[var(--color-text-muted)] opacity-50"></div>
+                  <span className="text-xs font-bold text-[var(--color-text-muted)] uppercase">Planejado</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="h-72 w-full bg-[var(--color-bg-dark)] rounded-xl p-4 border border-[var(--color-border)]">
+              {mounted && (
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                  <BarChart data={chartData} margin={{ left: 0, right: 0, top: 20, bottom: 5 }}>
+                    <XAxis dataKey="shortName" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 'bold', fill: 'var(--color-text-muted)' }} />
+                    <YAxis axisLine={false} tickLine={false} tickFormatter={(val) => `${val}%`} width={40} tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }} />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                      contentStyle={{ borderRadius: '12px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-panel)', color: 'var(--color-text-main)' }}
+                      formatter={(value: any) => [`${Number(value).toFixed(2)}%`, '']}
+                    />
+                    <Bar dataKey="atual" fill="var(--color-primary)" radius={[4, 4, 0, 0]} name="Investido (%)" />
+                    <Bar dataKey="alvo" fill="var(--color-text-muted)" radius={[4, 4, 0, 0]} opacity={0.3} name="Planejado (%)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm medieval-border flex flex-col justify-between">
+            <div>
+              <h4 className="text-xl medieval-title font-bold text-[var(--color-text-main)] mb-6">Resumo do Reino</h4>
+              
+              <div className="space-y-6">
+                <div>
+                  <p className="text-sm text-[var(--color-text-muted)]">Patrimônio Total</p>
+                  <p className="text-3xl font-bold text-[var(--color-text-main)]">{formatCurrency(totalValue)}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-[var(--color-bg-dark)] rounded-xl border border-[var(--color-border)]">
+                    <p className="text-xs text-[var(--color-text-muted)] mb-1">Maior Defasagem</p>
+                    <div className="flex items-center gap-2">
+                      <TrendingDown className="w-4 h-4 text-red-500" />
+                      <span className="font-bold text-[var(--color-text-main)] truncate" title={highestDeficit?.name || '-'}>{highestDeficit?.name || '-'}</span>
+                    </div>
+                    <p className="text-xs text-red-500 mt-1">Falta {((highestDeficit?.deficit || 0) * 100).toFixed(1)}%</p>
+                  </div>
+
+                  <div className="p-4 bg-[var(--color-bg-dark)] rounded-xl border border-[var(--color-border)]">
+                    <p className="text-xs text-[var(--color-text-muted)] mb-1">Classe Dominante</p>
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-emerald-500" />
+                      <span className="font-bold text-[var(--color-text-main)] truncate" title={dominantCategory?.name || '-'}>{dominantCategory?.name || '-'}</span>
+                    </div>
+                    <p className="text-xs text-emerald-500 mt-1">{((dominantCategory?.currentPercent || 0) * 100).toFixed(1)}% da carteira</p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-[var(--color-bg-dark)] rounded-xl border border-[var(--color-border)] flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-[var(--color-text-muted)] mb-1">Ativos na Carteira</p>
+                    <p className="font-bold text-[var(--color-text-main)] text-xl">{totalTickers}</p>
+                  </div>
+                  <Package className="w-8 h-8 text-[var(--color-text-muted)] opacity-50" />
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* Seção de Resumo por Ticker */}
-        <section className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm medieval-border space-y-6">
-          <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Resumo por Ticker</h4>
-          <div className="overflow-x-auto">
-            {summaryArray.length === 0 ? (
-              <div className="text-center py-8">
-                <TrendingUp className="w-12 h-12 text-[var(--color-text-muted)] mx-auto mb-4" />
-                <p className="text-[var(--color-text-muted)]">Nenhum investimento encontrado</p>
+        {/* Lista Consolidada de Investimentos (Agrupada por FACERO) */}
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xl medieval-title font-bold text-[var(--color-text-main)]">Grimório de Ativos (Posição Consolidada)</h4>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[var(--color-primary)]" />
+              <span className="text-sm font-bold text-[var(--color-text-muted)] hidden sm:inline">ROI e Preço Atual</span>
+            </div>
+          </div>
+          
+          <div className="space-y-6">
+            {['F', 'A', 'C', 'E', 'R', 'O'].map((fType) => {
+              const items = groupedConsolidated[fType];
+              if (!items || items.length === 0) return null;
+              
+              const groupTotal = items.reduce((acc, item) => acc + item.totalValue, 0);
+              const groupCorrected = items.reduce((acc, item) => acc + item.correctedTotal, 0);
+              const groupProfit = groupCorrected - groupTotal;
+              const groupProfitPercent = groupTotal > 0 ? (groupProfit / groupTotal) * 100 : 0;
+
+              return (
+                <div key={fType} className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl overflow-hidden medieval-border shadow-sm">
+                  <div className="bg-[var(--color-bg-dark)] p-4 border-b border-[var(--color-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[var(--color-bg-panel)] flex items-center justify-center text-[var(--color-primary)] border border-[var(--color-border)] shadow-inner">
+                        {getFaceroIcon(fType)}
+                      </div>
+                      <div>
+                        <h5 className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-widest">{getFaceroName(fType)}</h5>
+                        <p className="text-xs text-[var(--color-text-muted)]">{items.length} ativo(s)</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">Total Investido</p>
+                        <p className="text-sm font-bold text-[var(--color-text-main)]">{formatCurrency(groupTotal)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">Lucro/Prejuízo</p>
+                        <p className={cn("text-sm font-bold", getColorClass(groupProfit))}>
+                          {groupProfit > 0 ? '+' : ''}{formatCurrency(groupProfit)} ({groupProfitPercent > 0 ? '+' : ''}{groupProfitPercent.toFixed(2)}%)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse whitespace-nowrap">
+                      <thead>
+                        <tr className="bg-[var(--color-bg-panel)] border-b border-[var(--color-border)]">
+                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Ativo</th>
+                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Qtd</th>
+                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Preço Médio</th>
+                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Preço Atual</th>
+                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Total Investido</th>
+                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Total Corrigido</th>
+                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">L/P (%)</th>
+                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">L/P (R$)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--color-border)]">
+                        {items.map((item) => (
+                          <tr key={item.ticker} className="hover:bg-[var(--color-bg-dark)]/50 transition-colors">
+                            <td className="px-4 py-3 font-bold text-[var(--color-text-main)]">{item.ticker}</td>
+                            <td className="px-4 py-3 text-right text-xs text-[var(--color-text-main)]">{item.totalQuantity.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}</td>
+                            <td className="px-4 py-3 text-right text-xs text-[var(--color-text-muted)]">{formatCurrency(item.averageCost)}</td>
+                            <td className="px-4 py-3 text-right text-xs text-[var(--color-text-main)]">{formatCurrency(item.currentPrice)}</td>
+                            <td className="px-4 py-3 text-right text-xs font-bold text-[var(--color-text-main)]">{formatCurrency(item.totalValue)}</td>
+                            <td className="px-4 py-3 text-right text-xs font-bold text-[var(--color-text-main)]">{formatCurrency(item.correctedTotal)}</td>
+                            <td className="px-4 py-3 text-right text-xs font-bold">
+                              <span className={getColorClass(item.profitPercent)}>{item.profitPercent > 0 ? '+' : ''}{item.profitPercent.toFixed(2)}%</span>
+                            </td>
+                            <td className="px-4 py-3 text-right text-xs font-bold">
+                              <span className={getColorClass(item.profitValue)}>{item.profitValue > 0 ? '+' : ''}{formatCurrency(item.profitValue)}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
+            
+            {tickerDetails?.length === 0 && (
+              <div className="text-center py-12 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl medieval-border">
+                <TrendingUp className="w-12 h-12 text-[var(--color-text-muted)] mx-auto mb-4 opacity-20" />
+                <p className="text-[var(--color-text-muted)] font-bold">Nenhum investimento consolidado encontrado</p>
               </div>
-            ) : (
-              <table className="w-full text-left border-collapse">
+            )}
+          </div>
+        </section>
+
+        {/* Histórico de Investimentos */}
+        <section className="space-y-6">
+          <h4 className="text-xl medieval-title font-bold text-[var(--color-text-main)]">Pergaminho de Transações (Histórico)</h4>
+          <div className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl overflow-hidden medieval-border shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse whitespace-nowrap">
                 <thead>
                   <tr className="bg-[var(--color-bg-dark)] border-b border-[var(--color-border)]">
-                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Ticker</th>
-                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Tipo</th>
-                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Qtd Total</th>
-                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Preço Médio</th>
-                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Valor Unitário</th>
-                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Valor Total</th>
+                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-center">Data Mov.</th>
+                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Ativo</th>
+                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Tipo de Investimento</th>
+                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Qtd</th>
+                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Preço</th>
+                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Total</th>
+                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--color-border)]">
-                  {summaryArray.map((item) => (
-                    <tr key={item.ticker} className="hover:bg-[var(--color-bg-dark)]/50 transition-colors">
-                      <td className="px-4 py-3 font-bold text-[var(--color-text-main)]">{item.ticker}</td>
-                      <td className="px-4 py-3 text-xs text-[var(--color-text-muted)] capitalize">{item.type.replace('_', ' ')}</td>
-                      <td className="px-4 py-3 text-right text-xs text-[var(--color-text-main)]">{item.totalQuantity.toFixed(2)}</td>
-                      <td className="px-4 py-3 text-right text-xs">
-                        <span className={getColorClass(item.averagePrice)}>{formatCurrency(item.averagePrice)}</span>
+                  {historyAssets.map((asset) => (
+                    <tr key={asset.id} className="hover:bg-[var(--color-bg-dark)]/50 transition-colors">
+                      <td className="px-4 py-3 text-center text-xs text-[var(--color-text-muted)] font-medium">
+                        {parseDate(asset.date || asset.operation_date).toLocaleDateString('pt-BR')}
                       </td>
-                      <td className="px-4 py-3 text-right text-xs">
-                        <span className={getColorClass(item.unitPrice)}>{formatCurrency(item.unitPrice)}</span>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-[var(--color-bg-dark)] rounded flex items-center justify-center text-[var(--color-primary)] border border-[var(--color-border)]">
+                            {getFaceroIcon(asset.faceroType || '')}
+                          </div>
+                          <span className="text-xs font-bold text-[var(--color-text-main)]">{asset.ticker}</span>
+                        </div>
                       </td>
-                      <td className="px-4 py-3 text-right text-xs font-bold">
-                        <span className={getColorClass(item.totalValue)}>{formatCurrency(item.totalValue)}</span>
+                      <td className="px-4 py-3">
+                        <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{getFaceroName(asset.faceroType || '')}</span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-xs text-[var(--color-text-main)]">
+                        {(asset.quantity || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
+                      </td>
+                      <td className="px-4 py-3 text-right text-xs text-[var(--color-text-muted)]">
+                        {formatCurrency(asset.price || 0)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-[var(--color-text-main)]">
+                        {formatCurrency(asset.total || asset.invested_value || 0)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingInvestment({
+                                ...asset,
+                                value: asset.invested_value || asset.total || ((asset.price || 0) * (asset.quantity || 0)) || 0,
+                                type: asset.faceroType || 'O'
+                              });
+                              setIsEditModalOpen(true);
+                            }}
+                            className="p-1.5 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded transition-colors"
+                            title="Editar"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmation({ isOpen: true, ids: [asset.id] })}
+                            className="p-1.5 text-red-500 hover:bg-red-900/10 rounded transition-colors"
+                            title="Excluir"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            )}
+              {historyAssets.length === 0 && (
+                <div className="text-center py-12 text-[var(--color-text-muted)]">
+                  <Package className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p className="text-sm font-bold">Nenhum ativo no histórico.</p>
+                </div>
+              )}
+            </div>
           </div>
         </section>
-
-
-        {/* [RESPONSIVIDADE] Grid principal: 1 coluna no mobile, 2 colunas no desktop (lg) */}
-        <div className="grid grid-cols-1 gap-8">
-
-          {/* Painel de Poder F.A.C.E.R.O. */}
-          <section className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm medieval-border space-y-6">
-            <div className="flex items-center justify-between">
-              <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Painel de Poder F.A.C.E.R.O.</h4>
-              <div className="p-3 bg-[var(--color-bg-dark)] rounded-xl border border-[var(--color-border)]">
-                <p className="text-[10px] font-bold text-[var(--color-primary)] uppercase tracking-widest mb-0.5">Sugestão de Aporte (5%)</p>
-                <p className="text-lg font-display font-bold text-[var(--color-text-main)]">
-                  <span className={getColorClass(totalValue * 0.05)}>{formatCurrency(totalValue * 0.05)}</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Equilíbrio Chart */}
-              <div className="h-64 w-full bg-[var(--color-bg-dark)] rounded-xl p-4 border border-[var(--color-border)]">
-                {mounted && (
-                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                    <BarChart data={chartData} layout="vertical" margin={{ left: 20, right: 20, top: 10, bottom: 10 }}>
-                      <XAxis type="number" hide />
-                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={30} tick={{ fontSize: 12, fontWeight: 'bold', fill: 'var(--color-text-muted)' }} />
-                      <Tooltip
-                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                        contentStyle={{ borderRadius: '12px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-panel)', color: 'var(--color-text-main)' }}
-                      />
-                      <Bar dataKey="atual" fill="var(--color-primary)" radius={[0, 4, 4, 0]} name="Poder Atual %" />
-                      <Bar dataKey="alvo" fill="var(--color-text-muted)" radius={[0, 4, 4, 0]} opacity={0.3} name="Poder Alvo %" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-
-              {/* Lista FACERO Detalhada */}
-              <div className="space-y-3">
-                {aggregated.map((asset, i) => {
-                  const suggestedAmount = (totalValue * 0.05) * asset.targetPercent;
-                  const isSelected = selectedCategory === asset.faceroType;
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedCategory(isSelected ? null : asset.faceroType)}
-                      className={cn(
-                        "w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left",
-                        isSelected 
-                          ? "bg-[var(--color-primary)]/10 border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/5" 
-                          : "bg-[var(--color-bg-dark)] border-[var(--color-border)] hover:border-[var(--color-primary)]/50"
-                      )}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={cn(
-                          "w-10 h-10 rounded-lg flex items-center justify-center shadow-sm border",
-                          isSelected ? "bg-[var(--color-primary)] text-white border-white/20" : "bg-[var(--color-bg-panel)] text-[var(--color-text-muted)] border-[var(--color-border)]"
-                        )}>
-                          {getFaceroIcon(asset.faceroType)}
-                        </div>
-                        <div>
-                          <p className="text-xs font-black text-[var(--color-text-muted)] uppercase tracking-tighter mb-0.5">
-                            {getFaceroName(asset.faceroType)}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-[var(--color-text-main)]">
-                              {(asset.currentPercent * 100).toFixed(1)}%
-                            </span>
-                            <span className="text-[10px] text-[var(--color-text-muted)]">
-                              alvo: {(asset.targetPercent * 100).toFixed(0)}%
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-[var(--color-primary)]">
-                          {formatCurrency(suggestedAmount)}
-                        </p>
-                        <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">Sugestão Aporte</p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-
-          {/* Inventário de Ativos */}
-          <section className="space-y-4">
-            <h4 className="text-lg medieval-title font-bold text-[var(--color-text-main)]">Inventário de Ativos</h4>
-            <div className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl overflow-hidden medieval-border shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-[var(--color-bg-dark)] border-b border-[var(--color-border)]">
-                      <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Ativo</th>
-                      <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Tipo</th>
-                      <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Qtd</th>
-                      <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Preço</th>
-                      <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Total</th>
-                      <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-center">Data Mov.</th>
-                      <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-center">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--color-border)]">
-                    {assets
-                      .filter(asset => !selectedCategory || asset.faceroType === selectedCategory)
-                      .map((asset) => (
-                        <tr key={asset.id} className="hover:bg-[var(--color-bg-dark)]/50 transition-colors">
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 bg-[var(--color-bg-dark)] rounded flex items-center justify-center text-[var(--color-primary)] border border-[var(--color-border)]">
-                                {getFaceroIcon(asset.faceroType || '')}
-                              </div>
-                              <span className="text-xs font-bold text-[var(--color-text-main)]">{asset.ticker}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-[10px] text-[var(--color-text-muted)] uppercase">{asset.type?.replace('_', ' ')}</span>
-                          </td>
-                          <td className="px-4 py-3 text-right text-xs text-[var(--color-text-main)]">
-                            {(asset.quantity || 0).toLocaleString('pt-BR')}
-                          </td>
-                          <td className="px-4 py-3 text-right text-xs">
-                            <span className={getColorClass(asset.price || 0)}>{formatCurrency(asset.price || 0)}</span>
-                          </td>
-                          <td className="px-4 py-3 text-right text-xs font-bold">
-                            <span className={getColorClass(asset.total || asset.invested_value || 0)}>{formatCurrency(asset.total || asset.invested_value || 0)}</span>
-                          </td>
-                          <td className="px-4 py-3 text-center text-[10px] text-[var(--color-text-muted)]">
-                            {parseDate(asset.date || asset.operation_date).toLocaleDateString('pt-BR')}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() => {
-                                  setEditingInvestment({
-                                    ...asset,
-                                    value: asset.invested_value || asset.total || ((asset.price || 0) * (asset.quantity || 0)) || 0,
-                                    type: asset.type === 'fii' ? 'F' : 
-                                          asset.type === 'stock' ? 'A' :
-                                          asset.type === 'crypto' ? 'C' :
-                                          asset.type === 'etf' ? 'E' :
-                                          asset.type === 'fixed_income' ? 'R' : 'O'
-                                  });
-                                  setIsEditModalOpen(true);
-                                }}
-                                className="p-1.5 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded transition-colors"
-                                title="Editar"
-                              >
-                                <Edit2 className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => setDeleteConfirmation({ isOpen: true, ids: [asset.id] })}
-                                className="p-1.5 text-red-500 hover:bg-red-900/10 rounded transition-colors"
-                                title="Excluir"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-                {assets.length === 0 && (
-                  <div className="text-center py-12 text-[var(--color-text-muted)]">
-                    <Package className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                    <p className="text-sm">Nenhum ativo no inventário.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
-        </div>
       </main>
 
       {/* Modal para Adicionar Proventos */}

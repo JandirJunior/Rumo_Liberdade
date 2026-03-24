@@ -72,6 +72,15 @@ export function parseDate(date: any): Date {
   if (date instanceof Date) return date;
   if (typeof date.toDate === 'function') return date.toDate();
   if (date.seconds) return new Date(date.seconds * 1000);
+  
+  if (typeof date === 'string' && date.includes('/')) {
+    const parts = date.split('/');
+    if (parts.length === 3) {
+      const [day, month, year] = parts;
+      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    }
+  }
+
   const d = new Date(date);
   return isNaN(d.getTime()) ? new Date() : d;
 }

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Shield, Sword, Skull, Trophy, Flame } from 'lucide-react';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Header } from '@/components/layout/Header';
@@ -15,8 +16,15 @@ import { useKingdom } from '@/hooks/useKingdom';
 import { IMAGES } from '@/assets/images';
 
 export default function Villains() {
+  const router = useRouter();
   const { theme, user, loading: authLoading } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/logon');
+    }
+  }, [user, authLoading, router]);
 
   const { assets, loading } = useKingdom();
 

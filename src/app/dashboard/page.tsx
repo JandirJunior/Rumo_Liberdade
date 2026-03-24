@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { TrendingUp, TrendingDown, Target, ChevronRight, Bell, Trophy, Zap, Shield, Wand2, HandCoins, Compass, VenetianMask, Home, Sparkles, MessageSquare, User } from 'lucide-react';
@@ -30,8 +30,6 @@ import { generateRecurringQuests } from '@/lib/recurringTasks';
 import { financialEngine } from '@/lib/financialEngine';
 import { getDominantMentor } from '@/services/mentorService';
 import { calculatePlayerLevel } from '@/lib/gameEngine';
-
-import { auth } from '@/services/firebase';
 
 import { MainMenuGrid } from '@/components/game/MainMenuGrid';
 
@@ -77,20 +75,11 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/logon');
-    }
-  }, [user, authLoading, router]);
-
-  useEffect(() => {
     // Generate recurring quests when dashboard loads
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user && kingdom?.id) {
-        generateRecurringQuests(kingdom.id);
-      }
-    });
-    return () => unsubscribe();
-  }, [kingdom?.id]);
+    if (user && kingdom?.id) {
+      generateRecurringQuests(kingdom.id);
+    }
+  }, [user, kingdom?.id]);
 
   if (authLoading) {
     return (
@@ -124,11 +113,11 @@ export default function Dashboard() {
   const totalPower = totalInvested + totalYields;
 
   // Cálculos individuais do Herói
-  const myAssets = assets.filter(a => a.userId === auth.currentUser?.uid);
+  const myAssets = assets.filter(a => a.userId === user?.uid);
   const { totalValue: myInvested } = financialEngine.calculateInvestmentPower(myAssets);
   
   // Use financialEngine for transactions
-  const myTransactions = transactions.filter(t => t.userId === auth.currentUser?.uid);
+  const myTransactions = transactions.filter(t => t.userId === user?.uid);
   const { income: myIncome, expense: myExpenses } = financialEngine.calculateMonthlySummary(myTransactions as any, month, year);
 
   const dominantMentor = getDominantMentor(assets);

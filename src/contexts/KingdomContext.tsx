@@ -41,11 +41,12 @@ import { getCollectionByKingdom, parseDate, handleFirestoreError, OperationType 
 import { kingdomService } from '@/services/kingdomService';
 import { financialEngine } from '@/lib/financialEngine';
 import { useTheme } from '@/lib/ThemeContext';
-import { addXP, calculateXPFromInvestments, calculateTotalXPFromAssets, calculatePlayerLevel } from '@/lib/gameEngine';
+import { calculateXPFromInvestments, calculateTotalXPFromAssets, calculatePlayerLevel } from '@/lib/gameEngine';
 import { logActivity } from '@/lib/auditLogger';
 
 interface KingdomContextType {
   kingdom: Kingdom | null;
+  kingdomId: string | null; // Added
   role: KingdomRole | null;
   memberId: string | null;
   loading: boolean;
@@ -150,27 +151,48 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!assets) return;
 
-    // Kingdom XP: Global de todos os investimentos
-    const kXP = calculateTotalXPFromAssets(assets);
+    // Kingdom XP: Global de todos os registros do reino
+    const kTransactionsXP = transactions.reduce((acc, t) => acc + 10 + Math.floor(Number(t.amount || 0) / 10), 0);
+    const kPayablesXP = payables.reduce((acc, p) => acc + 10 + Math.floor(Number(p.amount || 0) / 10), 0);
+    const kReceivablesXP = receivables.reduce((acc, r) => acc + 10 + Math.floor(Number(r.amount || 0) / 10), 0);
+    const kInvestmentXP = calculateTotalXPFromAssets(assets);
+    
+    const kXP = kTransactionsXP + kPayablesXP + kReceivablesXP + kInvestmentXP;
     const kState = calculatePlayerLevel(kXP);
     setKingdomXP(kXP);
     setKingdomLevel(kState.level);
 
-    // Hero XP: Apenas do usuário logado + XP base do gameState (outras atividades)
+    // Hero XP: Apenas do usuário logado
     const myAssets = assets.filter(a => a.user_id === user?.uid || a.userId === user?.uid || a.created_by === user?.uid);
     const myInvestmentXP = calculateTotalXPFromAssets(myAssets);
     
-    // O XP total do herói é o XP base (quests, etc) + XP de investimentos
-    // Para evitar duplicidade se o XP de investimentos já estiver no gameState.xp, 
-    // vamos considerar que o gameState.xp é o XP "base" e somamos o de investimentos dinamicamente
-    // OU simplesmente usamos o myInvestmentXP se o usuário quiser que o nível seja puramente de investimentos.
-    // Baseado na solicitação: "quando mais quantidades e mais valor investido maior deverá ser o nivel"
-    const totalHeroXP = (gameState.xp || 0) + myInvestmentXP;
+    const myTransactions = transactions.filter(t => t.user_id === user?.uid || t.created_by === user?.uid);
+    const myPayables = payables.filter(p => p.userId === user?.uid || p.created_by === user?.uid);
+    const myReceivables = receivables.filter(r => r.userId === user?.uid || r.created_by === user?.uid);
+
+    // 10 XP por cada registro + 1 XP a cada R$ 10
+    const myTransactionsXP = myTransactions.reduce((acc, t) => acc + 10 + Math.floor(Number(t.amount || 0) / 10), 0);
+    const myPayablesXP = myPayables.reduce((acc, p) => acc + 10 + Math.floor(Number(p.amount || 0) / 10), 0);
+    const myReceivablesXP = myReceivables.reduce((acc, r) => acc + 10 + Math.floor(Number(r.amount || 0) / 10), 0);
+
+    const baseXP = myTransactionsXP + myPayablesXP + myReceivablesXP;
+    
+    const totalHeroXP = baseXP + myInvestmentXP;
     const hState = calculatePlayerLevel(totalHeroXP);
     
     setHeroXP(totalHeroXP);
     setHeroLevel(hState.level);
-  }, [assets, gameState.xp, user?.uid]);
+
+    // Sincronizar com o banco de dados se houver diferença
+    if (user && gameState.xp !== totalHeroXP) {
+      const userRef = doc(db, 'users', user.uid);
+      setDoc(userRef, {
+        xp: totalHeroXP,
+        level: hState.level,
+        title: hState.title
+      }, { merge: true }).catch(console.error);
+    }
+  }, [assets, transactions, payables, receivables, gameState.xp, user]);
 
   useEffect(() => {
     let unsubscribes: (() => void)[] = [];
@@ -354,7 +376,6 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
     };
     await setDoc(doc(db, 'transactions', id), payload);
     await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', id);
-    await addXP(auth.currentUser.uid, 10);
   };
 
   const updateTransaction = async (id: string, data: Partial<Transaction>) => {
@@ -546,9 +567,10 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
       category_id,
       budget_amount: amount,
       kingdom_id: kingdom.id,
-      created_by: auth.currentUser.uid
+      created_by: auth.currentUser.uid,
+      created_at: existingBudget?.created_at || new Date(),
+      updated_at: new Date()
     }, { merge: true });
-    await addXP(auth.currentUser.uid, 20);
   };
 
   const addCategory = async (category: any) => {
@@ -689,7 +711,8 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
       id: newId,
       userId: auth.currentUser.uid,
       kingdom_id: kingdom.id,
-      created_by: auth.currentUser.uid
+      created_by: auth.currentUser.uid,
+      created_at: new Date()
     };
     await setDoc(doc(db, 'credit_cards', newId), newCard);
     await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'credit_card', name: card.name });
@@ -750,7 +773,13 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
   const updateContributionPlanning = async (percentages: any) => {
     if (!auth.currentUser || !kingdom) return;
     const planningRef = contributionPlanning ? doc(db, 'contribution_planning', contributionPlanning.id) : doc(collection(db, 'contribution_planning'));
-    await setDoc(planningRef, { id: planningRef.id, kingdom_id: kingdom.id, percentages });
+    await setDoc(planningRef, { 
+      id: planningRef.id, 
+      kingdom_id: kingdom.id, 
+      percentages,
+      created_at: contributionPlanning?.created_at || new Date(),
+      updated_at: new Date()
+    });
     await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_CONTRIBUTION_PLANNING', planningRef.id);
   };
 
@@ -770,7 +799,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
   };
 
   const contextValue = {
-    kingdom, role, memberId, loading,
+    kingdom, kingdomId: kingdom?.id || null, role, memberId, loading,
     transactions, assets, activityLogs, contributionPlanning, categories, budgets, payables, receivables, creditCards, creditCardInvoices,
     getBudgetProgress,
     kingdomLevel, kingdomXP, heroLevel, heroXP,

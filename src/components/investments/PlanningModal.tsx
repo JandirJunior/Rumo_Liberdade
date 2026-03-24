@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { ContributionPlanning } from '@/types';
 
@@ -13,6 +13,13 @@ interface PlanningModalProps {
 
 export function PlanningModal({ isOpen, onClose, onSave, initialPlanning }: PlanningModalProps) {
   const [percentages, setPercentages] = useState(initialPlanning?.percentages || { F: 0, A: 0, C: 0, E: 0, R: 0, O: 0 });
+
+  useEffect(() => {
+    if (initialPlanning?.percentages) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPercentages(initialPlanning.percentages);
+    }
+  }, [initialPlanning]);
 
   const [error, setError] = useState<string | null>(null);
 

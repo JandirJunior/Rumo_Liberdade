@@ -4,13 +4,13 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Bell, Search, X } from 'lucide-react';
 import { UserAvatar } from '@/components/game/UserAvatar';
 import { useTheme } from '@/lib/ThemeContext';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/hooks/useUser';
 
@@ -25,6 +25,12 @@ export function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   const triggerToast = (message: string) => {
     setToastMessage(message);
@@ -40,6 +46,9 @@ export function Header() {
       setSearchQuery('');
     }
   };
+
+  const showNotificationDot = mounted && typeof window !== 'undefined' && 
+    (!window.notificationPermission || window.notificationPermission === 'default');
 
   return (
     <header className="bg-[var(--color-bg-panel)]/80 backdrop-blur-md border-b border-[var(--color-border)] sticky top-0 z-30 px-4 sm:px-6 lg:px-8 py-3 transition-all">
@@ -108,7 +117,7 @@ export function Header() {
             className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] rounded-full transition-colors relative"
           >
             <Bell size={20} />
-            {(!window.notificationPermission || window.notificationPermission === 'default') && (
+            {showNotificationDot && (
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-[var(--color-bg-panel)]"></span>
             )}
           </button>

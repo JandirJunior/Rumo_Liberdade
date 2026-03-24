@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { IMAGES } from '@/assets/images';
 import { Lock, User, Castle, Sparkles } from 'lucide-react';
 import Image from 'next/image';

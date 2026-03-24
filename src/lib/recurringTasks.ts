@@ -51,6 +51,7 @@ export async function generateRecurringQuests(kingdomId?: string) {
           ...payable,
           id: newId,
           dueDate: nextDate,
+          nextRecurrenceDate: nextDate, // Fix: Update nextRecurrenceDate for the new instance
           status: 'pendente',
           createdAt: new Date().toISOString()
         };
@@ -104,6 +105,7 @@ export async function generateRecurringQuests(kingdomId?: string) {
           ...receivable,
           id: newId,
           dueDate: nextDate,
+          nextRecurrenceDate: nextDate, // Fix: Update nextRecurrenceDate for the new instance
           status: 'pendente',
           createdAt: new Date().toISOString()
         };

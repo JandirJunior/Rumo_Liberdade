@@ -55,8 +55,22 @@ export function calculateInvestmentPower(assets: Asset[], planning?: { F: number
   if (!Array.isArray(assets)) return { totalValue: 0, aggregated: [], tickerDetails: [] };
   const totalValue = assets.reduce((acc, curr) => acc + Number(curr.invested_value || curr.value || curr.total || 0), 0);
 
+  const getFaceroType = (asset: any) => {
+    if (asset.faceroType) return asset.faceroType;
+    if (asset.investment_category_id) return asset.investment_category_id;
+    const typeToFacero: Record<string, string> = {
+      'fii': 'F',
+      'stock': 'A',
+      'crypto': 'C',
+      'etf': 'E',
+      'fixed_income': 'R',
+      'other': 'O'
+    };
+    return typeToFacero[asset.type] || 'O';
+  };
+
   const aggregated = Object.keys(FACERO_TARGETS).map(key => {
-    const typeAssets = assets.filter(a => a.faceroType === key || a.investment_category_id === key);
+    const typeAssets = assets.filter(a => getFaceroType(a) === key);
     const value = typeAssets.reduce((acc, curr) => acc + Number(curr.invested_value || curr.value || curr.total || 0), 0);
     const targetPercent = planning ? planning[key as keyof typeof planning] / 100 : FACERO_TARGETS[key];
     const currentPercent = totalValue > 0 ? value / totalValue : 0;
@@ -64,6 +78,7 @@ export function calculateInvestmentPower(assets: Asset[], planning?: { F: number
     return {
       faceroType: key as 'F' | 'A' | 'C' | 'E' | 'R' | 'O',
       name: FACERO_LABELS[key],
+      shortName: key,
       value,
       targetPercent,
       currentPercent,
@@ -81,7 +96,7 @@ export function calculateInvestmentPower(assets: Asset[], planning?: { F: number
         totalValue: 0,
         totalQuantity: 0,
         type: asset.type || 'other',
-        faceroType: (asset.faceroType || asset.investment_category_id || 'O') as string,
+        faceroType: getFaceroType(asset),
         ids: []
       };
     }
