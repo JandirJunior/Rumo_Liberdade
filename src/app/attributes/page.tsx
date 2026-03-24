@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
+import { IMAGES } from '@/assets/images';
 import { formatCurrency, cn, getColorClass } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
@@ -80,7 +81,7 @@ function AttributesContent() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://ibb.co/0yYwRDgp"
+          src={IMAGES.ATTRIBUTES}
           alt="Attributes Background"
           fill
           priority

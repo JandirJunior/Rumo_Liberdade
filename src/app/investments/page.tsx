@@ -13,6 +13,7 @@ import { ContributionComparison } from '@/components/investments/ContributionCom
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { useKingdom } from '@/hooks/useKingdom';
+import { IMAGES } from '@/assets/images';
 
 import { Modal } from '@/components/ui/Modal';
 import { ImportModal } from '@/components/ui/ImportModal';
@@ -266,7 +267,7 @@ export default function Investments() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://ibb.co/hJLhyhfp"
+          src={IMAGES.INVESTMENTS}
           alt="Investments Background"
           fill
           priority

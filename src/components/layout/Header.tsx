@@ -98,11 +98,19 @@ export function Header() {
           </div>
           {/* Botão de Notificações com indicador de novidade */}
           <button 
-            onClick={() => triggerToast('Nenhuma nova notificação.')}
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.requestNotificationPermission) {
+                window.requestNotificationPermission();
+              } else {
+                triggerToast('Nenhuma nova notificação.');
+              }
+            }}
             className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] rounded-full transition-colors relative"
           >
             <Bell size={20} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-[var(--color-bg-panel)]"></span>
+            {(!window.notificationPermission || window.notificationPermission === 'default') && (
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-[var(--color-bg-panel)]"></span>
+            )}
           </button>
           
           {/* Link para a Taverna (Perfil do Herói) */}

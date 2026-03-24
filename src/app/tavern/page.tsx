@@ -21,7 +21,7 @@ import { KingdomManager } from './KingdomManager';
 import { auth } from '@/services/firebase';
 import { signOut } from 'firebase/auth';
 
-import { ImageKey } from '@/assets/images';
+import { IMAGES } from '@/assets/images';
 
 import { financialEngine } from '@/lib/financialEngine';
 
@@ -146,7 +146,7 @@ export default function Tavern() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://ibb.co/HDvDxRhv"
+          src={IMAGES.TAVERN}
           alt="Tavern Background"
           fill
           priority

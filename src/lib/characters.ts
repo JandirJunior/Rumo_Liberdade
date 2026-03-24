@@ -1,5 +1,7 @@
 import { Character } from '@/types';
-import { VILLAINS } from '@/assets/images';
+import { IMAGES } from '@/assets/images';
+
+const VILLAINS_ARRAY = Object.values(IMAGES.VILLAINS).map(url => ({ image: url }));
 
 // Helper function to generate static characters based on the rules
 export const generateCharacters = (): Character[] => {
@@ -12,7 +14,7 @@ export const generateCharacters = (): Character[] => {
     const requiredInvestment = level * 10000;
     
     // Cycle through available villain images
-    const imageObj = VILLAINS[villainIndex % VILLAINS.length];
+    const imageObj = VILLAINS_ARRAY[villainIndex % VILLAINS_ARRAY.length];
     
     characters.push({
       id: level,

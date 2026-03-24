@@ -17,6 +17,7 @@ import { formatCurrency, cn, getColorClass } from '@/lib/utils';
 import { Transaction, TransactionType } from '@/types';
 
 import { useTheme } from '@/lib/ThemeContext';
+import { IMAGES } from '@/assets/images';
 import { THEMES } from '@/lib/themes';
 import { useKingdom } from '@/hooks/useKingdom';
 import { useCategories } from '@/hooks/useCategories';
@@ -286,7 +287,7 @@ function TransactionsContent() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://ibb.co/FqwPCv9S"
+          src={IMAGES.QUESTS}
           alt="Transactions Background"
           fill
           priority

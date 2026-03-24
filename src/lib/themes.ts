@@ -1,3 +1,5 @@
+import { IMAGES } from '@/assets/images';
+
 /**
  * 🎨 Sistema de Temas Medieval (Diablo Style)
  */
@@ -41,7 +43,7 @@ export const THEMES: Record<ThemeType, ThemeColors> = {
     textMuted: '#78350F',
     shadow: 'rgba(212,175,55,0.1)',
     glow: '0 0 10px rgba(212,175,55,0.3)',
-    texture: 'https://picsum.photos/seed/parchment/1920/1080',
+    texture: IMAGES.TEXTURE_PARCHMENT,
   },
 
   ARCANO: {
@@ -108,7 +110,7 @@ export const THEMES: Record<ThemeType, ThemeColors> = {
     textMuted: '#7F1D1D',
     shadow: 'rgba(127,29,29,0.1)',
     glow: '0 0 10px rgba(127,29,29,0.3)',
-    texture: 'https://picsum.photos/seed/parchment/1920/1080',
+    texture: IMAGES.TEXTURE_PARCHMENT,
   },
 
 };

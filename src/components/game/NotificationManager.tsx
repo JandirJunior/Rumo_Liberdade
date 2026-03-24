@@ -5,11 +5,40 @@ import { useKingdom } from '@/hooks/useKingdom';
 import { Bell, BellOff, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { IMAGES } from '@/assets/images';
+
+declare global {
+  interface Window {
+    requestNotificationPermission: () => Promise<void>;
+    notificationPermission: NotificationPermission;
+  }
+}
 
 export function NotificationManager() {
   const { payables, receivables } = useKingdom();
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [showPrompt, setShowPrompt] = useState(false);
+
+  const requestPermission = useCallback(async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      const result = await Notification.requestPermission();
+      setPermission(result);
+      setShowPrompt(false);
+      
+      if (result === 'granted') {
+        new Notification('Mensageiro do Reino', {
+          body: 'Saudações, herói! Agora você receberá avisos sobre suas quests.',
+          icon: IMAGES.NOTIFICATION_ICON
+        });
+      }
+    }
+  }, []);
+
+  // Expose these to be used by the Header
+  useEffect(() => {
+    window.requestNotificationPermission = requestPermission;
+    window.notificationPermission = permission;
+  }, [permission, requestPermission]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -23,21 +52,6 @@ export function NotificationManager() {
     }
   }, []);
 
-  const requestPermission = async () => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      const result = await Notification.requestPermission();
-      setPermission(result);
-      setShowPrompt(false);
-      
-      if (result === 'granted') {
-        new Notification('Mensageiro do Reino', {
-          body: 'Saudações, herói! Agora você receberá avisos sobre suas quests.',
-          icon: 'https://picsum.photos/seed/liberdade-icon-192/192/192'
-        });
-      }
-    }
-  };
-
   const triggerNotification = useCallback((title: string, body: string) => {
     if (permission === 'granted') {
       // Use service worker if available for better PWA support
@@ -45,11 +59,11 @@ export function NotificationManager() {
         navigator.serviceWorker.ready.then(registration => {
           registration.showNotification(title, {
             body,
-            icon: 'https://picsum.photos/seed/liberdade-icon-192/192/192',
-            badge: 'https://picsum.photos/seed/liberdade-icon-192/192/192',
+            icon: IMAGES.NOTIFICATION_ICON,
+            badge: IMAGES.NOTIFICATION_ICON,
             vibrate: [200, 100, 200],
             tag: `quest-${title}-${body}` // Avoid duplicate notifications
-          });
+          } as any);
         });
       } else {
         new Notification(title, { body });
@@ -135,20 +149,6 @@ export function NotificationManager() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Floating Action Button to toggle notifications in settings or similar */}
-      <div className="fixed bottom-4 left-4 z-50">
-        <button
-          onClick={() => permission === 'default' ? requestPermission() : setShowPrompt(true)}
-          className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg medieval-border",
-            permission === 'granted' ? "bg-emerald-500/20 text-emerald-500" : "bg-orange-500/20 text-orange-500"
-          )}
-          title="Mensageiro do Reino"
-        >
-          {permission === 'granted' ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
-        </button>
-      </div>
     </>
   );
 }

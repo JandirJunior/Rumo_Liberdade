@@ -12,6 +12,7 @@ import { THEMES } from '@/lib/themes';
 import { FINANCIAL_VILLAINS, calculateVillainDamage } from '@/lib/financialVillains';
 import { financialEngine } from '@/lib/financialEngine';
 import { useKingdom } from '@/hooks/useKingdom';
+import { IMAGES } from '@/assets/images';
 
 export default function Villains() {
   const { theme, user, loading: authLoading } = useTheme();
@@ -45,7 +46,7 @@ export default function Villains() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://ibb.co/N2B8VM7s"
+          src={IMAGES.MASMORRA}
           alt="Villains Background"
           fill
           priority

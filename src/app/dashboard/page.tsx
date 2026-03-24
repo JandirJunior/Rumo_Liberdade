@@ -11,6 +11,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { TrendingUp, TrendingDown, Target, ChevronRight, Bell, Trophy, Zap, Shield, Wand2, HandCoins, Compass, VenetianMask, Home, Sparkles, MessageSquare, User } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
+import { IMAGES } from '@/assets/images';
 import { MOCK_GOALS, MOCK_GAME_STATE } from '@/lib/data';
 import { formatCurrency, cn, getColorClass } from '@/lib/utils';
 import { ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis } from 'recharts';
@@ -204,7 +205,7 @@ export default function Dashboard() {
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
-          src="https://ibb.co/rGjY8cyK"
+          src={IMAGES.DASHBOARD}
           alt="Dashboard Background"
           fill
           priority

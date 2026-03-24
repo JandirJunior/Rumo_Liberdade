@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { Avatar } from '@/components/game/Avatar';
 import { Sparkles, Shield, Swords, Compass, Wand2, ChevronRight, Trophy } from 'lucide-react';
 import { FaceroStats, Archetype } from '@/types';
+import { safeStringify } from '@/lib/utils';
 import { ARCHETYPE_IMAGES } from '@/lib/data';
 
 // Banco de questões do quiz com pontuação para cada atributo F.A.C.E.R.O.
@@ -107,7 +108,12 @@ export default function GenesisQuiz() {
       stats,
       completedQuests: []
     };
-    localStorage.setItem('facero_game_state', JSON.stringify(gameState));
+    try {
+      localStorage.setItem('facero_game_state', safeStringify(gameState));
+    } catch (e) {
+      console.error('Error stringifying gameState:', gameState);
+      throw e;
+    }
     router.push('/dashboard');
   };
 

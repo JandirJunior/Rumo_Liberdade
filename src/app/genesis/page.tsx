@@ -11,7 +11,9 @@ import { useRouter } from 'next/navigation';
 import { Avatar } from '@/components/game/Avatar';
 import { Sparkles, Shield, Swords, Compass, Wand2, ChevronRight, Trophy, Target } from 'lucide-react';
 import { FaceroStats, Archetype } from '@/types';
+import { safeStringify } from '@/lib/utils';
 import { ARCHETYPE_IMAGES } from '@/lib/data';
+import { IMAGES } from '@/assets/images';
 import { BudgetProgressPanel } from '@/components/ui/BudgetProgressPanel';
 import { useKingdom } from '@/hooks/useKingdom';
 import { useTheme } from '@/lib/ThemeContext';
@@ -117,7 +119,12 @@ export default function GenesisQuiz() {
       stats,
       completedQuests: []
     };
-    localStorage.setItem('facero_game_state', JSON.stringify(gameState));
+    try {
+      localStorage.setItem('facero_game_state', safeStringify(gameState));
+    } catch (e) {
+      console.error('Error stringifying gameState:', gameState);
+      throw e;
+    }
     router.push('/dashboard');
   };
 
@@ -125,7 +132,7 @@ export default function GenesisQuiz() {
     <div className="min-h-screen bg-[var(--color-bg-dark)] text-[var(--color-text-main)] p-8 flex flex-col items-center justify-center overflow-y-auto relative">
       <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
         <Image 
-          src="https://ibb.co/23jJ57gK" 
+          src={IMAGES.LOGIN} 
           alt="Background" 
           fill
           priority

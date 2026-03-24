@@ -47,15 +47,18 @@ export const MOCK_GOALS = [
 // 🧙 ARCHETYPES (CLASSES RPG)
 // =========================
 
+import { IMAGES } from '@/assets/images';
+
+// ... (rest of the file)
+
 export const ARCHETYPE_IMAGES: Record<string, string> = {
-  Paladino:   'https://picsum.photos/seed/paladino/400/600',
-  Mago:       'https://picsum.photos/seed/mago/400/600',
-  Arqueiro:   'https://picsum.photos/seed/arqueiro/400/600',
-  Guerreiro:  'https://picsum.photos/seed/guerreiro/400/600',
-  Ladino:     'https://picsum.photos/seed/ladino/400/600',
-  Dwarf:      'https://picsum.photos/seed/dwarf/400/600',
-  Elfo:       'https://picsum.photos/seed/elfo/400/600',
-  Hobbit:     'https://picsum.photos/seed/hobbit/400/600'
+  Paladino:   IMAGES.FESTIN,
+  Mago:       IMAGES.ARCANO,
+  Dwarf:      IMAGES.CACHE,
+  Elfo:       IMAGES.EXODIA,
+  Ladino:     IMAGES.REAVER,
+  Hobbit:     IMAGES.ORBITA,
+  Iniciante:  IMAGES.LOGIN
 };
 
 // =========================
@@ -63,5 +66,9 @@ export const ARCHETYPE_IMAGES: Record<string, string> = {
 // =========================
 
 export const VILLAIN_IMAGES: Record<string, string> = {
-  default: 'https://picsum.photos/seed/villain/400/400'
+  V000: IMAGES.VILLAINS.V000,
+  V001: IMAGES.VILLAINS.V001,
+  V002: IMAGES.VILLAINS.V002,
+  V003: IMAGES.VILLAINS.V003,
+  default: IMAGES.VILLAINS.V000
 };

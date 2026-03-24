@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
+import { IMAGES } from '@/assets/images';
 import { Lock, User, Castle, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { auth } from '@/services/firebase';
@@ -68,7 +69,7 @@ export default function LoginPage() {
       {/* Camada de Fundo: Imagem ilustrativa de aventura RPG com overlay de gradiente */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="https://ibb.co/23jJ57gK"
+          src={IMAGES.LOGIN}
           alt="RPG Adventure Background"
           fill
           priority
