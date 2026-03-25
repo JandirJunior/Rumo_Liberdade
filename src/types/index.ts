@@ -4,7 +4,7 @@
  */
 
 // Tipos de transações financeiras
-export type TransactionType = "income" | "expense" | "investment";
+export type TransactionType = "income" | "expense" | "investment" | "earning";
 
 export interface CategoryGroup {
   id: string;
@@ -82,7 +82,7 @@ export interface Transaction {
   id: string;
   kingdom_id?: string;
   user_id?: string;
-  type: "income" | "expense" | "investment";
+  type: "income" | "expense" | "investment" | "earning";
   amount: number;
   description: string;
   category_id: string;
