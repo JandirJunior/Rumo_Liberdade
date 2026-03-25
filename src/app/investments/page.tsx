@@ -19,12 +19,14 @@ import { ImportModal } from '@/components/ui/ImportModal';
 
 import { financialEngine } from '@/lib/financialEngine';
 import { parseDate } from '@/services/firebaseUtils';
+import { useActionContext } from '@/context/ActionContext';
 
 export default function Investments() {
   const { theme, user, loading: authLoading } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
+  const { openAction } = useActionContext();
 
-  const { assets, loading: kingdomLoading, transactions, addInvestment, updateInvestment, addEarning, deleteInvestment, contributionPlanning, updateContributionPlanning, addTransaction } = useKingdom();
+  const { assets, loading: kingdomLoading, transactions, addInvestment, deleteInvestment, contributionPlanning, updateContributionPlanning } = useKingdom();
 
   const { totalValue, aggregated, tickerDetails } = useMemo(() =>
     financialEngine.calculateInvestmentPower(assets, contributionPlanning?.percentages),
@@ -76,28 +78,10 @@ export default function Investments() {
 
   const totalTickers = tickerDetails?.length || 0;
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingInvestment, setEditingInvestment] = useState<any>(null);
-  const [isEarningModalOpen, setIsEarningModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isPlanningModalOpen, setIsPlanningModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean, ids: string[] | null }>({ isOpen: false, ids: null });
-  const [newInvestment, setNewInvestment] = useState({
-    type: 'F',
-    ticker: '',
-    value: '',
-    quantity: '',
-    operation_date: new Date().toISOString().split('T')[0]
-  });
-
-  const [newEarning, setNewEarning] = useState({
-    ticker: '',
-    amount: '',
-    type: 'dividend' as 'dividend' | 'jcp' | 'rent' | 'other',
-    date: new Date().toISOString().split('T')[0]
-  });
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -117,84 +101,6 @@ export default function Investments() {
   }
 
   if (!user) return null;
-
-  const handleAddInvestment = async () => {
-    if (!newInvestment.ticker || !newInvestment.value || !newInvestment.quantity) return;
-
-    const typeMap: Record<string, string> = {
-      'F': 'fii',
-      'A': 'stock',
-      'C': 'crypto',
-      'E': 'etf',
-      'R': 'fixed_income',
-      'O': 'other'
-    };
-
-    const investmentData = {
-      type: typeMap[newInvestment.type],
-      ticker: newInvestment.ticker.toUpperCase(),
-      value: parseFloat(newInvestment.value),
-      quantity: parseFloat(newInvestment.quantity),
-      date: newInvestment.operation_date
-    };
-
-    await addInvestment(investmentData);
-
-    setIsModalOpen(false);
-    setNewInvestment({
-      type: 'F',
-      ticker: '',
-      value: '',
-      quantity: '',
-      operation_date: new Date().toISOString().split('T')[0]
-    });
-  };
-  
-  const handleUpdateInvestment = async () => {
-    if (!editingInvestment || !editingInvestment.ticker || !editingInvestment.value || !editingInvestment.quantity) return;
-
-    const typeMap: Record<string, string> = {
-      'F': 'fii',
-      'A': 'stock',
-      'C': 'crypto',
-      'E': 'etf',
-      'R': 'fixed_income',
-      'O': 'other'
-    };
-
-    const investmentData = {
-      type: typeMap[editingInvestment.type] || editingInvestment.type,
-      ticker: editingInvestment.ticker.toUpperCase(),
-      invested_value: parseFloat(editingInvestment.value),
-      quantity: parseFloat(editingInvestment.quantity),
-      price: parseFloat(editingInvestment.value) / parseFloat(editingInvestment.quantity),
-      date: editingInvestment.operation_date || editingInvestment.date || new Date().toISOString()
-    };
-
-    await updateInvestment(editingInvestment.id, investmentData);
-
-    setIsEditModalOpen(false);
-    setEditingInvestment(null);
-  };
-
-  const handleAddEarning = async () => {
-    if (!newEarning.ticker || !newEarning.amount) return;
-
-    await addEarning({
-      ticker: newEarning.ticker.toUpperCase(),
-      amount: parseFloat(newEarning.amount),
-      type: newEarning.type,
-      date: newEarning.date
-    });
-
-    setIsEarningModalOpen(false);
-    setNewEarning({
-      ticker: '',
-      amount: '',
-      type: 'dividend',
-      date: new Date().toISOString().split('T')[0]
-    });
-  };
 
   const handleImportInvestments = async (data: { type?: string; ticker: string; value: string; quantity: string; operation_date?: string }[]) => {
     for (const item of data) {
@@ -319,18 +225,25 @@ export default function Investments() {
               <span className="hidden sm:inline">Importar</span>
             </button>
             <button
-              onClick={() => setIsEarningModalOpen(true)}
+              onClick={() => openAction('investimento_proventos')}
               className="px-4 h-10 rounded-xl flex items-center gap-2 bg-amber-900/20 border border-amber-700/50 text-amber-500 shadow-sm font-bold text-sm transition-transform active:scale-95 hover:bg-amber-900/40 medieval-border"
             >
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">Proventos</span>
             </button>
             <button
-              onClick={() => setIsModalOpen(true)}
-              className={cn("px-4 h-10 rounded-xl flex items-center gap-2 text-[var(--color-bg-dark)] shadow-sm font-bold text-sm transition-transform active:scale-95 medieval-border medieval-glow", "bg-[var(--color-primary)]")}
+              onClick={() => openAction('investimento_venda')}
+              className="px-4 h-10 rounded-xl flex items-center gap-2 bg-red-900/20 border border-red-700/50 text-red-500 shadow-sm font-bold text-sm transition-transform active:scale-95 hover:bg-red-900/40 medieval-border"
             >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Investir</span>
+              <TrendingDown className="w-4 h-4" />
+              <span className="hidden sm:inline">Vender</span>
+            </button>
+            <button
+              onClick={() => openAction('investimento_compra')}
+              className="px-4 h-10 rounded-xl flex items-center gap-2 bg-emerald-900/20 border border-emerald-700/50 text-emerald-500 shadow-sm font-bold text-sm transition-transform active:scale-95 hover:bg-emerald-900/40 medieval-border"
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span className="hidden sm:inline">Comprar</span>
             </button>
           </div>
         </header>
@@ -571,6 +484,7 @@ export default function Investments() {
                     <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-center">Data Mov.</th>
                     <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Ativo</th>
                     <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Tipo de Investimento</th>
+                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-center">Operação</th>
                     <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Qtd</th>
                     <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Preço</th>
                     <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Total</th>
@@ -594,25 +508,51 @@ export default function Investments() {
                       <td className="px-4 py-3">
                         <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{getFaceroName(asset.faceroType || '')}</span>
                       </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={cn(
+                          "text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-wider",
+                          (asset.invested_value || asset.total || 0) < 0 
+                            ? "bg-red-900/20 text-red-500" 
+                            : "bg-emerald-900/20 text-emerald-500"
+                        )}>
+                          {(asset.invested_value || asset.total || 0) < 0 ? 'Venda' : 'Compra'}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-right text-xs text-[var(--color-text-main)]">
-                        {(asset.quantity || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
+                        {(Math.abs(asset.quantity || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
                       </td>
                       <td className="px-4 py-3 text-right text-xs text-[var(--color-text-muted)]">
-                        {formatCurrency(asset.price || 0)}
+                        <span className="font-bold text-[var(--color-text-main)]">{formatCurrency(asset.price || 0)}</span>
+                        <span className="opacity-50">/{(Math.abs(asset.quantity || 0)).toLocaleString('pt-BR')}</span>
                       </td>
                       <td className="px-4 py-3 text-right text-xs font-bold text-[var(--color-text-main)]">
-                        {formatCurrency(asset.total || asset.invested_value || 0)}
+                        {formatCurrency(Math.abs(asset.total || asset.invested_value || 0))}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => {
-                              setEditingInvestment({
-                                ...asset,
-                                value: asset.invested_value || asset.total || ((asset.price || 0) * (asset.quantity || 0)) || 0,
-                                type: asset.faceroType || 'O'
+                              const typeMapReverse: Record<string, string> = {
+                                'F': 'fii',
+                                'A': 'stock',
+                                'C': 'crypto',
+                                'E': 'etf',
+                                'R': 'fixed_income',
+                                'O': 'other'
+                              };
+                              const assetType = asset.type || typeMapReverse[asset.faceroType || 'O'] || 'other';
+                              const assetValue = asset.invested_value || asset.total || ((asset.price || 0) * (asset.quantity || 0)) || 0;
+                              const isSale = assetValue < 0;
+                              
+                              openAction(isSale ? 'investimento_venda' : 'investimento_compra', {
+                                id: asset.id,
+                                categoriaFinanceira: assetType,
+                                descricao: asset.ticker,
+                                valorTotal: Math.abs(assetValue),
+                                quantidade: Math.abs(asset.quantity || 0),
+                                usarDataManual: true,
+                                dataRegistro: (asset.operation_date || asset.date || new Date().toISOString()).split('T')[0]
                               });
-                              setIsEditModalOpen(true);
                             }}
                             className="p-1.5 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded transition-colors"
                             title="Editar"
@@ -642,268 +582,6 @@ export default function Investments() {
           </div>
         </section>
       </main>
-
-      {/* Modal para Adicionar Proventos */}
-      <Modal
-        isOpen={isEarningModalOpen}
-        onClose={() => setIsEarningModalOpen(false)}
-        title="Registrar Proventos"
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Ativo / Ticker</label>
-            <select
-              value={newEarning.ticker}
-              onChange={(e) => setNewEarning({ ...newEarning, ticker: e.target.value })}
-              className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
-            >
-              <option value="">Selecione um ativo</option>
-              {Array.from(new Set(assets.map(a => a.ticker))).map(ticker => (
-                <option key={ticker} value={ticker}>{ticker}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Tipo de Provento</label>
-            <select
-              value={newEarning.type}
-              onChange={(e) => setNewEarning({ ...newEarning, type: e.target.value as 'dividend' | 'jcp' | 'rent' | 'other' })}
-              className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
-            >
-              <option value="dividend">Dividendo</option>
-              <option value="jcp">JCP</option>
-              <option value="rent">Aluguel (FII)</option>
-              <option value="other">Outros</option>
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Valor Recebido</label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] font-bold">R$</span>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={newEarning.amount}
-                  onChange={(e) => setNewEarning({ ...newEarning, amount: e.target.value })}
-                  className="w-full pl-12 pr-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-bold text-[var(--color-text-main)]"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Data</label>
-              <input
-                type="date"
-                value={newEarning.date}
-                onChange={(e) => setNewEarning({ ...newEarning, date: e.target.value })}
-                className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
-              />
-            </div>
-          </div>
-
-          <button
-            onClick={handleAddEarning}
-            disabled={!newEarning.ticker || !newEarning.amount}
-            className={cn(
-              "w-full py-4 rounded-xl font-bold text-[var(--color-bg-dark)] shadow-lg transition-transform active:scale-95 mt-4 medieval-border medieval-glow",
-              (!newEarning.ticker || !newEarning.amount) ? "bg-[var(--color-border)] text-[var(--color-text-muted)] cursor-not-allowed" : "bg-amber-500 hover:brightness-110"
-            )}
-          >
-            Registrar Provento
-          </button>
-        </div>
-      </Modal>
-
-      {/* Modal para Editar Investimento */}
-      <Modal
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setEditingInvestment(null);
-        }}
-        title="Editar Investimento"
-      >
-        {editingInvestment && (
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Categoria F.A.C.E.R.O.</label>
-              <select
-                value={editingInvestment.type}
-                onChange={(e) => setEditingInvestment({ ...editingInvestment, type: e.target.value })}
-                className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
-              >
-                <option value="F">FUNDOS IMOBILIÁRIOS</option>
-                <option value="A">AÇÕES</option>
-                <option value="C">CRIPTO ATIVOS</option>
-                <option value="E">EXTERIOR ETF</option>
-                <option value="R">RENDA FIXA</option>
-                <option value="O">OPORTUNIDADES OUTROS INVESTIMENTS</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Ativo / Ticker</label>
-              <input
-                type="text"
-                placeholder="Ex: MXRF11, PETR4, BTC"
-                value={editingInvestment.ticker}
-                onChange={(e) => setEditingInvestment({ ...editingInvestment, ticker: e.target.value.toUpperCase() })}
-                className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Quantidade</label>
-                <input
-                  type="number"
-                  step="0.00000001"
-                  placeholder="0.00"
-                  value={editingInvestment.quantity}
-                  onChange={(e) => setEditingInvestment({ ...editingInvestment, quantity: e.target.value })}
-                  className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Data Operação</label>
-                <input
-                  type="date"
-                  value={editingInvestment.operation_date || (editingInvestment.date ? parseDate(editingInvestment.date).toISOString().split('T')[0] : '')}
-                  onChange={(e) => setEditingInvestment({ ...editingInvestment, operation_date: e.target.value })}
-                  className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Valor Total Investido</label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] font-bold">R$</span>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={editingInvestment.value}
-                  onChange={(e) => setEditingInvestment({ ...editingInvestment, value: e.target.value })}
-                  className="w-full pl-12 pr-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-bold text-[var(--color-text-main)]"
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={handleUpdateInvestment}
-              disabled={!editingInvestment.ticker || !editingInvestment.value || !editingInvestment.quantity}
-              className={cn(
-                "w-full py-4 rounded-xl font-bold text-[var(--color-bg-dark)] shadow-lg transition-transform active:scale-95 mt-4 medieval-border medieval-glow",
-                (!editingInvestment.ticker || !editingInvestment.value || !editingInvestment.quantity) ? "bg-[var(--color-border)] text-[var(--color-text-muted)] cursor-not-allowed" : "bg-[var(--color-primary)] hover:brightness-110"
-              )}
-            >
-              Salvar Alterações
-            </button>
-          </div>
-        )}
-      </Modal>
-
-      {/* Modal para Adicionar Investimento */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setNewInvestment({
-            type: 'F',
-            ticker: '',
-            value: '',
-            quantity: '',
-            operation_date: new Date().toISOString().split('T')[0]
-          });
-        }}
-        title="Novo Investimento"
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Categoria F.A.C.E.R.O.</label>
-            <select
-              value={newInvestment.type}
-              onChange={(e) => setNewInvestment({ ...newInvestment, type: e.target.value })}
-              className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
-            >
-              <option value="F">FUNDOS IMOBILIÁRIOS</option>
-              <option value="A">AÇÕES</option>
-              <option value="C">CRIPTO ATIVOS</option>
-              <option value="E">EXTERIOR ETF</option>
-              <option value="R">RENDA FIXA</option>
-              <option value="O">OPORTUNIDADES OUTROS INVESTIMENTS</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Ativo / Ticker</label>
-            <input
-              type="text"
-              placeholder="Ex: MXRF11, PETR4, BTC"
-              value={newInvestment.ticker}
-              onChange={(e) => setNewInvestment({ ...newInvestment, ticker: e.target.value.toUpperCase() })}
-              className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Quantidade</label>
-              <input
-                type="number"
-                step="0.00000001"
-                placeholder="0.00"
-                value={newInvestment.quantity}
-                onChange={(e) => setNewInvestment({ ...newInvestment, quantity: e.target.value })}
-                className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Data Operação</label>
-              <input
-                type="date"
-                value={newInvestment.operation_date}
-                onChange={(e) => setNewInvestment({ ...newInvestment, operation_date: e.target.value })}
-                className="w-full px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-medium text-[var(--color-text-main)]"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Valor Total Investido</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] font-bold">R$</span>
-              <input
-                type="number"
-                placeholder="0.00"
-                value={newInvestment.value}
-                onChange={(e) => setNewInvestment({ ...newInvestment, value: e.target.value })}
-                className="w-full pl-12 pr-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all font-bold text-[var(--color-text-main)]"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest block mb-2">Preço Médio (Calculado)</label>
-            <div className="px-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl font-bold text-[var(--color-text-main)]">
-              {newInvestment.quantity && newInvestment.value && parseFloat(newInvestment.quantity) !== 0 ? formatCurrency(parseFloat(newInvestment.value) / parseFloat(newInvestment.quantity)) : formatCurrency(0)}
-            </div>
-          </div>
-
-          <button
-            onClick={handleAddInvestment}
-            disabled={!newInvestment.ticker || !newInvestment.value || !newInvestment.quantity}
-            className={cn(
-              "w-full py-4 rounded-xl font-bold text-[var(--color-bg-dark)] shadow-lg transition-transform active:scale-95 mt-4 medieval-border medieval-glow",
-              (!newInvestment.ticker || !newInvestment.value || !newInvestment.quantity) ? "bg-[var(--color-border)] text-[var(--color-text-muted)] cursor-not-allowed" : "bg-[var(--color-primary)] hover:brightness-110"
-            )}
-          >
-            Adicionar Investimento
-          </button>
-        </div>
-      </Modal>
     </div>
   );
 }

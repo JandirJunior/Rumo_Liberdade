@@ -147,8 +147,9 @@ export function calculateInvestmentPower(assets: Asset[], planning?: { F: number
 export function calculateUserBalance(transactions: Transaction[]): number {
   return transactions.reduce((acc, t) => {
     const amount = Number(t.amount || 0);
-    if (t.type === 'income') return acc + amount;
-    if (t.type === 'expense' || t.type === 'investment') return acc - amount;
+    if (t.type === 'income' || t.type === 'earning') return acc + amount;
+    if (t.type === 'expense') return acc - amount;
+    if (t.type === 'investment') return acc + amount; // Investment: Buy is negative, Sale is positive
     return acc;
   }, 0);
 }
@@ -183,7 +184,11 @@ export function calculateBudgetProgressData(
   creditCards: CreditCardInvoice[]
 ): BudgetProgress[] {
   return categories.map(cat => {
-    const budget = budgets.find(b => b.category_id === cat.id);
+    const budget = budgets.find(b => 
+      b.category_id === cat.id && 
+      (b.mês === `${year}-${String(month).padStart(2, '0')}` || 
+       b.month === `${year}-${String(month).padStart(2, '0')}`)
+    );
     const orcado = budget ? (budget.budget_amount || budget.quantidade || 0) : 0;
 
     const gasto_real = transactions
@@ -196,7 +201,7 @@ export function calculateBudgetProgressData(
       })
       .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
-    let previsto = gasto_real;
+    let previsto = 0;
     if (cat.flow_type === 'expense') {
       const payablesAmount = payables
         .filter(p => {
@@ -218,7 +223,7 @@ export function calculateBudgetProgressData(
         })
         .reduce((sum, cc) => sum + Number(cc.total_amount || 0), 0);
 
-      previsto += payablesAmount + creditCardAmount;
+      previsto = payablesAmount + creditCardAmount;
     } else {
       const receivablesAmount = receivables
         .filter(r => {
@@ -230,7 +235,7 @@ export function calculateBudgetProgressData(
         })
         .reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
-      previsto += receivablesAmount;
+      previsto = receivablesAmount;
     }
 
     const progresso = orcado > 0 ? Math.min(100, (gasto_real / orcado) * 100) : (gasto_real > 0 ? 100 : 0);

@@ -129,16 +129,23 @@ service cloud.firestore {
     match /transactions/{transactionId} {
       function isValidTransaction() {
         return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'type', 'date']) &&
-               isValidNumber('amount', 0) &&
+               request.resource.data.amount is number &&
                isValidString('description', 1, 200) &&
                request.resource.data.type in ['income', 'expense', 'investment'];
       }
 
       allow read: if isViewer(resource.data.kingdom_id);
-      allow create: if isMember(request.resource.data.kingdom_id) && isValidTransaction();
+      allow create: if isMember(request.resource.data.kingdom_id) && 
+                      hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'type', 'date']) &&
+                      request.resource.data.amount is number &&
+                      isValidString('description', 1, 200) &&
+                      request.resource.data.type in ['income', 'expense', 'investment'];
       allow update: if isMember(resource.data.kingdom_id) && 
                       (request.resource.data.kingdom_id == null || isMember(request.resource.data.kingdom_id)) && 
-                      isValidTransaction();
+                      hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'type', 'date']) &&
+                      request.resource.data.amount is number &&
+                      isValidString('description', 1, 200) &&
+                      request.resource.data.type in ['income', 'expense', 'investment'];
       allow delete: if canDelete(resource.data);
     }
 

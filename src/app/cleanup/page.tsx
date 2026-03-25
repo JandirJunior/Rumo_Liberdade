@@ -5,13 +5,38 @@ import { collection, getDocs, deleteDoc, doc, query, where, writeBatch } from 'f
 import { useKingdomData } from '@/contexts/KingdomContext';
 
 export default function CleanupPage() {
-  const { kingdomId } = useKingdomData();
+  const { kingdomId, loading: contextLoading } = useKingdomData();
   const [selectedTable, setSelectedTable] = useState('accounts_payable');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [items, setItems] = useState<any[]>([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const parseItemDate = (data: any): Date | null => {
+    const dateValue = data.dueDate || data.due_date || data.date || data.created_at || data.createdAt || 
+                     data.closingDate || data.closing_date || data.paidAt || data.paid_at || 
+                     data.received_at || data.receivedAt || data.mês || data.month;
+    
+    if (dateValue) {
+      if (typeof dateValue === 'string' && /^\d{4}-\d{2}$/.test(dateValue)) {
+        const [year, month] = dateValue.split('-').map(Number);
+        return new Date(year, month - 1, 1);
+      }
+      const d = new Date(dateValue instanceof Date ? dateValue : dateValue.toDate ? dateValue.toDate() : dateValue);
+      if (!isNaN(d.getTime())) return d;
+    }
+
+    if (data.month !== undefined && data.year !== undefined) {
+      const m = Number(data.month);
+      const y = Number(data.year);
+      if (!isNaN(m) && !isNaN(y)) {
+        return new Date(y, m - 1, 1);
+      }
+    }
+
+    return null;
+  };
 
   const loadAllItems = useCallback(async () => {
     if (!kingdomId) return;
@@ -24,7 +49,8 @@ export default function CleanupPage() {
       'credit_cards',
       'credit_card_invoices',
       'contribution_planning',
-      'categories'
+      'categories',
+      'activity_logs'
     ];
     const allItems: any[] = [];
     for (const colName of collections) {
@@ -53,48 +79,48 @@ export default function CleanupPage() {
       const q = query(colRef, where('kingdom_id', '==', kingdomId));
       const snapshot = await getDocs(q);
       
-      const batch = writeBatch(db);
-      let count = 0;
       const start = new Date(startDate);
       const end = new Date(endDate);
       // Ensure end date includes the whole day
       end.setHours(23, 59, 59, 999);
 
-      for (const d of snapshot.docs) {
-        const data = d.data();
-        // Check multiple possible date fields
-        const dateField = data.dueDate || data.due_date || data.date || data.created_at || data.createdAt || data.closingDate || data.closing_date || data.paidAt || data.paid_at || data.received_at || data.receivedAt;
-        
-        let itemDate: Date | null = null;
+      const docsToDelete = snapshot.docs.filter(d => {
+        const itemDate = parseItemDate(d.data());
+        return itemDate && itemDate >= start && itemDate <= end;
+      });
 
-        if (dateField) {
-          itemDate = new Date(dateField instanceof Date ? dateField : dateField.toDate ? dateField.toDate() : dateField);
-        } else if (data.month !== undefined && data.year !== undefined) {
-          // Special handling for budgets
-          itemDate = new Date(data.year, data.month - 1, 1);
-        }
+      if (docsToDelete.length === 0) {
+        setMessage('Nenhum registro encontrado para este intervalo.');
+        setLoading(false);
+        return;
+      }
+
+      let count = 0;
+      // Chunk deletions in batches of 500 (Firestore limit)
+      for (let i = 0; i < docsToDelete.length; i += 500) {
+        const batch = writeBatch(db);
+        const chunk = docsToDelete.slice(i, i + 500);
         
-        if (itemDate && itemDate >= start && itemDate <= end) {
+        chunk.forEach(d => {
           batch.delete(doc(db, selectedTable, d.id));
           count++;
-        }
+        });
+        
+        await batch.commit();
       }
 
-      if (count > 0) {
-        await batch.commit();
-        setMessage(`Sucesso! ${count} registros removidos da tabela ${selectedTable}.`);
-        loadAllItems();
-      } else {
-        setMessage('Nenhum registro encontrado para este intervalo.');
-      }
+      setMessage(`Sucesso! ${count} registros removidos da tabela ${selectedTable}.`);
+      loadAllItems();
     } catch (e) {
-      setMessage('Erro: ' + e);
+      console.error('Erro no cleanup:', e);
+      setMessage('Erro: ' + (e instanceof Error ? e.message : String(e)));
     } finally {
       setLoading(false);
     }
   };
 
-  if (!kingdomId) return <div className="p-10">Loading or no kingdom selected...</div>;
+  if (contextLoading) return <div className="p-10">Carregando dados do reino...</div>;
+  if (!kingdomId) return <div className="p-10">Nenhum reino selecionado ou erro ao carregar.</div>;
 
   return (
     <div className="p-10 max-w-4xl mx-auto">
@@ -113,6 +139,7 @@ export default function CleanupPage() {
             <option value="credit_card_invoices">Faturas de Cartão</option>
             <option value="contribution_planning">Planejamento de Aportes</option>
             <option value="categories">Categorias</option>
+            <option value="activity_logs">Logs de Atividade</option>
           </select>
         </div>
 
@@ -141,14 +168,8 @@ export default function CleanupPage() {
       <h2 className="text-xl font-bold mt-10 mb-4">Todos os Registros ({items.length})</h2>
       <div className="border rounded max-h-96 overflow-y-auto">
         {items.map(item => {
-          const dateField = item.dueDate || item.due_date || item.date || item.created_at || item.createdAt || item.closingDate || item.closing_date || item.paidAt || item.paid_at || item.received_at || item.receivedAt;
-          let dateStr = '';
-          if (dateField) {
-            const d = new Date(dateField instanceof Date ? dateField : dateField.toDate ? dateField.toDate() : dateField);
-            dateStr = d.toLocaleDateString();
-          } else if (item.month !== undefined && item.year !== undefined) {
-            dateStr = `${item.month}/${item.year}`;
-          }
+          const itemDate = parseItemDate(item);
+          let dateStr = itemDate ? itemDate.toLocaleDateString() : 'Sem data';
 
           return (
             <div key={item.id} className="flex justify-between p-2 border-b text-sm hover:bg-gray-50">

@@ -84,3 +84,19 @@ export function parseDate(date: any): Date {
   const d = new Date(date);
   return isNaN(d.getTime()) ? new Date() : d;
 }
+
+/**
+ * 🧹 LIMPA OBJETOS PARA O FIRESTORE
+ *
+ * Remove campos undefined que causam erro no Firestore
+ */
+export function cleanObject(obj: any) {
+  if (!obj || typeof obj !== 'object') return obj;
+  const newObj = { ...obj };
+  Object.keys(newObj).forEach(key => {
+    if (newObj[key] === undefined) {
+      delete newObj[key];
+    }
+  });
+  return newObj;
+}

@@ -131,21 +131,6 @@ export function ActiveQuestsBoard() {
     return `Vence em ${diffDays} dias`;
   };
 
-  if (activeQuests.length === 0) {
-    return (
-      <Link href="/attributes" className="block group">
-        <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 border border-[var(--color-border)] shadow-sm text-center medieval-border group-hover:border-[var(--color-primary)] transition-all">
-          <div className="w-12 h-12 bg-[var(--color-bg-dark)] rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-            <CheckCircle2 className="w-6 h-6 text-emerald-500" />
-          </div>
-          <h3 className="text-lg medieval-title font-bold text-[var(--color-text-main)] mb-1">Todas as Quests Concluídas!</h3>
-          <p className="text-sm text-[var(--color-text-muted)]">Você não tem obrigações financeiras próximas.</p>
-          <p className="text-[10px] font-bold text-[var(--color-primary)] uppercase tracking-widest mt-4 opacity-0 group-hover:opacity-100 transition-opacity">Gerenciar Recorrências →</p>
-        </div>
-      </Link>
-    );
-  }
-
   return (
     <div className="bg-[var(--color-bg-panel)] rounded-2xl p-6 border border-[var(--color-border)] shadow-sm space-y-6 medieval-border">
       <header className="flex flex-col gap-4">
@@ -201,74 +186,86 @@ export function ActiveQuestsBoard() {
       </header>
 
       <div className="space-y-3">
-        {activeQuests.map((quest, index) => {
-          const isOverdue = quest.status === 'atrasado' || quest.status === 'inadimplente';
-          const isReceivable = quest.type === 'receivable';
-          
-          return (
-            <motion.div
-              key={quest.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={cn(
-                "flex items-center justify-between p-4 rounded-2xl border transition-all",
-                isOverdue ? "bg-red-900/20 border-red-900/50" : "bg-[var(--color-bg-dark)]/50 border-[var(--color-border)] hover:border-[var(--color-primary)]"
-              )}
-            >
-              <div className="flex items-center gap-4">
-                <div className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-[var(--color-border)]",
-                  isReceivable ? "bg-emerald-900/30 text-emerald-400" : 
-                  quest.type === 'invoice' ? "bg-purple-900/30 text-purple-400" :
-                  "bg-red-900/30 text-red-400"
-                )}>
-                  {isReceivable ? <ArrowDownRight className="w-5 h-5" /> : 
-                   quest.type === 'invoice' ? <CreditCard className="w-5 h-5" /> :
-                   <ArrowUpRight className="w-5 h-5" />}
-                </div>
-                
-                <div>
-                  <h4 className="text-sm font-bold text-[var(--color-text-main)]">{quest.title}</h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Calendar className={cn("w-3 h-3", isOverdue ? "text-red-400" : "text-[var(--color-text-muted)]")} />
-                    <span className={cn(
-                      "text-xs font-medium",
-                      isOverdue ? "text-red-400" : "text-[var(--color-text-muted)]"
-                    )}>
-                      {getDaysRemaining(quest.dueDate)}
-                    </span>
+        {activeQuests.length === 0 ? (
+          <div className="py-8 text-center space-y-3">
+            <div className="w-12 h-12 bg-[var(--color-bg-dark)] rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-[var(--color-text-main)]">Nenhuma quest encontrada</h4>
+              <p className="text-xs text-[var(--color-text-muted)]">Você não tem obrigações nesta categoria.</p>
+            </div>
+          </div>
+        ) : (
+          activeQuests.map((quest, index) => {
+            const isOverdue = quest.status === 'atrasado' || quest.status === 'inadimplente';
+            const isReceivable = quest.type === 'receivable';
+            
+            return (
+              <motion.div
+                key={quest.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className={cn(
+                  "flex items-center justify-between p-4 rounded-2xl border transition-all",
+                  isOverdue ? "bg-red-900/20 border-red-900/50" : "bg-[var(--color-bg-dark)]/50 border-[var(--color-border)] hover:border-[var(--color-primary)]"
+                )}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-[var(--color-border)]",
+                    isReceivable ? "bg-emerald-900/30 text-emerald-400" : 
+                    quest.type === 'invoice' ? "bg-purple-900/30 text-purple-400" :
+                    "bg-red-900/30 text-red-400"
+                  )}>
+                    {isReceivable ? <ArrowDownRight className="w-5 h-5" /> : 
+                     quest.type === 'invoice' ? <CreditCard className="w-5 h-5" /> :
+                     <ArrowUpRight className="w-5 h-5" />}
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-bold text-[var(--color-text-main)]">{quest.title}</h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Calendar className={cn("w-3 h-3", isOverdue ? "text-red-400" : "text-[var(--color-text-muted)]")} />
+                      <span className={cn(
+                        "text-xs font-medium",
+                        isOverdue ? "text-red-400" : "text-[var(--color-text-muted)]"
+                      )}>
+                        {getDaysRemaining(quest.dueDate)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <p className={cn(
-                    "text-sm font-bold",
-                    getColorClass(isReceivable ? quest.amount : -quest.amount)
-                  )}>
-                    {isReceivable ? '+' : '-'}{formatCurrency(quest.amount)}
-                  </p>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className={cn(
+                      "text-sm font-bold",
+                      getColorClass(isReceivable ? quest.amount : -quest.amount)
+                    )}>
+                      {isReceivable ? '+' : '-'}{formatCurrency(quest.amount)}
+                    </p>
+                  </div>
+                  
+                  <button
+                    onClick={() => handleCompleteQuest(quest)}
+                    disabled={isCompleting === quest.id}
+                    className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0 border border-[var(--color-border)]",
+                      isCompleting === quest.id ? "opacity-50 cursor-not-allowed" : "",
+                      isReceivable 
+                        ? "bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400" 
+                        : "bg-[var(--color-bg-dark)] hover:bg-[var(--color-border)] text-[var(--color-text-main)]"
+                    )}
+                  >
+                    <CheckCircle2 className="w-5 h-5" />
+                  </button>
                 </div>
-                
-                <button
-                  onClick={() => handleCompleteQuest(quest)}
-                  disabled={isCompleting === quest.id}
-                  className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0 border border-[var(--color-border)]",
-                    isCompleting === quest.id ? "opacity-50 cursor-not-allowed" : "",
-                    isReceivable 
-                      ? "bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-400" 
-                      : "bg-[var(--color-bg-dark)] hover:bg-[var(--color-border)] text-[var(--color-text-main)]"
-                  )}
-                >
-                  <CheckCircle2 className="w-5 h-5" />
-                </button>
-              </div>
-            </motion.div>
-          );
-        })}
+              </motion.div>
+            );
+          })
+        )}
       </div>
     </div>
   );

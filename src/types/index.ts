@@ -91,6 +91,9 @@ export interface Transaction {
   created_at?: string;
   status?: "concluído" | "pendente";
   source?: "manual" | "importação" | "investimento";
+  ticker?: string;
+  quantity?: number;
+  investment_category_id?: string;
   // Legacy fields
   category_name?: string;
   category_group?: string;

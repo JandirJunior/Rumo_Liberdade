@@ -6,38 +6,60 @@ export function OverviewListPanel({
   payables, 
   receivables, 
   creditCards,
+  categories = [],
   onEdit,
-  onDelete
+  onDelete,
+  month,
+  year
 }: { 
   payables: any[], 
   receivables: any[], 
   creditCards: any[],
+  categories?: any[],
   onEdit: (item: any) => void,
-  onDelete: (item: any) => void
+  onDelete: (item: any) => void,
+  month?: number,
+  year?: number
 }) {
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 10;
+
+  const getCategoryName = (item: any) => {
+    if (item.categoryName) return item.categoryName;
+    const cat = categories.find(c => c.id === item.category_id);
+    return cat ? cat.name : (item.category_id || 'Categoria');
+  };
 
   const allItems = [
     ...payables.map(p => ({ 
       ...p, 
       type: 'payable', 
       date: new Date(p.due_date || p.dueDate || p.createdAt || p.created_at || 0), 
-      userName: p.userName || 'Desconhecido' 
+      userName: p.userName || 'Desconhecido',
+      displayCategory: getCategoryName(p)
     })),
     ...receivables.map(r => ({ 
       ...r, 
       type: 'receivable', 
       date: new Date(r.due_date || r.dueDate || r.createdAt || r.created_at || 0), 
-      userName: r.userName || 'Desconhecido' 
+      userName: r.userName || 'Desconhecido',
+      displayCategory: getCategoryName(r)
     })),
     ...creditCards.map(c => ({ 
       ...c, 
       type: 'card', 
       date: new Date(c.created_at || 0), 
-      userName: c.userName || 'Desconhecido' 
+      userName: c.userName || c.created_by || 'Desconhecido',
+      displayCategory: getCategoryName(c)
     }))
-  ].sort((a, b) => a.date.getTime() - b.date.getTime());
+  ]
+  .filter(item => {
+    if (month === undefined || year === undefined) return true;
+    const itemMonth = item.date.getMonth() + 1;
+    const itemYear = item.date.getFullYear();
+    return itemMonth === month && itemYear === year;
+  })
+  .sort((a, b) => a.date.getTime() - b.date.getTime());
 
   const pageCount = Math.ceil(allItems.length / pageSize);
   const paginatedItems = allItems.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
@@ -66,7 +88,7 @@ export function OverviewListPanel({
                     {item.date.toLocaleDateString('pt-BR')}
                   </span>
                 </div>
-                <span className="text-xs text-[var(--color-text-muted)]">• {item.category_id || 'Categoria'}</span>
+                <span className="text-xs text-[var(--color-text-muted)]">• {item.displayCategory}</span>
                 <div className="flex items-center gap-1">
                   <User className="w-3 h-3 text-[var(--color-text-muted)]" />
                   <span className="text-xs text-[var(--color-text-muted)]">{item.userName}</span>

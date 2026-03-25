@@ -37,7 +37,7 @@ import {
   CreditCardInvoice,
   BudgetProgress
 } from '@/types';
-import { getCollectionByKingdom, parseDate, handleFirestoreError, OperationType } from '@/services/firebaseUtils';
+import { getCollectionByKingdom, parseDate, handleFirestoreError, OperationType, cleanObject } from '@/services/firebaseUtils';
 import { kingdomService } from '@/services/kingdomService';
 import { financialEngine } from '@/lib/financialEngine';
 import { useTheme } from '@/lib/ThemeContext';
@@ -360,7 +360,8 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
   const addTransaction = async (data: Partial<Transaction>) => {
     if (!auth.currentUser || !kingdom) return;
     const id = doc(collection(db, 'transactions')).id;
-    const payload = {
+    const categoryName = categories.find(c => c.id === data.category_id)?.name || 'Categoria';
+    const payload = cleanObject({
       id,
       user_id: auth.currentUser.uid,
       userName: auth.currentUser.displayName || 'Usuário',
@@ -368,19 +369,20 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
       type: data.type,
       description: data.description,
       category_id: data.category_id,
+      categoryName,
       date: new Date(data.date!),
       created_at: new Date(),
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid,
       status: 'concluído'
-    };
+    });
     await setDoc(doc(db, 'transactions', id), payload);
     await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', id);
   };
 
   const updateTransaction = async (id: string, data: Partial<Transaction>) => {
     if (!auth.currentUser || !kingdom) return;
-    const updateData: any = { ...data };
+    const updateData: any = cleanObject({ ...data });
     if (data.date) updateData.date = new Date(data.date);
     await updateDoc(doc(db, 'transactions', id), updateData);
     await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id);
@@ -400,9 +402,11 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
     // Calcular investimento total = valor total informado
     const totalInvestedAmount = Number(data.value);
     // Calcular preço unitário = valor total / quantidade
-    const unitPrice = Number(data.quantity) > 0 ? totalInvestedAmount / Number(data.quantity) : 0;
+    const unitPrice = Math.abs(Number(data.quantity)) > 0 ? totalInvestedAmount / Number(data.quantity) : 0;
 
-    batch.set(doc(db, 'investments', invId), {
+    const isSale = totalInvestedAmount < 0;
+
+    batch.set(doc(db, 'investments', invId), cleanObject({
       id: invId,
       ticker: data.ticker,
       quantity: data.quantity,
@@ -414,21 +418,25 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid,
       transaction_id: txId
-    });
+    }));
 
-    batch.set(doc(db, 'transactions', txId), {
+    batch.set(doc(db, 'transactions', txId), cleanObject({
       id: txId,
       type: 'investment',
-      amount: totalInvestedAmount,
+      amount: -totalInvestedAmount, // Invert sign: Buy is negative, Sale is positive
       category_id: 'investimentos',
-      description: `Aporte em ${data.ticker}`,
+      description: isSale ? `Venda de ${data.ticker}` : `Aporte em ${data.ticker}`,
+      ticker: data.ticker,
+      quantity: data.quantity,
+      investment_category_id: data.investment_category_id,
+      source: 'investimento',
       date: new Date(data.date),
       created_at: new Date(),
       user_id: auth.currentUser.uid,
       userName: auth.currentUser.displayName || 'Usuário',
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid
-    });
+    }));
     try {
       await batch.commit();
       await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_INVESTMENT', invId);
@@ -441,15 +449,16 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
     if (!auth.currentUser || !kingdom) return;
     
     try {
-      const updateData: any = { ...data };
+      const updateData: any = cleanObject({ ...data });
       if (data.type) updateData.faceroType = determineFaceroType(data.type);
       
-      // Remover campos undefined para evitar erro no Firestore
-      Object.keys(updateData).forEach(key => {
-        if (updateData[key] === undefined) {
-          delete updateData[key];
-        }
-      });
+      if (data.value !== undefined && data.quantity !== undefined) {
+        const totalInvestedAmount = Number(data.value);
+        const unitPrice = Number(data.quantity) !== 0 ? totalInvestedAmount / Number(data.quantity) : 0;
+        updateData.invested_value = totalInvestedAmount;
+        updateData.price = unitPrice;
+        delete updateData.value;
+      }
       
       await updateDoc(doc(db, 'investments', id), {
         ...updateData,
@@ -543,7 +552,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
   const addEarning = async (data: any) => {
     if (!auth.currentUser || !kingdom) return;
     const id = doc(collection(db, 'transactions')).id;
-    await setDoc(doc(db, 'transactions', id), {
+    await setDoc(doc(db, 'transactions', id), cleanObject({
       id,
       type: 'earning',
       amount: data.amount,
@@ -553,37 +562,45 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
       created_at: new Date(),
       user_id: auth.currentUser.uid,
       kingdom_id: kingdom.id
-    });
+    }));
     await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_EARNING', id);
   };
 
-  const saveBudget = async (category_id: string, amount: number) => {
+  const saveBudget = async (category_id: string, amount: number, month?: number, year?: number) => {
     if (!auth.currentUser || !kingdom) return;
-    const existingBudget = budgets.find(b => b.category_id === category_id);
-    const budgetId = existingBudget ? existingBudget.id : `${kingdom.id}_${category_id}`;
-    await setDoc(doc(db, 'budgets', budgetId), {
+    
+    const targetMonth = month || new Date().getMonth() + 1;
+    const targetYear = year || new Date().getFullYear();
+    const monthStr = `${targetYear}-${String(targetMonth).padStart(2, '0')}`;
+    
+    const existingBudget = budgets.find(b => b.category_id === category_id && (b.mês === monthStr || b.month === monthStr));
+    const budgetId = existingBudget ? existingBudget.id : `${kingdom.id}_${category_id}_${monthStr}`;
+    
+    await setDoc(doc(db, 'budgets', budgetId), cleanObject({
       id: budgetId,
       user_id: auth.currentUser.uid,
       category_id,
       budget_amount: amount,
+      mês: monthStr,
+      month: monthStr,
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid,
       created_at: existingBudget?.created_at || new Date(),
       updated_at: new Date()
-    }, { merge: true });
+    }), { merge: true });
   };
 
   const addCategory = async (category: any) => {
     if (!auth.currentUser || !kingdom) return;
     const newId = doc(collection(db, 'categories')).id;
-    await setDoc(doc(db, 'categories', newId), {
+    await setDoc(doc(db, 'categories', newId), cleanObject({
       ...category,
       id: newId,
       user_id: auth.currentUser.uid,
       created_at: new Date(),
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid
-    });
+    }));
     await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_CATEGORY', newId, { name: category.name });
   };
 
@@ -599,34 +616,84 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
 
   const addPayable = async (payable: any) => {
     if (!auth.currentUser || !kingdom) return;
-    const installments = payable.installments && payable.installments > 1 ? payable.installments : 1;
-    const baseAmount = payable.amount / installments;
     
-    // Garantir status válido
+    const categoryName = categories.find(c => c.id === payable.category_id)?.name || 'Categoria';
     const validStatus = ['pendente', 'pago', 'atrasado'].includes(payable.status) ? payable.status : 'pendente';
+    const rawDueDate = payable.due_date || payable.dueDate || new Date().toISOString();
+    
+    if (payable.isRecurring && payable.dataFim) {
+      const startDate = new Date(rawDueDate);
+      const endDate = new Date(payable.dataFim);
+      const recurrenceRule = payable.recurrenceRule || 'monthly';
+      
+      let currentDate = new Date(startDate);
+      let count = 0;
+      
+      while (currentDate <= endDate && count < 120) { // Safety limit of 10 years
+        const newId = doc(collection(db, 'accounts_payable')).id;
+        const dueDateStr = currentDate.toISOString().split('T')[0];
+        
+        const newPayable = cleanObject({
+          ...payable,
+          isRecurring: false, // Pre-generated instances should not be picked up by the dynamic engine
+          status: validStatus,
+          id: newId,
+          due_date: dueDateStr,
+          dueDate: dueDateStr,
+          userId: auth.currentUser.uid,
+          userName: auth.currentUser.displayName || 'Usuário',
+          categoryName,
+          createdAt: new Date().toISOString(),
+          kingdom_id: kingdom.id,
+          created_by: auth.currentUser.uid
+        });
+        
+        await setDoc(doc(db, 'accounts_payable', newId), newPayable);
+        await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'payable', amount: payable.amount });
+        
+        // Increment date based on recurrence rule
+        if (recurrenceRule === 'weekly') {
+          currentDate.setDate(currentDate.getDate() + 7);
+        } else if (recurrenceRule === 'monthly') {
+          currentDate.setMonth(currentDate.getMonth() + 1);
+        } else if (recurrenceRule === 'quarterly') {
+          currentDate.setMonth(currentDate.getMonth() + 3);
+        } else if (recurrenceRule === 'yearly') {
+          currentDate.setFullYear(currentDate.getFullYear() + 1);
+        } else {
+          break;
+        }
+        count++;
+      }
+    } else {
+      const installments = payable.installments && payable.installments > 1 ? payable.installments : 1;
+      const baseAmount = payable.amount / installments;
 
-    for (let i = 0; i < installments; i++) {
-      const newId = doc(collection(db, 'accounts_payable')).id;
-      const rawDueDate = payable.due_date || payable.dueDate || new Date().toISOString();
-      let dueDate = new Date(rawDueDate);
-      dueDate.setMonth(dueDate.getMonth() + i);
-      const dueDateStr = dueDate.toISOString().split('T')[0];
-      const newPayable = {
-        ...payable,
-        status: validStatus,
-        id: newId,
-        amount: baseAmount,
-        due_date: dueDateStr,
-        dueDate: dueDateStr,
-        installments: installments,
-        currentInstallment: i + 1,
-        userId: auth.currentUser.uid,
-        createdAt: new Date().toISOString(),
-        kingdom_id: kingdom.id,
-        created_by: auth.currentUser.uid
-      };
-      await setDoc(doc(db, 'accounts_payable', newId), newPayable);
-      await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'payable', amount: baseAmount });
+      for (let i = 0; i < installments; i++) {
+        const newId = doc(collection(db, 'accounts_payable')).id;
+        let dueDate = new Date(rawDueDate);
+        dueDate.setMonth(dueDate.getMonth() + i);
+        const dueDateStr = dueDate.toISOString().split('T')[0];
+        const newPayable = cleanObject({
+          ...payable,
+          isRecurring: installments > 1 ? false : payable.isRecurring, // Only set to false if it's a pre-generated installment
+          status: validStatus,
+          id: newId,
+          amount: baseAmount,
+          due_date: dueDateStr,
+          dueDate: dueDateStr,
+          installments: installments,
+          currentInstallment: i + 1,
+          userId: auth.currentUser.uid,
+          userName: auth.currentUser.displayName || 'Usuário',
+          categoryName,
+          createdAt: new Date().toISOString(),
+          kingdom_id: kingdom.id,
+          created_by: auth.currentUser.uid
+        });
+        await setDoc(doc(db, 'accounts_payable', newId), newPayable);
+        await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'payable', amount: baseAmount });
+      }
     }
   };
 
@@ -634,7 +701,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
     if (!auth.currentUser || !kingdom) return;
     
     // Garantir status válido se estiver sendo atualizado
-    const updateData = { ...payable };
+    const updateData = cleanObject({ ...payable });
     if (updateData.status && !['pendente', 'pago', 'atrasado'].includes(updateData.status)) {
       updateData.status = 'pendente';
     }
@@ -657,32 +724,79 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
 
   const addReceivable = async (receivable: any) => {
     if (!auth.currentUser || !kingdom) return;
-    const newId = doc(collection(db, 'accounts_receivable')).id;
     
-    // Garantir status válido e data
+    const categoryName = categories.find(c => c.id === receivable.category_id)?.name || 'Categoria';
     const validStatus = ['pendente', 'recebido', 'atrasado', 'inadimplente'].includes(receivable.status) ? receivable.status : 'pendente';
-    const dueDate = receivable.dueDate || receivable.due_date || new Date().toISOString().split('T')[0];
+    const rawDueDate = receivable.dueDate || receivable.due_date || new Date().toISOString().split('T')[0];
 
-    const newReceivable = {
-      ...receivable,
-      status: validStatus,
-      dueDate: dueDate,
-      due_date: dueDate,
-      id: newId,
-      userId: auth.currentUser.uid,
-      createdAt: new Date().toISOString(),
-      kingdom_id: kingdom.id,
-      created_by: auth.currentUser.uid
-    };
-    await setDoc(doc(db, 'accounts_receivable', newId), newReceivable);
-    await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'receivable' });
+    if (receivable.isRecurring && receivable.dataFim) {
+      const startDate = new Date(rawDueDate);
+      const endDate = new Date(receivable.dataFim);
+      const recurrenceRule = receivable.recurrenceRule || 'monthly';
+      
+      let currentDate = new Date(startDate);
+      let count = 0;
+      
+      while (currentDate <= endDate && count < 120) {
+        const newId = doc(collection(db, 'accounts_receivable')).id;
+        const dueDateStr = currentDate.toISOString().split('T')[0];
+        
+        const newReceivable = cleanObject({
+          ...receivable,
+          isRecurring: false, // Pre-generated instances should not be picked up by the dynamic engine
+          status: validStatus,
+          dueDate: dueDateStr,
+          due_date: dueDateStr,
+          id: newId,
+          userId: auth.currentUser.uid,
+          userName: auth.currentUser.displayName || 'Usuário',
+          categoryName,
+          createdAt: new Date().toISOString(),
+          kingdom_id: kingdom.id,
+          created_by: auth.currentUser.uid
+        });
+        
+        await setDoc(doc(db, 'accounts_receivable', newId), newReceivable);
+        await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'receivable', amount: receivable.amount });
+        
+        if (recurrenceRule === 'weekly') {
+          currentDate.setDate(currentDate.getDate() + 7);
+        } else if (recurrenceRule === 'monthly') {
+          currentDate.setMonth(currentDate.getMonth() + 1);
+        } else if (recurrenceRule === 'quarterly') {
+          currentDate.setMonth(currentDate.getMonth() + 3);
+        } else if (recurrenceRule === 'yearly') {
+          currentDate.setFullYear(currentDate.getFullYear() + 1);
+        } else {
+          break;
+        }
+        count++;
+      }
+    } else {
+      const newId = doc(collection(db, 'accounts_receivable')).id;
+      const newReceivable = cleanObject({
+        ...receivable,
+        status: validStatus,
+        dueDate: rawDueDate,
+        due_date: rawDueDate,
+        id: newId,
+        userId: auth.currentUser.uid,
+        userName: auth.currentUser.displayName || 'Usuário',
+        categoryName,
+        createdAt: new Date().toISOString(),
+        kingdom_id: kingdom.id,
+        created_by: auth.currentUser.uid
+      });
+      await setDoc(doc(db, 'accounts_receivable', newId), newReceivable);
+      await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'receivable' });
+    }
   };
 
   const updateReceivable = async (id: string, receivable: any) => {
     if (!auth.currentUser || !kingdom) return;
     
     // Garantir status válido se estiver sendo atualizado
-    const updateData = { ...receivable };
+    const updateData = cleanObject({ ...receivable });
     if (updateData.status && !['pendente', 'recebido', 'atrasado', 'inadimplente'].includes(updateData.status)) {
       updateData.status = 'pendente';
     }
@@ -706,21 +820,21 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
   const addCreditCard = async (card: any) => {
     if (!auth.currentUser || !kingdom) return;
     const newId = doc(collection(db, 'credit_cards')).id;
-    const newCard = {
+    const newCard = cleanObject({
       ...card,
       id: newId,
       userId: auth.currentUser.uid,
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid,
       created_at: new Date()
-    };
+    });
     await setDoc(doc(db, 'credit_cards', newId), newCard);
     await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'credit_card', name: card.name });
   };
 
   const updateCreditCard = async (id: string, card: any) => {
     if (!auth.currentUser || !kingdom) return;
-    await setDoc(doc(db, 'credit_cards', id), card, { merge: true });
+    await setDoc(doc(db, 'credit_cards', id), cleanObject(card), { merge: true });
     await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'credit_card', updates: card });
   };
 
@@ -733,21 +847,21 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
   const addCreditCardInvoice = async (invoice: any) => {
     if (!auth.currentUser || !kingdom) return;
     const newId = doc(collection(db, 'credit_card_invoices')).id;
-    const newInvoice = {
+    const newInvoice = cleanObject({
       ...invoice,
       id: newId,
       userId: auth.currentUser.uid,
       createdAt: new Date().toISOString(),
       kingdom_id: kingdom.id,
       created_by: auth.currentUser.uid
-    };
+    });
     await setDoc(doc(db, 'credit_card_invoices', newId), newInvoice);
     await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'credit_card_invoice', amount: invoice.total_amount });
   };
 
   const updateCreditCardInvoice = async (id: string, invoice: any) => {
     if (!auth.currentUser || !kingdom) return;
-    await setDoc(doc(db, 'credit_card_invoices', id), invoice, { merge: true });
+    await setDoc(doc(db, 'credit_card_invoices', id), cleanObject(invoice), { merge: true });
     await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'credit_card_invoice', updates: invoice });
   };
 

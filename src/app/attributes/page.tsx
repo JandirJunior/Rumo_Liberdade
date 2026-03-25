@@ -9,7 +9,7 @@ import { IMAGES } from '@/assets/images';
 import { formatCurrency, cn, getColorClass } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
-import { TrendingUp, TrendingDown, Settings2, X, Target } from 'lucide-react';
+import { TrendingUp, TrendingDown, Settings2, X, Target, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { useKingdom } from '@/hooks/useKingdom';
 import { useBudgets } from '@/hooks/useBudgets';
 import { BudgetProgressPanel } from '@/components/ui/BudgetProgressPanel';
@@ -17,12 +17,13 @@ import { CategoryManagerPanel } from '@/components/ui/CategoryManagerPanel';
 import { AnnualChartPanel } from '@/components/ui/AnnualChartPanel';
 import { RecurringAccountsPanel } from '@/components/ui/RecurringAccountsPanel';
 import { OverviewListPanel } from '@/components/ui/OverviewListPanel';
+import { useActionContext } from '@/context/ActionContext';
 
 function AttributesContent() {
   const { theme, user, loading: authLoading } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
 
-  const { transactions, payables, receivables, creditCards, deletePayable, deleteReceivable, deleteCreditCard } = useKingdom();
+  const { transactions, payables, receivables, creditCards, categories, deletePayable, deleteReceivable, deleteCreditCard } = useKingdom();
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'Visão Geral' | 'Orçamento' | 'Recorrências'>('Visão Geral');
@@ -33,9 +34,59 @@ function AttributesContent() {
 
   const { budgetProgress } = useBudgets(month, year);
 
+  const { openAction } = useActionContext();
+
+  const handlePrevMonth = () => {
+    if (month === 1) {
+      setMonth(12);
+      setYear(y => y - 1);
+    } else {
+      setMonth(m => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (month === 12) {
+      setMonth(1);
+      setYear(y => y + 1);
+    } else {
+      setMonth(m => m + 1);
+    }
+  };
+
+  const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
   const handleEdit = (item: any) => {
-    console.log('Edit item:', item);
-    // TODO: Implement edit modal
+    if (item.type === 'payable') {
+      openAction('contas_pagar', {
+        id: item.id,
+        descricao: item.description,
+        valorTotal: Math.abs(item.amount),
+        dataVencimento: item.dueDate,
+        categoria: item.category_id,
+        recorrente: item.isRecurring,
+        tipoRecorrencia: item.recurrenceRule,
+      });
+    } else if (item.type === 'receivable') {
+      openAction('contas_receber', {
+        id: item.id,
+        descricao: item.description,
+        valorTotal: Math.abs(item.amount),
+        dataVencimento: item.dueDate,
+        categoria: item.category_id,
+        recorrente: item.isRecurring,
+        tipoRecorrencia: item.recurrenceRule,
+      });
+    } else if (item.type === 'card') {
+      openAction('fatura', {
+        id: item.id,
+        descricao: item.name,
+        limite: item.limit,
+        diaFatura: item.closing_day,
+        diaVencimento: item.due_day,
+        categoria: item.category_id,
+      });
+    }
   };
 
   const handleDelete = (item: any) => {
@@ -115,6 +166,20 @@ function AttributesContent() {
             </button>
           </div>
         </header>
+
+        {/* Month/Year Filter */}
+        <div className="flex items-center justify-between bg-[var(--color-bg-panel)] rounded-2xl p-2 shadow-sm border border-[var(--color-border)] medieval-border">
+          <button onClick={handlePrevMonth} className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
+            <ArrowDownLeft className="w-5 h-5 rotate-45" />
+          </button>
+          <div className="text-center">
+            <p className="text-sm font-bold text-[var(--color-text-main)]">{monthNames[month - 1]}</p>
+            <p className="text-xs text-[var(--color-text-muted)]">{year}</p>
+          </div>
+          <button onClick={handleNextMonth} className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
+            <ArrowUpRight className="w-5 h-5 rotate-45" />
+          </button>
+        </div>
 
         {/* Grid de receitas/despesas */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -263,12 +328,25 @@ function AttributesContent() {
           </div>
           
           <div className="p-6">
-            {activeTab === 'Visão Geral' && <OverviewListPanel payables={payables} receivables={receivables} creditCards={creditCards} onEdit={handleEdit} onDelete={handleDelete} />}
+            {activeTab === 'Visão Geral' && (
+              <OverviewListPanel 
+                payables={payables} 
+                receivables={receivables} 
+                creditCards={creditCards} 
+                categories={categories} 
+                onEdit={handleEdit} 
+                onDelete={handleDelete} 
+                month={month}
+                year={year}
+              />
+            )}
             {activeTab === 'Orçamento' && (
               <BudgetProgressPanel 
-                month={today.getMonth() + 1} 
-                year={today.getFullYear()} 
+                month={month} 
+                year={year} 
                 hideSelectors={true} 
+                onMonthChange={setMonth}
+                onYearChange={setYear}
               />
             )}
             {activeTab === 'Recorrências' && <RecurringAccountsPanel />}
@@ -308,7 +386,14 @@ function AttributesContent() {
               </div>
               
               <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
-                <BudgetProgressPanel hideSelectors={true} isPlanningMode={true} />
+                <BudgetProgressPanel 
+                  month={month} 
+                  year={year} 
+                  hideSelectors={false} 
+                  isPlanningMode={true} 
+                  onMonthChange={setMonth}
+                  onYearChange={setYear}
+                />
               </div>
             </motion.div>
           </div>

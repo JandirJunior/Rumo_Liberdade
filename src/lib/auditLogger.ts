@@ -4,6 +4,7 @@
 
 import { db } from '@/services/firebase';
 import { doc, setDoc, collection } from 'firebase/firestore';
+import { cleanObject } from '@/services/firebaseUtils';
 
 export async function logActivity(
   kingdomId: string,
@@ -14,7 +15,7 @@ export async function logActivity(
 ) {
   const id = doc(collection(db, 'activity_logs')).id;
 
-  await setDoc(doc(db, 'activity_logs', id), {
+  await setDoc(doc(db, 'activity_logs', id), cleanObject({
     id,
     kingdom_id: kingdomId,
     user_id: userId,
@@ -22,5 +23,5 @@ export async function logActivity(
     entity_id: entityId || null,
     details: details || null,
     created_at: new Date()
-  });
+  }));
 }

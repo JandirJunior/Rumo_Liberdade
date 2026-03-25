@@ -2,7 +2,9 @@
 
 import { ThemeProvider, useTheme } from '@/lib/ThemeContext';
 import { KingdomProvider } from '@/contexts/KingdomContext';
+import { ActionProvider } from '@/context/ActionContext';
 import { SpeedDial } from '@/components/ui/SpeedDial';
+import { GlobalModal } from '@/components/ui/GlobalModal';
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary';
 import { AmbientEngine } from '@/components/game/AmbientEngine';
 import { AmbientBackground } from '@/components/game/AmbientBackground';
@@ -45,6 +47,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <main className="w-full min-h-screen relative overflow-x-hidden">
           {children}
           {showNav && <SpeedDial />}
+          {showNav && <GlobalModal />}
           {showNav && <NotificationManager />}
         </main>
       </div>
@@ -57,13 +60,15 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
       <KingdomProvider>
-        <ErrorBoundary>
-          <AmbientEngine />
-          <AmbientBackground />
-          <LayoutContent>
-            {children}
-          </LayoutContent>
-        </ErrorBoundary>
+        <ActionProvider>
+          <ErrorBoundary>
+            <AmbientEngine />
+            <AmbientBackground />
+            <LayoutContent>
+              {children}
+            </LayoutContent>
+          </ErrorBoundary>
+        </ActionProvider>
       </KingdomProvider>
     </ThemeProvider>
   );

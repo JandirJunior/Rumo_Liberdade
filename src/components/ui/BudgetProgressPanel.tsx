@@ -7,22 +7,39 @@ import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 
 export function BudgetProgressPanel({ 
-  month: initialMonth, 
-  year: initialYear,
+  month: propMonth, 
+  year: propYear,
   hideSelectors = false,
-  isPlanningMode = false
+  isPlanningMode = false,
+  onMonthChange,
+  onYearChange
 }: { 
   month?: number, 
   year?: number,
   hideSelectors?: boolean,
-  isPlanningMode?: boolean
+  isPlanningMode?: boolean,
+  onMonthChange?: (m: number) => void,
+  onYearChange?: (y: number) => void
 } = {}) {
   const { theme } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
   
   const today = new Date();
-  const [month, setMonth] = useState(initialMonth || today.getMonth() + 1);
-  const [year, setYear] = useState(initialYear || today.getFullYear());
+  const [internalMonth, setInternalMonth] = useState(today.getMonth() + 1);
+  const [internalYear, setInternalYear] = useState(today.getFullYear());
+
+  const month = propMonth !== undefined ? propMonth : internalMonth;
+  const year = propYear !== undefined ? propYear : internalYear;
+
+  const setMonth = (m: number) => {
+    if (onMonthChange) onMonthChange(m);
+    else setInternalMonth(m);
+  };
+
+  const setYear = (y: number) => {
+    if (onYearChange) onYearChange(y);
+    else setInternalYear(y);
+  };
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('expense');
   
   const { budgetProgress, loading, saveBudget } = useBudgets(month, year);
