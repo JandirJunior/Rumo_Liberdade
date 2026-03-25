@@ -22,7 +22,7 @@ interface KingdomStats {
 
 export function KingdomLevelPanel({ stats }: { stats: KingdomStats }) {
   const { theme } = useTheme();
-  const progress = (stats.xp / stats.nextLevelXp) * 100;
+  const progress = (stats.xp / stats.nextLevelXp) * 100
 
   return (
     <div className="bg-[var(--color-bg-panel)] rounded-[2.5rem] p-6 border border-[var(--color-border)] shadow-sm relative overflow-hidden medieval-border">

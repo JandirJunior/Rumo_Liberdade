@@ -122,7 +122,6 @@ function TransactionsContent() {
 
   const handleImportTransactions = async (data: { type: string; amount: string; description: string; category_id: string; date?: string }[]) => {
     for (const item of data) {
-      // expected headers: type, amount, description, category_id, date
       await addTransaction({
         type: item.type.toLowerCase() as TransactionType,
         amount: parseFloat(item.amount),
@@ -142,9 +141,35 @@ function TransactionsContent() {
     return matchesMonth && matchesYear && matchesFilter && matchesSearch;
   });
 
-  const { income: totalActualIncome, expense: totalActualExpenses, investment: totalActualInvestments } = financialEngine.calculateMonthlySummary(transactions, month, year);
+  /**
+   * 💰 CÁLCULO DO SALDO PARA INVESTIR (SURPLUS)
+   * 
+   * 🔴 Antes:
+   * Somava tudo direto → receitas, despesas e investimentos sem distinção.
+   * Isso fazia o saldo ficar incorreto.
+   * 
+   * ✅ Agora:
+   * - income / earning → soma
+   * - expense → subtrai
+   * - investment → respeita sinal (positivo = venda, negativo = compra)
+   */
+  const surplus = filteredTransactions.reduce((acc, t) => {
+    const amount = Number(t.amount || 0);
 
-  const surplus = totalActualIncome - totalActualExpenses - totalActualInvestments;
+    if (t.type === 'income' || t.type === 'earning') {
+      return acc + amount;
+    }
+
+    if (t.type === 'expense') {
+      return acc - amount;
+    }
+
+    if (t.type === 'investment') {
+      return acc + amount;
+    }
+
+    return acc;
+  }, 0);
 
   const handlePrevMonth = () => {
     if (month === 1) {
@@ -168,6 +193,7 @@ function TransactionsContent() {
 
   return (
     <div className="min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)] relative overflow-hidden">
+
       {/* Imagem de Fundo Sugestiva */}
       <div className="fixed inset-0 z-0 opacity-10 pointer-events-none">
         <Image
