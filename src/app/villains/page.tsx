@@ -14,8 +14,17 @@ import { FINANCIAL_VILLAINS, calculateVillainDamage } from '@/lib/financialVilla
 import { financialEngine } from '@/lib/financialEngine';
 import { useKingdom } from '@/hooks/useKingdom';
 import { IMAGES } from '@/assets/images';
+import { ClientOnly } from '@/components/ClientOnly';
 
 export default function Villains() {
+  return (
+    <ClientOnly>
+      <VillainsContent />
+    </ClientOnly>
+  );
+}
+
+function VillainsContent() {
   const router = useRouter();
   const { theme, user, loading: authLoading } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
