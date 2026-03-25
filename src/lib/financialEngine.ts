@@ -184,11 +184,30 @@ export function calculateBudgetProgressData(
   creditCards: CreditCardInvoice[]
 ): BudgetProgress[] {
   return categories.map(cat => {
-    const budget = budgets.find(b => 
-      b.category_id === cat.id && 
-      (b.mês === `${year}-${String(month).padStart(2, '0')}` || 
-       b.month === `${year}-${String(month).padStart(2, '0')}`)
-    );
+    const targetMonthStr = `${year}-${String(month).padStart(2, '0')}`;
+    
+    // Sort budgets for this category by date descending
+    const categoryBudgets = budgets
+      .filter(b => b.category_id === cat.id)
+      .sort((a, b) => {
+        const yearA = a.year || 0;
+        const monthA = a.month || 0;
+        const yearB = b.year || 0;
+        const monthB = b.month || 0;
+        
+        if (yearA !== yearB) return yearB - yearA;
+        return monthB - monthA;
+      });
+
+    // Find the first budget that is <= targetMonth and targetYear
+    const budget = categoryBudgets.find(b => {
+      const bYear = b.year || 0;
+      const bMonth = b.month || 0;
+      if (bYear < year) return true;
+      if (bYear === year && bMonth <= month) return true;
+      return false;
+    });
+
     const orcado = budget ? (budget.budget_amount || budget.quantidade || 0) : 0;
 
     const gasto_real = transactions
@@ -248,7 +267,7 @@ export function calculateBudgetProgressData(
       category_name: cat.name,
       rpg_group: cat.rpg_group || 'Outros',
       icon: cat.icon || 'HelpCircle',
-      color: cat.color || '#94a3b8',
+      color: cat.color || '#3b82f6', // Changed from #94a3b8 to a vibrant blue
       rpg_theme_name: cat.rpg_theme_name || 'Geral',
       flow_type: cat.flow_type || 'expense',
       orcado,
@@ -270,7 +289,28 @@ export function calculateCategoryFinancials(
   month: number,
   year: number
 ) {
-  const budget = budgets.find(b => b.category_id === categoryId && (b.month === month || b.mês === `${year}-${String(month).padStart(2, '0')}`));
+  const targetMonthStr = `${year}-${String(month).padStart(2, '0')}`;
+  
+  const categoryBudgets = budgets
+    .filter(b => b.category_id === categoryId)
+    .sort((a, b) => {
+      const yearA = a.year || 0;
+      const monthA = a.month || 0;
+      const yearB = b.year || 0;
+      const monthB = b.month || 0;
+      
+      if (yearA !== yearB) return yearB - yearA;
+      return monthB - monthA;
+    });
+
+  const budget = categoryBudgets.find(b => {
+    const bYear = b.year || 0;
+    const bMonth = b.month || 0;
+    if (bYear < year) return true;
+    if (bYear === year && bMonth <= month) return true;
+    return false;
+  });
+
   const budgeted = budget ? (budget.budget_amount || budget.quantidade || 0) : 0;
 
   const realized = transactions

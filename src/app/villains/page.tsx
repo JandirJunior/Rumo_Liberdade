@@ -21,7 +21,9 @@ export default function Villains() {
   const colors = THEMES[theme] || THEMES.ORBITA;
 
   useEffect(() => {
+    console.log('Villains check auth:', { authLoading, user });
     if (!authLoading && !user) {
+      console.log('Redirecting to logon');
       router.push('/logon');
     }
   }, [user, authLoading, router]);

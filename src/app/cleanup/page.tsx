@@ -14,9 +14,18 @@ export default function CleanupPage() {
   const [loading, setLoading] = useState(false);
 
   const parseItemDate = (data: any): Date | null => {
+    // Handle explicit month/year first to avoid treating month number as milliseconds
+    if (data.month !== undefined && data.year !== undefined) {
+      const m = Number(data.month);
+      const y = Number(data.year);
+      if (!isNaN(m) && !isNaN(y)) {
+        return new Date(y, m - 1, 1);
+      }
+    }
+
     const dateValue = data.dueDate || data.due_date || data.date || data.created_at || data.createdAt || 
                      data.closingDate || data.closing_date || data.paidAt || data.paid_at || 
-                     data.received_at || data.receivedAt || data.mês || data.month;
+                     data.received_at || data.receivedAt || data.mês;
     
     if (dateValue) {
       if (typeof dateValue === 'string' && /^\d{4}-\d{2}$/.test(dateValue)) {
@@ -25,14 +34,6 @@ export default function CleanupPage() {
       }
       const d = new Date(dateValue instanceof Date ? dateValue : dateValue.toDate ? dateValue.toDate() : dateValue);
       if (!isNaN(d.getTime())) return d;
-    }
-
-    if (data.month !== undefined && data.year !== undefined) {
-      const m = Number(data.month);
-      const y = Number(data.year);
-      if (!isNaN(m) && !isNaN(y)) {
-        return new Date(y, m - 1, 1);
-      }
     }
 
     return null;

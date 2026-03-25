@@ -25,8 +25,11 @@ export function BudgetProgressPanel({
   const colors = THEMES[theme] || THEMES.ORBITA;
   
   const today = new Date();
-  const [internalMonth, setInternalMonth] = useState(today.getMonth() + 1);
-  const [internalYear, setInternalYear] = useState(today.getFullYear());
+  const currentMonth = today.getMonth() + 1;
+  const currentYear = today.getFullYear();
+
+  const [internalMonth, setInternalMonth] = useState(currentMonth);
+  const [internalYear, setInternalYear] = useState(currentYear);
 
   const month = propMonth !== undefined ? propMonth : internalMonth;
   const year = propYear !== undefined ? propYear : internalYear;
@@ -42,7 +45,10 @@ export function BudgetProgressPanel({
   };
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('expense');
   
-  const { budgetProgress, loading, saveBudget } = useBudgets(month, year);
+  const effectiveMonth = isPlanningMode ? currentMonth : month;
+  const effectiveYear = isPlanningMode ? currentYear : year;
+
+  const { budgetProgress, loading, saveBudget } = useBudgets(effectiveMonth, effectiveYear);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState<string>('');
 
@@ -54,7 +60,11 @@ export function BudgetProgressPanel({
   const handleSave = async (category_id: string) => {
     const amount = parseFloat(editAmount);
     if (!isNaN(amount) && amount >= 0) {
-      await saveBudget(category_id, amount);
+      if (isPlanningMode) {
+        await saveBudget(category_id, amount, currentMonth, currentYear);
+      } else {
+        await saveBudget(category_id, amount);
+      }
     }
     setEditingCategory(null);
   };
@@ -71,22 +81,133 @@ export function BudgetProgressPanel({
     }
   };
 
-  const filteredProgress = useMemo(() => {
-    return budgetProgress.filter(b => b.flow_type === activeTab);
-  }, [budgetProgress, activeTab]);
+  const incomeProgress = useMemo(() => budgetProgress.filter(b => b.flow_type === 'income'), [budgetProgress]);
+  const expenseProgress = useMemo(() => budgetProgress.filter(b => b.flow_type === 'expense'), [budgetProgress]);
 
-  const groupedProgress = useMemo(() => {
-    return filteredProgress.reduce((acc, item) => {
+  const groupProgress = (progress: typeof budgetProgress) => {
+    return progress.reduce((acc, item) => {
       if (!acc[item.rpg_group]) {
         acc[item.rpg_group] = [];
       }
       acc[item.rpg_group].push(item);
       return acc;
     }, {} as Record<string, typeof budgetProgress>);
-  }, [filteredProgress]);
+  };
+
+  const groupedIncome = useMemo(() => groupProgress(incomeProgress), [incomeProgress]);
+  const groupedExpense = useMemo(() => groupProgress(expenseProgress), [expenseProgress]);
+
+  const totalIncomeBudget = useMemo(() => incomeProgress.reduce((sum, item) => sum + item.orcado, 0), [incomeProgress]);
+  const totalExpenseBudget = useMemo(() => expenseProgress.reduce((sum, item) => sum + item.orcado, 0), [expenseProgress]);
+  const balanceBudget = totalIncomeBudget - totalExpenseBudget;
+
+  const filteredProgress = useMemo(() => {
+    return budgetProgress.filter(b => b.flow_type === activeTab);
+  }, [budgetProgress, activeTab]);
+
+  const groupedProgress = useMemo(() => groupProgress(filteredProgress), [filteredProgress]);
 
   if (loading) {
     return <div className="animate-pulse bg-[var(--color-bg-panel)] h-64 rounded-3xl medieval-border"></div>;
+  }
+
+  const renderPlanningItem = (item: any) => (
+    <div key={item.category_id} className="flex items-center justify-between p-3 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-xl shadow-sm hover:border-[var(--color-primary)] transition-colors medieval-border">
+      <div className="flex items-center gap-3">
+        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-bg-dark)] shadow-sm", item.color || 'bg-[var(--color-primary)]')}>
+          {getIcon(item.icon || 'Target')}
+        </div>
+        <div className="text-xs font-bold text-[var(--color-text-main)]">{item.category_name}</div>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-bold text-[var(--color-text-muted)]">R$</span>
+        <input 
+          type="number"
+          defaultValue={item.orcado || ''}
+          onBlur={(e) => {
+            const val = parseFloat(e.target.value);
+            if (!isNaN(val) && val >= 0 && val !== item.orcado) {
+              if (isPlanningMode) {
+                saveBudget(item.category_id, val, currentMonth, currentYear);
+              } else {
+                saveBudget(item.category_id, val);
+              }
+            } else if (e.target.value === '' && item.orcado !== 0) {
+              if (isPlanningMode) {
+                saveBudget(item.category_id, 0, currentMonth, currentYear);
+              } else {
+                saveBudget(item.category_id, 0);
+              }
+            }
+          }}
+          className="w-24 px-2 py-1.5 text-sm font-bold text-[var(--color-text-main)] bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] text-right transition-all"
+          placeholder="0.00"
+        />
+      </div>
+    </div>
+  );
+
+  if (isPlanningMode) {
+    return (
+      <section className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-[var(--color-bg-panel)] p-4 rounded-xl border border-[var(--color-border)] shadow-sm text-center medieval-border">
+            <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-bold mb-1">Total Receitas</p>
+            <p className="text-xl font-bold text-emerald-500">{formatCurrency(totalIncomeBudget)}</p>
+          </div>
+          <div className="bg-[var(--color-bg-panel)] p-4 rounded-xl border border-[var(--color-border)] shadow-sm text-center medieval-border">
+            <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-bold mb-1">Total Despesas</p>
+            <p className="text-xl font-bold text-red-500">{formatCurrency(totalExpenseBudget)}</p>
+          </div>
+          <div className="bg-[var(--color-bg-panel)] p-4 rounded-xl border border-[var(--color-border)] shadow-sm text-center medieval-border">
+            <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-bold mb-1">Saldo Previsto</p>
+            <p className={cn("text-xl font-bold", balanceBudget >= 0 ? "text-emerald-500" : "text-red-500")}>
+              {formatCurrency(balanceBudget)}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Coluna Receitas */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 border-b border-[var(--color-border)] pb-2">
+              <TrendingUp className="w-5 h-5 text-emerald-500" />
+              <h3 className="text-lg font-bold text-[var(--color-text-main)] medieval-title">Receitas</h3>
+            </div>
+            {Object.entries(groupedIncome).map(([groupName, items]) => (
+              <div key={groupName} className="space-y-3">
+                <h4 className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest px-2">{groupName}</h4>
+                <div className="flex flex-col gap-2">
+                  {items.map(renderPlanningItem)}
+                </div>
+              </div>
+            ))}
+            {Object.keys(groupedIncome).length === 0 && (
+              <p className="text-sm text-[var(--color-text-muted)] text-center py-4">Nenhuma categoria de receita encontrada.</p>
+            )}
+          </div>
+
+          {/* Coluna Despesas */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 border-b border-[var(--color-border)] pb-2">
+              <TrendingDown className="w-5 h-5 text-red-500" />
+              <h3 className="text-lg font-bold text-[var(--color-text-main)] medieval-title">Despesas</h3>
+            </div>
+            {Object.entries(groupedExpense).map(([groupName, items]) => (
+              <div key={groupName} className="space-y-3">
+                <h4 className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest px-2">{groupName}</h4>
+                <div className="flex flex-col gap-2">
+                  {items.map(renderPlanningItem)}
+                </div>
+              </div>
+            ))}
+            {Object.keys(groupedExpense).length === 0 && (
+              <p className="text-sm text-[var(--color-text-muted)] text-center py-4">Nenhuma categoria de despesa encontrada.</p>
+            )}
+          </div>
+        </div>
+      </section>
+    );
   }
 
   return (
@@ -144,38 +265,8 @@ export function BudgetProgressPanel({
         {Object.entries(groupedProgress).map(([groupName, items]) => (
           <div key={groupName} className="space-y-4">
             <h4 className="text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-widest px-2">{groupName}</h4>
-            <div className={isPlanningMode ? "flex flex-col gap-2" : "flex flex-col gap-3"}>
+            <div className="flex flex-col gap-3">
               {items.map((item) => {
-                if (isPlanningMode) {
-                  return (
-                    <div key={item.category_id} className="flex items-center justify-between p-3 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-xl shadow-sm hover:border-[var(--color-primary)] transition-colors medieval-border">
-                      <div className="flex items-center gap-3">
-                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-bg-dark)] shadow-sm", item.color || 'bg-[var(--color-primary)]')}>
-                          {getIcon(item.icon || 'Target')}
-                        </div>
-                        <span className="text-sm font-bold text-[var(--color-text-main)]">{item.category_name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-[var(--color-text-muted)]">R$</span>
-                        <input 
-                          type="number"
-                          defaultValue={item.orcado || ''}
-                          onBlur={(e) => {
-                            const val = parseFloat(e.target.value);
-                            if (!isNaN(val) && val >= 0 && val !== item.orcado) {
-                              saveBudget(item.category_id, val);
-                            } else if (e.target.value === '' && item.orcado !== 0) {
-                              saveBudget(item.category_id, 0);
-                            }
-                          }}
-                          className="w-24 px-2 py-1.5 text-sm font-bold text-[var(--color-text-main)] bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] text-right transition-all"
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-                  );
-                }
-
                 const isExceeded = item.status === 'orçamento excedido';
                 const isEditing = editingCategory === item.category_id;
 
@@ -190,7 +281,7 @@ export function BudgetProgressPanel({
                           {getIcon(item.icon || 'Target')}
                         </div>
                         <div>
-                          <h5 className="text-xs font-bold text-[var(--color-text-main)]">{item.category_name}</h5>
+                          <h5 className="text-[10px] font-bold text-[var(--color-text-main)]">{item.category_name}</h5>
                           <div className="flex items-center gap-1">
                             {isExceeded ? (
                               <AlertCircle className="w-3 h-3 text-red-500" />
@@ -229,17 +320,17 @@ export function BudgetProgressPanel({
                             className="cursor-pointer group text-right"
                             onClick={() => handleEdit(item.category_id, item.orcado)}
                           >
-                            <p className="text-xs font-bold text-[var(--color-text-main)] group-hover:text-[var(--color-primary)] transition-colors">
+                            <p className="text-[10px] font-bold text-[var(--color-text-main)] group-hover:text-[var(--color-primary)] transition-colors">
                               {formatCurrency(item.gasto_real)} <span className="text-[var(--color-text-muted)] text-[10px] font-normal">/ {formatCurrency(item.orcado)}</span>
                             </p>
-                            <p className="text-[9px] text-[var(--color-text-muted)] font-medium uppercase tracking-wider group-hover:underline">
+                            <p className="text-[8px] text-[var(--color-text-muted)] font-medium uppercase tracking-wider group-hover:underline">
                               Editar
                             </p>
                           </div>
                         )}
                         <div className="flex items-center gap-1 bg-[var(--color-bg-dark)] px-1.5 py-0 rounded-md border border-[var(--color-border)]">
                           <span className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-tighter">Prev:</span>
-                          <span className="text-[9px] font-bold text-[var(--color-text-main)]">{formatCurrency(item.previsto)}</span>
+                          <span className="text-[8px] font-bold text-[var(--color-text-main)]">{formatCurrency(item.previsto)}</span>
                         </div>
                       </div>
                     </div>
@@ -262,8 +353,8 @@ export function BudgetProgressPanel({
                     </div>
                     
                     <div className="flex justify-between mt-1">
-                      <span className="text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{item.progresso.toFixed(0)}%</span>
-                      <span className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-widest">+{item.xp_reward} XP</span>
+                      <span className="text-[8px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">{item.progresso.toFixed(0)}%</span>
+                      <span className="text-[8px] font-black text-[var(--color-primary)] uppercase tracking-widest">+{item.xp_reward} XP</span>
                     </div>
                   </div>
                 );

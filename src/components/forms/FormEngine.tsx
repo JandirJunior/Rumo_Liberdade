@@ -4,11 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { useActionContext } from '@/context/ActionContext';
 import { actionsRegistry, ActionField } from '@/lib/actionsRegistry';
 import { useKingdomData } from '@/contexts/KingdomContext';
+import { useTheme } from '@/lib/ThemeContext';
 import { X } from 'lucide-react';
 
 export function FormEngine({ actionKey }: { actionKey: string }) {
   const { activeAction, actionData, closeAction } = useActionContext();
   const { categories, creditCards, addPayable, addReceivable, addCreditCard, updateCreditCard, addTransaction, addInvestment, addEarning, updateTransaction, updateInvestment, updatePayable, updateReceivable } = useKingdomData();
+  const { gameMode } = useTheme();
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -179,7 +181,10 @@ export function FormEngine({ actionKey }: { actionKey: string }) {
       // Dynamic options based on field name
       if (field.name === 'categoria') {
         const flowType = actionKey === 'receita' || actionKey === 'contas_receber' ? 'income' : 'expense';
-        options = categories.filter(c => c.flow_type === flowType).map(c => ({ label: c.name, value: c.id }));
+        const profileType = gameMode === 'reino' ? 'MultiUsuario' : 'MonoUsuario';
+        options = categories
+          .filter(c => c.flow_type === flowType && (!c.allowed_profiles || c.allowed_profiles.includes(profileType)))
+          .map(c => ({ label: c.name, value: c.id }));
       } else if (field.name === 'cartao') {
         options = creditCards.map(c => ({ label: c.name, value: c.id }));
       }
