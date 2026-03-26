@@ -96,6 +96,7 @@ export interface Transaction {
   investment_category_id?: string;
   // Legacy fields
   category_name?: string;
+  categoryName?: string;
   category_group?: string;
   userId?: string;
   userName?: string;
