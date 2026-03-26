@@ -1,6 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion } from 'motion/react';
-import { Target, AlertCircle, CheckCircle2, FlaskConical, Castle, Compass, Beer, Book, TrendingUp, TrendingDown } from 'lucide-react';
+import { 
+  Target, AlertCircle, CheckCircle2, FlaskConical, Castle, Compass, Beer, Book, 
+  TrendingUp, TrendingDown, Wallet, Coins, Gem, Zap, Gift, Briefcase, Landmark,
+  CreditCard, ShoppingCart, Utensils, Home, Car, Heart, Shield, Sword, Trophy
+} from 'lucide-react';
 import { useBudgets } from '@/hooks/useBudgets';
 import { formatCurrency, cn } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
@@ -77,6 +81,22 @@ export function BudgetProgressPanel({
       case 'Compass': return <Compass className="w-5 h-5" />;
       case 'Beer': return <Beer className="w-5 h-5" />;
       case 'Book': return <Book className="w-5 h-5" />;
+      case 'Wallet': return <Wallet className="w-5 h-5" />;
+      case 'Coins': return <Coins className="w-5 h-5" />;
+      case 'Gem': return <Gem className="w-5 h-5" />;
+      case 'Zap': return <Zap className="w-5 h-5" />;
+      case 'Gift': return <Gift className="w-5 h-5" />;
+      case 'Briefcase': return <Briefcase className="w-5 h-5" />;
+      case 'Landmark': return <Landmark className="w-5 h-5" />;
+      case 'CreditCard': return <CreditCard className="w-5 h-5" />;
+      case 'ShoppingCart': return <ShoppingCart className="w-5 h-5" />;
+      case 'Utensils': return <Utensils className="w-5 h-5" />;
+      case 'Home': return <Home className="w-5 h-5" />;
+      case 'Car': return <Car className="w-5 h-5" />;
+      case 'Heart': return <Heart className="w-5 h-5" />;
+      case 'Shield': return <Shield className="w-5 h-5" />;
+      case 'Sword': return <Sword className="w-5 h-5" />;
+      case 'Trophy': return <Trophy className="w-5 h-5" />;
       default: return <Target className="w-5 h-5" />;
     }
   };
@@ -84,18 +104,25 @@ export function BudgetProgressPanel({
   const incomeProgress = useMemo(() => budgetProgress.filter(b => b.flow_type === 'income'), [budgetProgress]);
   const expenseProgress = useMemo(() => budgetProgress.filter(b => b.flow_type === 'expense'), [budgetProgress]);
 
-  const groupProgress = (progress: typeof budgetProgress) => {
+  const groupProgress = useCallback((progress: typeof budgetProgress) => {
     return progress.reduce((acc, item) => {
-      if (!acc[item.rpg_group]) {
-        acc[item.rpg_group] = [];
+      // Normaliza o nome do grupo para corresponder exatamente aos rótulos definidos em rpgCategories.ts
+      let normalizedGroup = item.rpg_group;
+      if (normalizedGroup.includes('Cofre')) normalizedGroup = '💎 Cofre do Reino - Receitas Fixas';
+      else if (normalizedGroup.includes('Saque')) normalizedGroup = '⚡ Saque de Missões - Receitas Variáveis';
+      else if (normalizedGroup.includes('Tributo')) normalizedGroup = '🛡️ Tributos do Reino - Despesas Fixas';
+      else if (normalizedGroup.includes('Aventura')) normalizedGroup = '⚔️ Aventuras do Herói - Despesas Variáveis';
+        
+      if (!acc[normalizedGroup]) {
+        acc[normalizedGroup] = [];
       }
-      acc[item.rpg_group].push(item);
+      acc[normalizedGroup].push(item);
       return acc;
     }, {} as Record<string, typeof budgetProgress>);
-  };
+  }, []);
 
-  const groupedIncome = useMemo(() => groupProgress(incomeProgress), [incomeProgress]);
-  const groupedExpense = useMemo(() => groupProgress(expenseProgress), [expenseProgress]);
+  const groupedIncome = useMemo(() => groupProgress(incomeProgress), [incomeProgress, groupProgress]);
+  const groupedExpense = useMemo(() => groupProgress(expenseProgress), [expenseProgress, groupProgress]);
 
   const totalIncomeBudget = useMemo(() => incomeProgress.reduce((sum, item) => sum + item.orcado, 0), [incomeProgress]);
   const totalExpenseBudget = useMemo(() => expenseProgress.reduce((sum, item) => sum + item.orcado, 0), [expenseProgress]);
@@ -105,7 +132,7 @@ export function BudgetProgressPanel({
     return budgetProgress.filter(b => b.flow_type === activeTab);
   }, [budgetProgress, activeTab]);
 
-  const groupedProgress = useMemo(() => groupProgress(filteredProgress), [filteredProgress]);
+  const groupedProgress = useMemo(() => groupProgress(filteredProgress), [filteredProgress, groupProgress]);
 
   if (loading) {
     return <div className="animate-pulse bg-[var(--color-bg-panel)] h-64 rounded-3xl medieval-border"></div>;

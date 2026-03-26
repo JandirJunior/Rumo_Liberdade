@@ -10,6 +10,7 @@ import { formatCurrency, cn, getColorClass } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
 import { TrendingUp, TrendingDown, Settings2, X, Target, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { getRpgGroupConfig } from '@/lib/rpgCategories';
 import { useKingdom } from '@/hooks/useKingdom';
 import { useBudgets } from '@/hooks/useBudgets';
 import { BudgetProgressPanel } from '@/components/ui/BudgetProgressPanel';
@@ -109,23 +110,47 @@ function AttributesContent() {
   }
 
   if (!user) return null;
-
-  const cofreReino = budgetProgress
-    .filter(b => b.rpg_group === '💎 Cofre do Reino (Receitas Fixas)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
-  const saquesMissoes = budgetProgress
-    .filter(b => b.rpg_group === '⚡ Saque de Missões (Receitas Variáveis)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
-  const tributosReino = budgetProgress
-    .filter(b => b.rpg_group === '🛡️ Tributos do Reino (Despesas Fixas)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
-  const aventurasHeroi = budgetProgress
-    .filter(b => b.rpg_group === '⚔️ Aventuras do Herói (Despesas Variáveis)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real, previsto: acc.previsto + curr.previsto }), { orcado: 0, realizado: 0, previsto: 0 });
   
-  // Filter out the specified expense categories from the progress panel
-  const expenseCategoriesToRemove = ['Previdência privada', 'Seguros', 'Aluguel/Financiamento', 'Impostos e taxas'];
-  const filteredBudgetProgress = budgetProgress.filter(b => !expenseCategoriesToRemove.includes(b.category_name));
+  // Normalização dos grupos para corresponder exatamente aos rótulos definidos em rpgCategories.ts
+  const normalizeGroupName = (name: string) => {
+    if (name.includes('Cofre')) return '💎 Cofre do Reino - Receitas Fixas';
+    if (name.includes('Saque')) return '⚡ Saque de Missões - Receitas Variáveis';
+    if (name.includes('Tributo')) return '🛡️ Tributos do Reino - Despesas Fixas';
+    if (name.includes('Aventura')) return '⚔️ Aventuras do Herói - Despesas Variáveis';
+    return name;
+  };
+
+  // Get all unique RPG groups from the budget progress and normalize them
+  const allRpgGroups = Array.from(new Set(budgetProgress.map(b => normalizeGroupName(b.rpg_group))));
+  
+  // Create summaries for each group
+  const groupSummaries = allRpgGroups.map(groupName => {
+    const groupItems = budgetProgress.filter(b => normalizeGroupName(b.rpg_group) === groupName);
+    const summary = groupItems.reduce((acc, curr) => ({
+      orcado: acc.orcado + curr.orcado,
+      realizado: acc.realizado + curr.gasto_real,
+      previsto: acc.previsto + curr.previsto
+    }), { orcado: 0, realizado: 0, previsto: 0 });
+    
+    return {
+      name: groupName,
+      ...summary,
+      config: getRpgGroupConfig(groupName)
+    };
+  });
+
+  // Define column groups na ordem solicitada
+  const leftGroups = [
+    '💎 Cofre do Reino - Receitas Fixas',
+    '⚡ Saque de Missões - Receitas Variáveis'
+  ];
+  const rightGroups = [
+    '🛡️ Tributos do Reino - Despesas Fixas',
+    '⚔️ Aventuras do Herói - Despesas Variáveis'
+  ];
+
+  const leftSummaries = groupSummaries.filter(g => leftGroups.includes(g.name)).sort((a, b) => leftGroups.indexOf(a.name) - leftGroups.indexOf(b.name));
+  const rightSummaries = groupSummaries.filter(g => rightGroups.includes(g.name)).sort((a, b) => rightGroups.indexOf(a.name) - rightGroups.indexOf(b.name));
   
   return (
     <div className={cn("min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)] relative overflow-hidden")}>
@@ -181,130 +206,80 @@ function AttributesContent() {
           </button>
         </div>
 
-        {/* Grid de receitas/despesas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Coluna de Receitas */}
+        {/* Grid de receitas/despesas dinâmico */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Coluna Esquerda */}
           <div className="space-y-4">
-            
-            <Link href="/transactions?search=Cofre do Reino" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">💎</span>
-                <span className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-wider">
-                  Cofre do Reino
-                </span>
-              </div>
-              <p className="text-xs text-[var(--color-text-muted)] mb-2">Receitas Fixas</p>
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
-                  <p className={cn(
-                    "text-lg font-bold",
-                    getColorClass(cofreReino.realizado || 0)
-                  )}>
-                    {formatCurrency(cofreReino.realizado || 0)}
-                  </p>
+            {leftSummaries.map((group) => (
+              <Link 
+                key={group.name}
+                href={`/transactions?search=${encodeURIComponent(group.name.split('-')[1].trim())}`}
+                className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{group.config.emoji}</span>
+                  <span className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-wider">
+                    {group.name.split('-')[1].trim()}
+                  </span>
                 </div>
-                <div className="text-center">
-                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Previsto</p>
-                  <p className="text-sm font-medium text-[var(--color-text-muted)]">{formatCurrency(cofreReino.previsto)}</p>
+                <div className="flex justify-between items-end">
+                  <div>
+                    <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
+                    <p className={cn(
+                      "text-lg font-bold",
+                      group.realizado < 0 ? "text-red-500" : group.name.toLowerCase().includes('despesa') ? "text-red-500" : "text-green-500"
+                    )}>
+                      {formatCurrency(group.realizado || 0)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Previsto</p>
+                    <p className="text-sm font-medium text-[var(--color-text-muted)]">{formatCurrency(group.previsto)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Orçado</p>
+                    <p className="text-sm font-medium text-[var(--color-text-main)]">{formatCurrency(group.orcado)}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Orçado</p>
-                  <p className="text-sm font-medium text-[var(--color-text-main)]">{formatCurrency(cofreReino.orcado)}</p>
-                </div>
-              </div>
-            </Link>
-
-            <Link href="/transactions?search=Saque de Missões" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">⚡</span>
-                <span className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-wider">
-                  Saque de Missões
-                </span>
-              </div>
-              <p className="text-xs text-[var(--color-text-muted)] mb-2">Receitas Variáveis</p>
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
-                  <p className={cn(
-                    "text-lg font-bold",
-                    getColorClass(saquesMissoes.realizado || 0)
-                  )}>
-                    {formatCurrency(saquesMissoes.realizado || 0)}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Previsto</p>
-                  <p className="text-sm font-medium text-[var(--color-text-muted)]">{formatCurrency(saquesMissoes.previsto)}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Orçado</p>
-                  <p className="text-sm font-medium text-[var(--color-text-main)]">{formatCurrency(saquesMissoes.orcado)}</p>
-                </div>
-              </div>
-            </Link>
+              </Link>
+            ))}
           </div>
 
-          {/* Coluna de Despesas */}
+          {/* Coluna Direita */}
           <div className="space-y-4">
-            
-            <Link href="/transactions?search=Tributos do Reino" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">🛡️</span>
-                <span className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-wider">
-                  Tributos do Reino
-                </span>
-              </div>
-              <p className="text-xs text-[var(--color-text-muted)] mb-2">Despesas Fixas</p>
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
-                  <p className={cn(
-                    "text-lg font-bold",
-                    getColorClass(-(tributosReino.realizado || 0))
-                  )}>
-                    {formatCurrency(tributosReino.realizado || 0)}
-                  </p>
+            {rightSummaries.map((group) => (
+              <Link 
+                key={group.name}
+                href={`/transactions?search=${encodeURIComponent(group.name.split('-')[1].trim())}`}
+                className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{group.config.emoji}</span>
+                  <span className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-wider">
+                    {group.name.split('-')[1].trim()}
+                  </span>
                 </div>
-                <div className="text-center">
-                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Previsto</p>
-                  <p className="text-sm font-medium text-[var(--color-text-muted)]">{formatCurrency(tributosReino.previsto)}</p>
+                <div className="flex justify-between items-end">
+                  <div>
+                    <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
+                    <p className={cn(
+                      "text-lg font-bold",
+                      group.realizado < 0 ? "text-red-500" : group.name.toLowerCase().includes('despesa') ? "text-red-500" : "text-green-500"
+                    )}>
+                      {formatCurrency(group.realizado || 0)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Previsto</p>
+                    <p className="text-sm font-medium text-[var(--color-text-muted)]">{formatCurrency(group.previsto)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Orçado</p>
+                    <p className="text-sm font-medium text-[var(--color-text-main)]">{formatCurrency(group.orcado)}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Orçado</p>
-                  <p className="text-sm font-medium text-[var(--color-text-main)]">{formatCurrency(tributosReino.orcado)}</p>
-                </div>
-              </div>
-            </Link>
-
-            <Link href="/transactions?search=Aventuras do Herói" className="bg-[var(--color-bg-panel)] rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-bg-dark)] transition-colors cursor-pointer block medieval-border">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">⚔️</span>
-                <span className="text-[10px] font-black text-[var(--color-text-main)] uppercase tracking-wider">
-                  Aventuras do Herói
-                </span>
-              </div>
-              <p className="text-xs text-[var(--color-text-muted)] mb-2">Despesas Variáveis</p>
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Realizado</p>
-                  <p className={cn(
-                    "text-lg font-bold",
-                    getColorClass(-(aventurasHeroi.realizado || 0))
-                  )}>
-                    {formatCurrency(aventurasHeroi.realizado || 0)}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Previsto</p>
-                  <p className="text-sm font-medium text-[var(--color-text-muted)]">{formatCurrency(aventurasHeroi.previsto)}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider">Orçado</p>
-                  <p className="text-sm font-medium text-[var(--color-text-main)]">{formatCurrency(aventurasHeroi.orcado)}</p>
-                </div>
-              </div>
-            </Link>
+              </Link>
+            ))}
           </div>
         </div>
 

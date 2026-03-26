@@ -53,7 +53,7 @@ export async function seedCategoriesIfNeeded(
 ) {
   try {
     /**
-     * 🔍 Verifica se já existem categorias para o reino
+     * 🔍 Busca categorias existentes para o reino
      */
     const q = query(
       collection(db, 'categories'),
@@ -61,22 +61,12 @@ export async function seedCategoriesIfNeeded(
     );
 
     const snapshot = await getDocs(q);
+    const existingNames = new Set(snapshot.docs.map(doc => doc.data().name));
 
-    /**
-     * ✅ REGRA PRINCIPAL:
-     * Se já existir qualquer categoria → NÃO FAZER NADA
-     */
-    if (!snapshot.empty) {
-      console.log('ℹ️ Categorias já existem, seed ignorado.');
-      return;
-    }
+    console.log(`🚀 Verificando seed de categorias para o reino ${kingdomId}...`);
 
-    console.log('🚀 Iniciando seed de categorias...');
-
-    /**
-     * 🧱 Batch para inserção em massa (mais performático)
-     */
     const batch = writeBatch(db);
+    let count = 0;
 
     /**
      * 📦 Função auxiliar para criar categorias
@@ -90,7 +80,6 @@ export async function seedCategoriesIfNeeded(
 
       /**
        * 🎨 Definição visual (ícones e cores)
-       * Mantém identidade RPG
        */
       let icon = 'Target';
       let color = 'bg-gray-500';
@@ -101,11 +90,11 @@ export async function seedCategoriesIfNeeded(
         color = 'bg-emerald-500';
         rpgThemeName = 'Cofre do Reino';
       } else if (schemaPart.titulo.includes('Saques de Missões')) {
-        icon = 'Zap';
+        icon = 'Target';
         color = 'bg-amber-500';
         rpgThemeName = 'Saques de Missões';
       } else if (schemaPart.titulo.includes('Tributos do Reino')) {
-        icon = 'Shield';
+        icon = 'Castle';
         color = 'bg-indigo-500';
         rpgThemeName = 'Tributos do Reino';
       } else if (schemaPart.titulo.includes('Aventuras do Herói')) {
@@ -115,64 +104,48 @@ export async function seedCategoriesIfNeeded(
       }
 
       /**
-       * 🧾 Criação das subcategorias
+       * 🧾 Criação das subcategorias faltantes
        */
       schemaPart.subcategorias.forEach((sub: any) => {
-        const newRef = doc(collection(db, 'categories'));
+        if (!existingNames.has(sub.nome)) {
+          const newRef = doc(collection(db, 'categories'));
 
-        batch.set(newRef, {
-          id: newRef.id,
-          name: sub.nome,
-
-          // 🔑 Estrutura padronizada
-          group_id: groupId,
-          flow_type: flowType,
-          group_type: groupType,
-
-          // 🎮 RPG
-          rpg_group: schemaPart.titulo,
-          rpg_theme_name: rpgThemeName,
-
-          // 👥 Perfil de uso
-          allowed_profiles: sub.usuarios || ['MonoUsuario', 'MultiUsuario'],
-
-          // 🎨 UI
-          icon,
-          color,
-
-          // 📊 Controle
-          is_active: true,
-
-          // 🏰 Multiusuário
-          kingdom_id: kingdomId,
-          created_by: userId,
-          user_id: userId,
-
-          // ⏱️ Datas
-          created_at: new Date()
-        });
+          batch.set(newRef, {
+            id: newRef.id,
+            name: sub.nome,
+            group_id: groupId,
+            flow_type: flowType,
+            group_type: groupType,
+            rpg_group: schemaPart.titulo,
+            rpg_theme_name: rpgThemeName,
+            allowed_profiles: sub.usuarios || ['MonoUsuario', 'MultiUsuario'],
+            icon,
+            color,
+            is_active: true,
+            kingdom_id: kingdomId,
+            created_by: userId,
+            user_id: userId,
+            created_at: new Date(),
+            updated_at: new Date()
+          });
+          existingNames.add(sub.nome);
+          count++;
+        }
       });
     };
 
-    /**
-     * 📚 Carrega schema RPG
-     */
     const schema = RPG_CATEGORIES_SCHEMA.financeiroRPG;
-
-    /**
-     * 🏗️ Criação estruturada
-     */
     createCategoriesFromSchema('income', 'fixed', schema.receitas.fixas);
     createCategoriesFromSchema('income', 'variable', schema.receitas.variaveis);
     createCategoriesFromSchema('expense', 'fixed', schema.despesas.fixas);
     createCategoriesFromSchema('expense', 'variable', schema.despesas.variaveis);
 
-    /**
-     * 💾 Commit no Firestore
-     */
-    await batch.commit();
-
-    console.log('✅ Seed de categorias concluído com sucesso!');
+    if (count > 0) {
+      await batch.commit();
+      console.log(`✅ Seed finalizado: ${count} novas categorias criadas.`);
+    } else {
+      console.log('ℹ️ Nenhuma nova categoria necessária.');
+    }
   } catch (error) {
     console.error('❌ Erro ao executar seed de categorias:', error);
   }

@@ -177,14 +177,48 @@ export function FormEngine({ actionKey }: { actionKey: string }) {
 
     if (field.type === 'select') {
       let options = field.options || [];
+      const isCategoryField = field.name === 'categoria';
       
       // Dynamic options based on field name
-      if (field.name === 'categoria') {
+      if (isCategoryField) {
         const flowType = actionKey === 'receita' || actionKey === 'contas_receber' ? 'income' : 'expense';
         const profileType = gameMode === 'reino' ? 'MultiUsuario' : 'MonoUsuario';
-        options = categories
-          .filter(c => c.flow_type === flowType && (!c.allowed_profiles || c.allowed_profiles.includes(profileType)))
-          .map(c => ({ label: c.name, value: c.id }));
+        
+        const filteredCategories = categories.filter(c => 
+          c.flow_type === flowType && 
+          (!c.allowed_profiles || c.allowed_profiles.includes(profileType))
+        );
+
+        // Group categories by rpg_group
+        const groups: Record<string, any[]> = {};
+        filteredCategories.forEach(c => {
+          const groupName = c.rpg_group || 'Outros';
+          if (!groups[groupName]) groups[groupName] = [];
+          groups[groupName].push({ label: c.name, value: c.id });
+        });
+
+        return (
+          <div key={field.name}>
+            <label className="block text-sm font-bold text-[var(--color-text-main)] mb-2">{field.label}</label>
+            <select
+              value={value}
+              onChange={(e) => handleChange(field.name, e.target.value, field.transform)}
+              required={field.required}
+              className="w-full px-4 py-2 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all medieval-border"
+            >
+              <option value="">Selecione...</option>
+              {Object.entries(groups).map(([groupName, groupOptions]) => (
+                <optgroup key={groupName} label={groupName} className="bg-[var(--color-bg-panel)] text-[var(--color-text-main)] font-bold">
+                  {groupOptions.map(opt => (
+                    <option key={opt.value} value={opt.value} className="bg-[var(--color-bg-dark)] text-[var(--color-text-main)]">
+                      {opt.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+        );
       } else if (field.name === 'cartao') {
         options = creditCards.map(c => ({ label: c.name, value: c.id }));
       }

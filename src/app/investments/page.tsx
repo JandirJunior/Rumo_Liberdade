@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
 import { motion } from 'motion/react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Header } from '@/components/layout/Header';
@@ -20,17 +20,19 @@ import { ImportModal } from '@/components/ui/ImportModal';
 import { financialEngine } from '@/lib/financialEngine';
 import { parseDate } from '@/services/firebaseUtils';
 import { useActionContext } from '@/context/ActionContext';
+import { useAllMarketData } from '@/hooks/useAllMarketData';
 
 export default function Investments() {
   const { theme, user, loading: authLoading } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
   const { openAction } = useActionContext();
+  const { marketData } = useAllMarketData();
 
   const { assets, loading: kingdomLoading, transactions, addInvestment, deleteInvestment, contributionPlanning, updateContributionPlanning } = useKingdom();
 
   const { totalValue, aggregated, tickerDetails } = useMemo(() =>
-    financialEngine.calculateInvestmentPower(assets, contributionPlanning?.percentages),
-    [assets, contributionPlanning]
+    financialEngine.calculateInvestmentPower(assets, contributionPlanning?.percentages, marketData),
+    [assets, contributionPlanning, marketData]
   );
 
   const historyAssets = useMemo(() => {
@@ -49,16 +51,11 @@ export default function Investments() {
       const fType = item.faceroType || 'O';
       if (!groups[fType]) groups[fType] = [];
       
-      // Mock current price (using averageCost for now, to be updated by API later)
-      const currentPrice = item.averageCost; 
-      const correctedTotal = currentPrice * item.totalQuantity;
-      const profitValue = correctedTotal - item.totalValue;
+      const profitValue = item.correctedTotal - item.totalValue;
       const profitPercent = item.totalValue > 0 ? (profitValue / item.totalValue) * 100 : 0;
 
       groups[fType].push({
         ...item,
-        currentPrice,
-        correctedTotal,
         profitValue,
         profitPercent
       });
@@ -391,80 +388,63 @@ export default function Investments() {
           </div>
           
           <div className="space-y-6">
-            {['F', 'A', 'C', 'E', 'R', 'O'].map((fType) => {
-              const items = groupedConsolidated[fType];
-              if (!items || items.length === 0) return null;
-              
-              const groupTotal = items.reduce((acc, item) => acc + item.totalValue, 0);
-              const groupCorrected = items.reduce((acc, item) => acc + item.correctedTotal, 0);
-              const groupProfit = groupCorrected - groupTotal;
-              const groupProfitPercent = groupTotal > 0 ? (groupProfit / groupTotal) * 100 : 0;
-
-              return (
-                <div key={fType} className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl overflow-hidden medieval-border shadow-sm">
-                  <div className="bg-[var(--color-bg-dark)] p-4 border-b border-[var(--color-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[var(--color-bg-panel)] flex items-center justify-center text-[var(--color-primary)] border border-[var(--color-border)] shadow-inner">
-                        {getFaceroIcon(fType)}
-                      </div>
-                      <div>
-                        <h5 className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-widest">{getFaceroName(fType)}</h5>
-                        <p className="text-xs text-[var(--color-text-muted)]">{items.length} ativo(s)</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">Total Investido</p>
-                        <p className="text-sm font-bold text-[var(--color-text-main)]">{formatCurrency(groupTotal)}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">Lucro/Prejuízo</p>
-                        <p className={cn("text-sm font-bold", getColorClass(groupProfit))}>
-                          {groupProfit > 0 ? '+' : ''}{formatCurrency(groupProfit)} ({groupProfitPercent > 0 ? '+' : ''}{groupProfitPercent.toFixed(2)}%)
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse whitespace-nowrap">
-                      <thead>
-                        <tr className="bg-[var(--color-bg-panel)] border-b border-[var(--color-border)]">
-                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Ativo</th>
-                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Qtd</th>
-                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Preço Médio</th>
-                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Preço Atual</th>
-                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Total Investido</th>
-                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Total Corrigido</th>
-                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">L/P (%)</th>
-                          <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">L/P (R$)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[var(--color-border)]">
-                        {items.map((item) => (
-                          <tr key={item.ticker} className="hover:bg-[var(--color-bg-dark)]/50 transition-colors">
-                            <td className="px-4 py-3 font-bold text-[var(--color-text-main)]">{item.ticker}</td>
-                            <td className="px-4 py-3 text-right text-xs text-[var(--color-text-main)]">{item.totalQuantity.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}</td>
-                            <td className="px-4 py-3 text-right text-xs text-[var(--color-text-muted)]">{formatCurrency(item.averageCost)}</td>
-                            <td className="px-4 py-3 text-right text-xs text-[var(--color-text-main)]">{formatCurrency(item.currentPrice)}</td>
-                            <td className="px-4 py-3 text-right text-xs font-bold text-[var(--color-text-main)]">{formatCurrency(item.totalValue)}</td>
-                            <td className="px-4 py-3 text-right text-xs font-bold text-[var(--color-text-main)]">{formatCurrency(item.correctedTotal)}</td>
-                            <td className="px-4 py-3 text-right text-xs font-bold">
-                              <span className={getColorClass(item.profitPercent)}>{item.profitPercent > 0 ? '+' : ''}{item.profitPercent.toFixed(2)}%</span>
-                            </td>
-                            <td className="px-4 py-3 text-right text-xs font-bold">
-                              <span className={getColorClass(item.profitValue)}>{item.profitValue > 0 ? '+' : ''}{formatCurrency(item.profitValue)}</span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+            {tickerDetails?.length > 0 ? (
+              <div className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl overflow-hidden medieval-border shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse whitespace-nowrap">
+                    <thead>
+                      <tr className="bg-[var(--color-bg-dark)] border-b border-[var(--color-border)]">
+                        <th className="px-4 py-3 text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest">Ativo</th>
+                        <th className="px-4 py-3 text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Qtd</th>
+                        <th className="px-4 py-3 text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Preço Médio</th>
+                        <th className="px-4 py-3 text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Preço Atual</th>
+                        <th className="px-4 py-3 text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Total Investido</th>
+                        <th className="px-4 py-3 text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Total Corrigido</th>
+                        <th className="px-4 py-3 text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">L/P (%)</th>
+                        <th className="px-4 py-3 text-xs font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">L/P (R$)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--color-border)]">
+                      {['F', 'A', 'C', 'E', 'R', 'O'].map((fType) => {
+                        const items = groupedConsolidated[fType];
+                        if (!items || items.length === 0) return null;
+                        
+                        return (
+                          <Fragment key={fType}>
+                            <tr className="bg-[var(--color-bg-dark)]/50">
+                              <td colSpan={8} className="px-4 py-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-md bg-[var(--color-bg-panel)] flex items-center justify-center text-[var(--color-primary)] border border-[var(--color-border)]">
+                                    {getFaceroIcon(fType)}
+                                  </div>
+                                  <span className="text-xs font-black text-[var(--color-text-main)] uppercase tracking-widest">{getFaceroName(fType)}</span>
+                                </div>
+                              </td>
+                            </tr>
+                            {items.map((item) => (
+                              <tr key={item.ticker} className="hover:bg-[var(--color-bg-dark)]/50 transition-colors">
+                                <td className="px-4 py-3 font-bold text-[var(--color-text-main)] text-sm">{item.ticker}</td>
+                                <td className="px-4 py-3 text-right text-sm text-[var(--color-text-main)]">{item.totalQuantity.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}</td>
+                                <td className="px-4 py-3 text-right text-sm text-[var(--color-text-muted)]">{formatCurrency(item.averageCost)}</td>
+                                <td className="px-4 py-3 text-right text-sm text-[var(--color-text-main)] font-medium">{formatCurrency(item.currentPrice)}</td>
+                                <td className="px-4 py-3 text-right text-sm text-[var(--color-text-muted)]">{formatCurrency(item.totalValue)}</td>
+                                <td className="px-4 py-3 text-right text-sm text-[var(--color-text-main)] font-bold">{formatCurrency(item.correctedTotal)}</td>
+                                <td className="px-4 py-3 text-right text-sm font-bold">
+                                  <span className={getColorClass(item.profitPercent)}>{item.profitPercent > 0 ? '+' : ''}{item.profitPercent.toFixed(2)}%</span>
+                                </td>
+                                <td className="px-4 py-3 text-right text-sm font-bold">
+                                  <span className={getColorClass(item.profitValue)}>{item.profitValue > 0 ? '+' : ''}{formatCurrency(item.profitValue)}</span>
+                                </td>
+                              </tr>
+                            ))}
+                          </Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-              );
-            })}
-            
-            {tickerDetails?.length === 0 && (
+              </div>
+            ) : (
               <div className="text-center py-12 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl medieval-border">
                 <TrendingUp className="w-12 h-12 text-[var(--color-text-muted)] mx-auto mb-4 opacity-20" />
                 <p className="text-[var(--color-text-muted)] font-bold">Nenhum investimento consolidado encontrado</p>

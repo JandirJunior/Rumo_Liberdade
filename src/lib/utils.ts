@@ -3,7 +3,7 @@
  */
 
 // merge de classes
-export function cn(...classes: (string | undefined)[]) {
+export function cn(...classes: (string | undefined | null | false)[]) {
   return classes.filter(Boolean).join(' ');
 }
 
@@ -22,14 +22,19 @@ export function getColorClass(value: number) {
 }
 
 /**
- * Safely stringifies an object by removing circular references.
+ * Safely stringifies an object by removing circular references and handling DOM elements.
  */
 export function safeStringify(obj: any): string {
-  const cache = new Set();
+  const cache = new WeakSet();
   return JSON.stringify(obj, (key, value) => {
     if (typeof value === 'object' && value !== null) {
+      // Handle DOM elements which often cause circular reference errors in React
+      if (typeof window !== 'undefined' && value instanceof Node) {
+        return `[DOM ${value.nodeName}]`;
+      }
+
       if (cache.has(value)) {
-        return; // Circular reference found, discard key
+        return '[Circular]'; // Return a placeholder instead of undefined for better debugging
       }
       cache.add(value);
     }

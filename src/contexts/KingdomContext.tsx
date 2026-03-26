@@ -41,7 +41,14 @@ import { getCollectionByKingdom, parseDate, handleFirestoreError, OperationType,
 import { kingdomService } from '@/services/kingdomService';
 import { financialEngine } from '@/lib/financialEngine';
 import { useTheme } from '@/lib/ThemeContext';
-import { calculateXPFromInvestments, calculateTotalXPFromAssets, calculatePlayerLevel } from '@/lib/gameEngine';
+import { 
+  calculateXPFromInvestments, 
+  calculateTotalXPFromAssets, 
+  calculatePlayerLevel,
+  calculateKingdomLevel,
+  calculateXPFromAction,
+  addXP
+} from '@/lib/gameEngine';
 import { logActivity } from '@/lib/auditLogger';
 
 interface KingdomContextType {
@@ -149,50 +156,26 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
   const { gameState, user } = useTheme();
 
   useEffect(() => {
-    if (!assets) return;
+    if (!assets || !transactions) return;
 
-    // Kingdom XP: Global de todos os registros do reino
-    const kTransactionsXP = transactions.reduce((acc, t) => acc + 10 + Math.floor(Number(t.amount || 0) / 10), 0);
-    const kPayablesXP = payables.reduce((acc, p) => acc + 10 + Math.floor(Number(p.amount || 0) / 10), 0);
-    const kReceivablesXP = receivables.reduce((acc, r) => acc + 10 + Math.floor(Number(r.amount || 0) / 10), 0);
+    // Kingdom XP: Global de todos os registros do reino (Apenas para exibição local)
+    const kTransactionsXP = transactions.reduce((acc, t) => acc + calculateXPFromAction(Number(t.amount || 0)), 0);
+    const kPayablesXP = payables.reduce((acc, p) => acc + calculateXPFromAction(Number(p.amount || 0)), 0);
+    const kReceivablesXP = receivables.reduce((acc, r) => acc + calculateXPFromAction(Number(r.amount || 0)), 0);
     const kInvestmentXP = calculateTotalXPFromAssets(assets);
     
     const kXP = kTransactionsXP + kPayablesXP + kReceivablesXP + kInvestmentXP;
-    const kState = calculatePlayerLevel(kXP);
+    const kState = calculateKingdomLevel(kXP);
     setKingdomXP(kXP);
     setKingdomLevel(kState.level);
 
-    // Hero XP: Apenas do usuário logado
-    const myAssets = assets.filter(a => a.user_id === user?.uid || a.userId === user?.uid || a.created_by === user?.uid);
-    const myInvestmentXP = calculateTotalXPFromAssets(myAssets);
-    
-    const myTransactions = transactions.filter(t => t.user_id === user?.uid || t.created_by === user?.uid);
-    const myPayables = payables.filter(p => p.userId === user?.uid || p.created_by === user?.uid);
-    const myReceivables = receivables.filter(r => r.userId === user?.uid || r.created_by === user?.uid);
-
-    // 10 XP por cada registro + 1 XP a cada R$ 10
-    const myTransactionsXP = myTransactions.reduce((acc, t) => acc + 10 + Math.floor(Number(t.amount || 0) / 10), 0);
-    const myPayablesXP = myPayables.reduce((acc, p) => acc + 10 + Math.floor(Number(p.amount || 0) / 10), 0);
-    const myReceivablesXP = myReceivables.reduce((acc, r) => acc + 10 + Math.floor(Number(r.amount || 0) / 10), 0);
-
-    const baseXP = myTransactionsXP + myPayablesXP + myReceivablesXP;
-    
-    const totalHeroXP = baseXP + myInvestmentXP;
-    const hState = calculatePlayerLevel(totalHeroXP);
-    
-    setHeroXP(totalHeroXP);
-    setHeroLevel(hState.level);
-
-    // Sincronizar com o banco de dados se houver diferença
-    if (user && gameState.xp !== totalHeroXP) {
-      const userRef = doc(db, 'users', user.uid);
-      setDoc(userRef, {
-        xp: totalHeroXP,
-        level: hState.level,
-        title: hState.title
-      }, { merge: true }).catch(console.error);
+    // Hero XP: Sincronizado via ThemeContext/gameState
+    // Não recalculamos e sobrescrevemos mais o Firestore aqui para evitar loops e flickering.
+    if (gameState) {
+      setHeroXP(gameState.xp);
+      setHeroLevel(gameState.level);
     }
-  }, [assets, transactions, payables, receivables, gameState.xp, user]);
+  }, [assets, transactions, payables, receivables, gameState, user]);
 
   useEffect(() => {
     let unsubscribes: (() => void)[] = [];
@@ -377,6 +360,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
       status: 'concluído'
     });
     await setDoc(doc(db, 'transactions', id), payload);
+    await addXP(auth.currentUser.uid, calculateXPFromAction(Number(data.amount || 0)));
     await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', id);
   };
 
@@ -439,6 +423,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
     }));
     try {
       await batch.commit();
+      await addXP(auth.currentUser.uid, calculateXPFromInvestments(totalInvestedAmount, Number(data.quantity || 0)));
       await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_INVESTMENT', invId);
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'investments/transactions');
@@ -563,6 +548,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
       user_id: auth.currentUser.uid,
       kingdom_id: kingdom.id
     }));
+    await addXP(auth.currentUser.uid, calculateXPFromAction(Number(data.amount || 0)));
     await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_EARNING', id);
   };
 
@@ -712,7 +698,11 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
 
   const payPayable = async (id: string, paidAt: string) => {
     if (!auth.currentUser || !kingdom) return;
+    const payable = payables.find(p => p.id === id);
     await updateDoc(doc(db, 'accounts_payable', id), { status: 'pago', paidAt });
+    if (payable) {
+      await addXP(auth.currentUser.uid, calculateXPFromAction(Number(payable.amount || 0)));
+    }
     await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'payable', status: 'paid' });
   };
 
@@ -807,7 +797,11 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
 
   const receiveReceivable = async (id: string, receivedAt: string) => {
     if (!auth.currentUser || !kingdom) return;
+    const receivable = receivables.find(r => r.id === id);
     await updateDoc(doc(db, 'accounts_receivable', id), { status: 'recebido', receivedAt });
+    if (receivable) {
+      await addXP(auth.currentUser.uid, calculateXPFromAction(Number(receivable.amount || 0)));
+    }
     await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'receivable', status: 'received' });
   };
 
@@ -868,13 +862,16 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
   const payCreditCardInvoice = async (id: string, paidAt: string) => {
     if (!auth.currentUser || !kingdom) return;
     const docRef = doc(db, 'credit_card_invoices', id);
+    let amount = 0;
     await runTransaction(db, async (transaction: any) => {
       const docSnap = await transaction.get(docRef);
       if (!docSnap.exists()) throw new Error('Fatura não encontrada.');
       const data = docSnap.data();
       if (data?.status === 'paid') throw new Error('Esta fatura já foi paga.');
+      amount = Number(data?.total_amount || 0);
       transaction.update(docRef, { status: 'paid', paidAt });
     });
+    await addXP(auth.currentUser.uid, calculateXPFromAction(amount));
     await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'credit_card_invoice', status: 'paid' });
   };
 

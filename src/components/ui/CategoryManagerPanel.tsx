@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Plus, Edit2, Trash2, Save, X, Target, Castle, Compass } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, Target, Castle, Compass, RefreshCw } from 'lucide-react';
+import { RPG_GROUPS, getRpgGroupConfig } from '@/lib/rpgCategories';
 import { useCategories } from '@/hooks/useCategories';
 import { CategoryEntity } from '@/types';
 import { cn } from '@/lib/utils';
@@ -24,20 +25,50 @@ export function CategoryManagerPanel() {
     allowed_profiles: ['MonoUsuario', 'MultiUsuario']
   });
 
-  const rpgGroups = [
-    '💎 Cofre do Reino (Receitas Fixas)',
-    '⚡ Saques de Missões (Receitas Variáveis)',
-    '🛡️ Tributos do Reino (Despesas Fixas)',
-    '⚔️ Aventuras do Herói (Despesas Variáveis)'
-  ];
-
   const getRpgGroupDetails = (rpgGroup: string) => {
-    switch (rpgGroup) {
-      case '💎 Cofre do Reino (Receitas Fixas)': return { icon: <Castle className="w-4 h-4" />, color: 'bg-emerald-500', text: 'text-emerald-500' };
-      case '⚡ Saques de Missões (Receitas Variáveis)': return { icon: <Target className="w-4 h-4" />, color: 'bg-amber-500', text: 'text-amber-500' };
-      case '🛡️ Tributos do Reino (Despesas Fixas)': return { icon: <Castle className="w-4 h-4" />, color: 'bg-indigo-500', text: 'text-indigo-500' };
-      case '⚔️ Aventuras do Herói (Despesas Variáveis)': return { icon: <Compass className="w-4 h-4" />, color: 'bg-rose-500', text: 'text-rose-500' };
-      default: return { icon: <Target className="w-4 h-4" />, color: 'bg-gray-500', text: 'text-[var(--color-text-muted)]' };
+    const config = getRpgGroupConfig(rpgGroup);
+    const Icon = config.icon === 'Castle' ? Castle : (config.icon === 'Compass' ? Compass : Target);
+    return { 
+      icon: <Icon className="w-4 h-4" />, 
+      color: config.color, 
+      text: config.text 
+    };
+  };
+
+  const [isCleaning, setIsCleaning] = useState(false);
+
+  const cleanupDuplicates = async () => {
+    setIsCleaning(true);
+    try {
+      const seen = new Set();
+      const toDelete: string[] = [];
+      
+      // Sort to keep the oldest one
+      const sorted = [...categories].sort((a, b) => {
+        const dateA = (a.created_at as any)?.seconds || 0;
+        const dateB = (b.created_at as any)?.seconds || 0;
+        return dateA - dateB;
+      });
+
+      for (const cat of sorted) {
+        const key = `${cat.name}-${cat.rpg_group}`;
+        if (seen.has(key)) {
+          toDelete.push(cat.id);
+        } else {
+          seen.add(key);
+        }
+      }
+
+      if (toDelete.length > 0) {
+        for (const id of toDelete) {
+          await deleteCategory(id);
+        }
+        console.log(`Limpeza concluída: ${toDelete.length} duplicatas removidas.`);
+      }
+    } catch (error) {
+      console.error('Erro na limpeza:', error);
+    } finally {
+      setIsCleaning(false);
     }
   };
 
@@ -122,6 +153,12 @@ export function CategoryManagerPanel() {
     return acc;
   }, {} as Record<string, CategoryEntity[]>);
 
+  // Obter todos os grupos únicos presentes nas categorias + os grupos padrão
+  const allGroups = Array.from(new Set([
+    ...RPG_GROUPS,
+    ...Object.keys(groupedCategories)
+  ]));
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -130,12 +167,25 @@ export function CategoryManagerPanel() {
           <p className="text-sm text-[var(--color-text-muted)]">Gerencie seus agrupadores RPG e subcategorias.</p>
         </div>
         {!isAdding && !editingId && (
-          <button
-            onClick={() => setIsAdding(true)}
-            className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-[var(--color-bg-dark)] shadow-sm transition-transform active:scale-95 bg-[var(--color-primary)] medieval-glow")}
-          >
-            <Plus className="w-5 h-5" />
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={cleanupDuplicates}
+              disabled={isCleaning}
+              title="Limpar Duplicatas"
+              className={cn(
+                "w-10 h-10 rounded-xl flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] bg-[var(--color-bg-dark)] border border-[var(--color-border)] shadow-sm transition-transform active:scale-95",
+                isCleaning && "animate-spin"
+              )}
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setIsAdding(true)}
+              className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-[var(--color-bg-dark)] shadow-sm transition-transform active:scale-95 bg-[var(--color-primary)] medieval-glow")}
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
         )}
       </div>
 
@@ -179,7 +229,7 @@ export function CategoryManagerPanel() {
                 }}
                 className="w-full p-3 bg-[var(--color-bg-panel)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-sm"
               >
-                {rpgGroups.map(g => <option key={g} value={g}>{g}</option>)}
+                {allGroups.map(g => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
 
@@ -203,7 +253,7 @@ export function CategoryManagerPanel() {
       )}
 
       <div className="space-y-6">
-        {rpgGroups.map(groupName => {
+        {allGroups.map(groupName => {
           const groupCats = groupedCategories[groupName] || [];
           const { icon, color, text } = getRpgGroupDetails(groupName);
           

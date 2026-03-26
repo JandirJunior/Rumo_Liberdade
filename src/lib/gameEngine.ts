@@ -23,24 +23,24 @@ export interface GameState {
 
 export const TITLES = [
   { level: 1, title: 'Aprendiz das Moedas' },
-  { level: 5, title: 'Mercador' },
+  { level: 3, title: 'Mercador' },
+  { level: 5, title: 'Guardião do Tesouro' },
   { level: 10, title: 'Mestre da Moeda' },
-  { level: 20, title: 'Guardião do Tesouro' },
-  { level: 50, title: 'Lenda Financeira' }
+  { level: 25, title: 'Lenda Financeira' }
 ];
 
 /**
- * 🧠 Calcula nível baseado no XP
- * Progressão: cada nível exige (nível * 1000) XP total acumulado
- * Ex: Nível 1: 0, Nível 2: 1000, Nível 3: 3000, Nível 4: 6000...
+ * 🧠 Calcula nível baseado no XP (HERÓI - DIFÍCIL)
+ * Progressão: cada nível exige (nível * 100.000) XP adicional acumulado
+ * Ex: Nível 1: 0, Nível 2: 100.000, Nível 3: 300.000, Nível 4: 600.000, Nível 5: 1.000.000
  */
 export function calculatePlayerLevel(xp: number): GameState {
   let level = 1;
-  let totalXpForNextLevel = 1000;
+  let totalXpForNextLevel = 100000000; // Nível 2 exige 100M XP (MUITO DIFÍCIL)
 
   while (xp >= totalXpForNextLevel) {
     level++;
-    totalXpForNextLevel += level * 1000;
+    totalXpForNextLevel += level * 100000000; // Progressão geométrica extremamente difícil
   }
 
   let title = TITLES[0].title;
@@ -58,6 +58,35 @@ export function calculatePlayerLevel(xp: number): GameState {
     nextLevelXp: totalXpForNextLevel,
     title 
   };
+}
+
+/**
+ * 🏰 Calcula nível do REINO (MAIS FÁCIL)
+ * Progressão: cada nível exige (nível * 5000) XP adicional acumulado
+ */
+export function calculateKingdomLevel(xp: number): GameState {
+  let level = 1;
+  let totalXpForNextLevel = 50000000; // Nível 2 exige 50M XP
+
+  while (xp >= totalXpForNextLevel) {
+    level++;
+    totalXpForNextLevel += level * 50000000;
+  }
+
+  return { 
+    level, 
+    xp, 
+    nextLevelXp: totalXpForNextLevel,
+    title: '' 
+  };
+}
+
+/**
+ * ⚡ Calcula XP de uma ação financeira (transação, pagamento, recebimento)
+ * Padronizado: 10 XP base + 1 XP a cada R$ 10
+ */
+export function calculateXPFromAction(amount: number): number {
+  return 10 + Math.floor(Math.abs(amount) / 10);
 }
 
 /**
@@ -107,11 +136,11 @@ export function calculateXPFromBudgetControl(planned: number, actual: number): n
 
 /**
  * 📈 XP por investimentos
- * ✔ PADRONIZADO: 1000 XP por unidade + 10 XP por cada R$1 investido
+ * ✔ PADRONIZADO: 1 XP por cada R$1 investido + 10 XP por cada unidade
  */
 export function calculateXPFromInvestments(amount: number, quantity: number = 0): number {
-  const xpFromAmount = Math.floor(amount * 10);
-  const xpFromQuantity = Math.floor(quantity * 1000);
+  const xpFromAmount = Math.floor(amount * 1);
+  const xpFromQuantity = Math.floor(quantity * 10);
   return xpFromAmount + xpFromQuantity;
 }
 

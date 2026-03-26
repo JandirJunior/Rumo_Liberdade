@@ -47,6 +47,18 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'brapi.dev',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 's3-symbol-logo.tradingview.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
   output: 'standalone',

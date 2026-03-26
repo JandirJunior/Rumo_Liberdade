@@ -21,7 +21,7 @@ export function Header() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const { userData } = useUser();
-  const { kingdom } = useKingdom();
+  const { kingdom, kingdomLevel } = useKingdom();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
@@ -51,21 +51,21 @@ export function Header() {
     (!window.notificationPermission || window.notificationPermission === 'default');
 
   return (
-    <header className="bg-[var(--color-bg-panel)]/80 backdrop-blur-md border-b border-[var(--color-border)] sticky top-0 z-30 px-4 sm:px-6 lg:px-8 py-3 transition-all">
+    <header className="bg-[var(--color-bg-panel)]/80 backdrop-blur-md border-b border-[var(--color-border)] sticky top-0 z-30 px-3 sm:px-6 lg:px-8 py-2 transition-all">
       <div className="w-full flex items-center justify-between">
         {/* Lado Esquerdo: Logotipo (Mobile) e Nome do App */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <Link href="/dashboard" className="flex items-center gap-2 md:hidden">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--color-primary)] text-[var(--color-bg-dark)] font-bold medieval-title">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-[var(--color-primary)] text-[var(--color-bg-dark)] font-bold medieval-title text-sm">
               R
             </div>
           </Link>
           <div className="flex flex-col">
-            <span className="font-bold text-[var(--color-text-main)] hidden sm:block medieval-title text-xl tracking-wider">Rumo à Liberdade</span>
+            <span className="font-bold text-[var(--color-text-main)] hidden sm:block medieval-title text-lg tracking-wider">Rumo à Liberdade</span>
             {kingdom && (
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-[var(--color-primary)] uppercase tracking-[0.2em]">{kingdom.name}</span>
-                <span className="text-[10px] font-bold text-[var(--color-text-muted)]">Nv. {gameState.level}</span>
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-[0.1em] truncate max-w-[100px]">{kingdom.name}</span>
+                <span className="text-[9px] font-bold text-[var(--color-text-muted)]">Nv. {kingdomLevel}</span>
               </div>
             )}
           </div>
@@ -131,8 +131,8 @@ export function Header() {
             >
               {/* Informações resumidas do Herói */}
               <div className="hidden md:block text-right">
-                <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">Lvl {userData?.level || 1}</p>
-                <p className="text-sm font-bold text-[var(--color-primary)] medieval-title">{userData?.title || gameState.archetype}</p>
+                <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">Lvl {gameState.level}</p>
+                <p className="text-sm font-bold text-[var(--color-primary)] medieval-title">{gameState.title || gameState.archetype}</p>
               </div>
               {/* Avatar do Usuário */}
               <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2 border-[var(--color-primary)] medieval-glow transition-colors relative">

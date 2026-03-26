@@ -29,7 +29,7 @@ import { ActiveQuestsBoard } from '@/components/game/ActiveQuestsBoard';
 import { generateRecurringQuests } from '@/lib/recurringTasks';
 import { financialEngine } from '@/lib/financialEngine';
 import { getDominantMentor } from '@/services/mentorService';
-import { calculatePlayerLevel } from '@/lib/gameEngine';
+import { calculatePlayerLevel, calculateKingdomLevel } from '@/lib/gameEngine';
 
 import { MainMenuGrid } from '@/components/game/MainMenuGrid';
 
@@ -93,19 +93,6 @@ export default function Dashboard() {
   }
 
   if (!user) return null;
-
-  const cofreReino = budgetProgress
-    .filter(b => b.rpg_group === '💎 Cofre do Reino (Receitas Fixas)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real }), { orcado: 0, realizado: 0 });
-  const saquesMissoes = budgetProgress
-    .filter(b => b.rpg_group === '⚡ Saques de Missões (Receitas Variáveis)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real }), { orcado: 0, realizado: 0 });
-  const tributosReino = budgetProgress
-    .filter(b => b.rpg_group === '🛡️ Tributos do Reino (Despesas Fixas)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real }), { orcado: 0, realizado: 0 });
-  const aventurasHeroi = budgetProgress
-    .filter(b => b.rpg_group === '⚔️ Aventuras do Herói (Despesas Variáveis)')
-    .reduce((acc, curr) => ({ orcado: acc.orcado + curr.orcado, realizado: acc.realizado + curr.gasto_real }), { orcado: 0, realizado: 0 });
 
   // Total investido no Inventário
   const { totalValue: totalInvested } = financialEngine.calculateInvestmentPower(assets);
@@ -171,10 +158,12 @@ export default function Dashboard() {
 
   const completedQuestsCount = gameState.completedQuests?.length || 0;
 
+  const kingdomState = calculateKingdomLevel(kingdomXP);
+
   const kingdomStats = {
     level: kingdomLevel,
     xp: kingdomXP,
-    nextLevelXp: (kingdomLevel + 1) * 1000,
+    nextLevelXp: kingdomState.nextLevelXp,
     totalWealth: totalInvested,
     activeQuestsCount,
     completedQuestsCount,

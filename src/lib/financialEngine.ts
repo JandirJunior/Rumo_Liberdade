@@ -51,9 +51,8 @@ export function parseDate(date: any): Date {
   return new Date();
 }
 
-export function calculateInvestmentPower(assets: Asset[], planning?: { F: number; A: number; C: number; E: number; R: number; O: number }) {
+export function calculateInvestmentPower(assets: Asset[], planning?: { F: number; A: number; C: number; E: number; R: number; O: number }, marketData?: Record<string, any>) {
   if (!Array.isArray(assets)) return { totalValue: 0, aggregated: [], tickerDetails: [] };
-  const totalValue = assets.reduce((acc, curr) => acc + Number(curr.invested_value || curr.value || curr.total || 0), 0);
 
   const getFaceroType = (asset: any) => {
     if (asset.faceroType) return asset.faceroType;
@@ -68,23 +67,6 @@ export function calculateInvestmentPower(assets: Asset[], planning?: { F: number
     };
     return typeToFacero[asset.type] || 'O';
   };
-
-  const aggregated = Object.keys(FACERO_TARGETS).map(key => {
-    const typeAssets = assets.filter(a => getFaceroType(a) === key);
-    const value = typeAssets.reduce((acc, curr) => acc + Number(curr.invested_value || curr.value || curr.total || 0), 0);
-    const targetPercent = planning ? planning[key as keyof typeof planning] / 100 : FACERO_TARGETS[key];
-    const currentPercent = totalValue > 0 ? value / totalValue : 0;
-
-    return {
-      faceroType: key as 'F' | 'A' | 'C' | 'E' | 'R' | 'O',
-      name: FACERO_LABELS[key],
-      shortName: key,
-      value,
-      targetPercent,
-      currentPercent,
-      deficit: targetPercent - currentPercent > 0 ? targetPercent - currentPercent : 0
-    };
-  });
 
   const tickerGroups: Record<string, { totalValue: number, totalQuantity: number, type: string, faceroType: string, ids: string[] }> = {};
 
@@ -130,16 +112,43 @@ export function calculateInvestmentPower(assets: Asset[], planning?: { F: number
     }
   });
 
-  const tickerDetails = Object.entries(tickerGroups).map(([ticker, data]) => ({
-    ticker,
-    totalValue: data.totalValue,
-    totalQuantity: data.totalQuantity,
-    averageCost: data.totalQuantity > 0 ? data.totalValue / data.totalQuantity : 0,
-    unitPrice: data.totalQuantity > 0 ? data.totalValue / data.totalQuantity : 0,
-    type: data.type,
-    faceroType: data.faceroType,
-    ids: data.ids
-  }));
+  const tickerDetails = Object.entries(tickerGroups).map(([ticker, data]) => {
+    const marketInfo = marketData ? marketData[ticker.toUpperCase()] : null;
+    const currentPrice = marketInfo?.price || (data.totalQuantity > 0 ? data.totalValue / data.totalQuantity : 0);
+    const correctedTotal = currentPrice * data.totalQuantity;
+
+    return {
+      ticker,
+      totalValue: data.totalValue,
+      totalQuantity: data.totalQuantity,
+      averageCost: data.totalQuantity > 0 ? data.totalValue / data.totalQuantity : 0,
+      unitPrice: data.totalQuantity > 0 ? data.totalValue / data.totalQuantity : 0,
+      currentPrice,
+      correctedTotal,
+      type: data.type,
+      faceroType: data.faceroType,
+      ids: data.ids
+    };
+  });
+
+  const totalValue = tickerDetails.reduce((acc, curr) => acc + curr.correctedTotal, 0);
+
+  const aggregated = Object.keys(FACERO_TARGETS).map(key => {
+    const typeAssets = tickerDetails.filter(a => a.faceroType === key);
+    const value = typeAssets.reduce((acc, curr) => acc + curr.correctedTotal, 0);
+    const targetPercent = planning ? planning[key as keyof typeof planning] / 100 : FACERO_TARGETS[key];
+    const currentPercent = totalValue > 0 ? value / totalValue : 0;
+
+    return {
+      faceroType: key as 'F' | 'A' | 'C' | 'E' | 'R' | 'O',
+      name: FACERO_LABELS[key],
+      shortName: key,
+      value,
+      targetPercent,
+      currentPercent,
+      deficit: targetPercent - currentPercent > 0 ? targetPercent - currentPercent : 0
+    };
+  });
 
   return { totalValue, aggregated, tickerDetails };
 }
@@ -183,49 +192,79 @@ export function calculateBudgetProgressData(
   receivables: AccountReceivable[],
   creditCards: CreditCardInvoice[]
 ): BudgetProgress[] {
-  return categories.map(cat => {
-    const targetMonthStr = `${year}-${String(month).padStart(2, '0')}`;
+    // Combine all IDs: from DB categories, from budgets, and from transactions
+    const budgetCategoryIds = Array.from(new Set(budgets.map(b => b.category_id)));
+    const transactionCategoryIds = Array.from(new Set(transactions.map(t => t.category_id)));
+    const existingCategoryIds = new Set(categories.map(c => c.id));
     
-    // Sort budgets for this category by date descending
-    const categoryBudgets = budgets
-      .filter(b => b.category_id === cat.id)
-      .sort((a, b) => {
-        const yearA = a.year || 0;
-        const monthA = a.month || 0;
-        const yearB = b.year || 0;
-        const monthB = b.month || 0;
-        
-        if (yearA !== yearB) return yearB - yearA;
-        return monthB - monthA;
+    const allCategoryIds = Array.from(new Set([
+      ...Array.from(existingCategoryIds),
+      ...budgetCategoryIds,
+      ...transactionCategoryIds
+    ]));
+
+    // Create a map for quick access to categories
+    const categoryMap = new Map(categories.map(c => [c.id, c]));
+
+    return allCategoryIds.map(id => {
+      const category = categoryMap.get(id);
+      const budget = budgets.find(b => b.category_id === id);
+      const transaction = transactions.find(t => t.category_id === id);
+      
+      // Se a categoria não existe no DB (ex: deletada mas tem orçamento/transação), cria um objeto "fantasma"
+      const catInfo = category || {
+        id,
+        name: budget?.category_name || transaction?.categoryName || `Categoria Antiga (${id.slice(0, 5)})`,
+        flow_type: budget?.flow_type || transaction?.type || 'expense',
+        rpg_group: budget?.rpg_group || '⚔️ Aventuras do Herói (Despesas Variáveis)',
+        icon: 'AlertCircle',
+        color: 'bg-gray-400',
+        rpg_theme_name: 'Legado',
+        group_type: 'variable'
+      };
+
+      const targetMonthStr = `${year}-${String(month).padStart(2, '0')}`;
+      
+      // Sort budgets for this category by date descending
+      const categoryBudgets = budgets
+        .filter(b => b.category_id === id)
+        .sort((a, b) => {
+          const yearA = a.year || 0;
+          const monthA = a.month || 0;
+          const yearB = b.year || 0;
+          const monthB = b.month || 0;
+          
+          if (yearA !== yearB) return yearB - yearA;
+          return monthB - monthA;
+        });
+
+      // Find the first budget that is <= targetMonth and targetYear
+      const currentBudget = categoryBudgets.find(b => {
+        const bYear = b.year || 0;
+        const bMonth = b.month || 0;
+        if (bYear < year) return true;
+        if (bYear === year && bMonth <= month) return true;
+        return false;
       });
 
-    // Find the first budget that is <= targetMonth and targetYear
-    const budget = categoryBudgets.find(b => {
-      const bYear = b.year || 0;
-      const bMonth = b.month || 0;
-      if (bYear < year) return true;
-      if (bYear === year && bMonth <= month) return true;
-      return false;
-    });
+      const orcado = currentBudget ? (currentBudget.budget_amount || currentBudget.quantidade || 0) : 0;
 
-    const orcado = budget ? (budget.budget_amount || budget.quantidade || 0) : 0;
-
-    const gasto_real = transactions
-      .filter(t => {
-        const d = parseDate(t.date);
-        return t.type === cat.flow_type &&
-          t.category_id === cat.id &&
-          d.getMonth() + 1 === month &&
-          d.getFullYear() === year;
-      })
-      .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+      const gasto_real = transactions
+        .filter(t => {
+          const d = parseDate(t.date);
+          return t.type === catInfo.flow_type &&
+            t.category_id === id &&
+            d.getMonth() + 1 === month &&
+            d.getFullYear() === year;
+        })
+        .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
     let previsto = 0;
-    if (cat.flow_type === 'expense') {
+    if (catInfo.flow_type === 'expense') {
       const payablesAmount = payables
         .filter(p => {
           const d = parseDate(p.due_date || p.dueDate);
-          return p.category_id === cat.id &&
+          return p.category_id === id &&
             d.getMonth() + 1 === month &&
             d.getFullYear() === year &&
             p.status !== 'pago';
@@ -235,7 +274,7 @@ export function calculateBudgetProgressData(
       const creditCardAmount = creditCards
         .filter(cc => {
           const d = parseDate(cc.dueDate || cc.month + '-01');
-          return cat.name.toLowerCase().includes('cartão') &&
+          return catInfo.name.toLowerCase().includes('cartão') &&
             d.getMonth() + 1 === month &&
             d.getFullYear() === year &&
             cc.status !== 'paid';
@@ -247,7 +286,7 @@ export function calculateBudgetProgressData(
       const receivablesAmount = receivables
         .filter(r => {
           const d = parseDate(r.due_date || r.dueDate);
-          return r.category_id === cat.id &&
+          return r.category_id === id &&
             d.getMonth() + 1 === month &&
             d.getFullYear() === year &&
             r.status !== 'recebido';
@@ -258,18 +297,18 @@ export function calculateBudgetProgressData(
     }
 
     const progresso = orcado > 0 ? Math.min(100, (gasto_real / orcado) * 100) : (gasto_real > 0 ? 100 : 0);
-    const status = cat.flow_type === 'expense'
+    const status = catInfo.flow_type === 'expense'
       ? (gasto_real > orcado ? 'orçamento excedido' : 'controle mantido')
       : (gasto_real >= orcado ? 'controle mantido' : 'orçamento excedido');
 
     return {
-      category_id: cat.id,
-      category_name: cat.name,
-      rpg_group: cat.rpg_group || 'Outros',
-      icon: cat.icon || 'HelpCircle',
-      color: cat.color || '#3b82f6', // Changed from #94a3b8 to a vibrant blue
-      rpg_theme_name: cat.rpg_theme_name || 'Geral',
-      flow_type: cat.flow_type || 'expense',
+      category_id: id,
+      category_name: catInfo.name,
+      rpg_group: catInfo.rpg_group || 'Outros',
+      icon: catInfo.icon || 'HelpCircle',
+      color: catInfo.color || '#3b82f6', // Changed from #94a3b8 to a vibrant blue
+      rpg_theme_name: catInfo.rpg_theme_name || 'Geral',
+      flow_type: catInfo.flow_type || 'expense',
       orcado,
       gasto_real,
       previsto,

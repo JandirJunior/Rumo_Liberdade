@@ -18,7 +18,7 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--color-bg-panel)]/90 backdrop-blur-lg border-t border-[var(--color-border)] z-50 px-2 py-3">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--color-bg-panel)]/90 backdrop-blur-lg border-t border-[var(--color-border)] z-50 px-1 py-2">
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
@@ -27,12 +27,12 @@ export function BottomNav() {
               key={item.href} 
               href={item.href} 
               className={cn(
-                "flex flex-col items-center gap-1 transition-all duration-300",
+                "flex flex-col items-center gap-0.5 transition-all duration-300 w-14",
                 isActive ? "text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"
               )}
             >
-              <item.icon size={20} className={cn(isActive ? "medieval-glow" : undefined)} />
-              <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
+              <item.icon size={18} className={cn(isActive ? "medieval-glow" : undefined)} />
+              <span className="text-[8px] font-medium uppercase">{item.label}</span>
             </Link>
           );
         })}

@@ -229,6 +229,47 @@ export interface Character {
 
 // --- FIM SAAS INTERFACES ---
 
+// --- MARKET DATA INTERFACES ---
+
+export interface MarketData {
+  ticker: string;
+  price: number;
+  last_updated: any; // Firestore Timestamp
+  shortName?: string;
+  longName?: string;
+  currency?: string;
+  regularMarketChange?: number;
+  regularMarketChangePercent?: number;
+  regularMarketTime?: string;
+  regularMarketVolume?: number;
+  marketCap?: number;
+  regularMarketPreviousClose?: number;
+  regularMarketOpen?: number;
+  regularMarketDayHigh?: number;
+  regularMarketDayLow?: number;
+  fiftyTwoWeekLow?: number;
+  fiftyTwoWeekHigh?: number;
+  priceEarnings?: number;
+  earningsPerShare?: number;
+  logourl?: string;
+}
+
+export interface MarketConfig {
+  enabled: boolean;
+  max_requests_per_day: number;
+  requests_today: number;
+  last_reset: any; // Firestore Timestamp
+}
+
+export interface MarketUsageLog {
+  date: string;
+  total_requests: number;
+  total_tickers: number;
+  created_at: any; // Firestore Timestamp
+}
+
+// --- FIM MARKET DATA INTERFACES ---
+
 export interface BudgetProgress {
   category_id: string;
   category_name: string;
@@ -272,6 +313,7 @@ export interface UserGameState {
   xp: number;
   nextLevelXp: number;
   archetype: Archetype;
+  title?: string;
   stats: FaceroStats;
   completedQuests: string[];
 }
