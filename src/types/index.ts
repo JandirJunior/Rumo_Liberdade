@@ -138,6 +138,7 @@ export interface Asset {
   organizationId?: string;
   created_by?: string;
   average_cost?: number;
+  categoryName?: string;
 }
 
 // --- SAAS INTERFACES ---
@@ -323,6 +324,7 @@ export interface AccountPayable {
   transactionId?: string;
   created_by?: string;
   dueDate?: string; // Legacy
+  categoryName?: string;
 }
 
 export interface AccountReceivable {
@@ -346,6 +348,7 @@ export interface AccountReceivable {
   transactionId?: string;
   created_by?: string;
   dueDate?: string; // Legacy
+  categoryName?: string;
 }
 
 export interface CreditCard {
@@ -359,6 +362,7 @@ export interface CreditCard {
   userId?: string;
   limit?: number;
   category_id?: string;
+  categoryName?: string;
   created_by?: string;
 }
 
@@ -396,6 +400,7 @@ export interface Budget {
   // Legacy fields
   amount?: number;
   month?: string;
+  categoryName?: string;
 }
 
 export type BudgetEntity = Budget;
