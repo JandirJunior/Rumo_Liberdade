@@ -13,24 +13,22 @@
  * ❗ Não misturar lógica de UI aqui
  */
 
-import { useKingdomData } from '@/contexts/KingdomContext';
+import { useKingdom } from '@/contexts/KingdomContext';
 
-export function useKingdom() {
-  return useKingdomData();
-}
+export { useKingdom };
 
 // 👥 LISTAR MEMBROS DO REINO
 export function useKingdomMembers() {
-  const { members, loading } = useKingdomData();
+  const { members, loading } = useKingdom();
   return { members, loading };
 }
 
 export function useUserInvites() {
-  const { userInvites, loading } = useKingdomData();
+  const { userInvites, loading } = useKingdom();
   return { invites: userInvites, loading };
 }
 
 export function useKingdomInvites() {
-  const { kingdomInvites } = useKingdomData();
+  const { kingdomInvites } = useKingdom();
   return { invites: kingdomInvites };
 }

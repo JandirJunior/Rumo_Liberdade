@@ -9,6 +9,7 @@ export function useAllMarketData() {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     const colRef = collection(db, 'market_data');
 

@@ -354,7 +354,7 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
       isCancelled = true;
       unsubscribes.forEach(u => u && u());
     };
-  }, [user]);
+  }, [user, kingdomId]);
 
   // Actions
   const addTransaction = async (data: Partial<Transaction>) => {
@@ -987,6 +987,14 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
       {children}
     </KingdomContext.Provider>
   );
+}
+
+export function useKingdom() {
+  const context = useContext(KingdomContext);
+  if (context === undefined) {
+    throw new Error('useKingdom must be used within a KingdomProvider');
+  }
+  return context;
 }
 
 export function useKingdomData() {

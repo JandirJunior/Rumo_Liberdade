@@ -10,6 +10,7 @@ export function useMarketData(ticker: string | undefined) {
 
   useEffect(() => {
     if (!ticker) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMarketData(null);
       setLoading(false);
       return;
