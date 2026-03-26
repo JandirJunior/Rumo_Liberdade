@@ -77,7 +77,7 @@ interface KingdomContextType {
 
   addEarning: (data: any) => Promise<void>;
 
-  saveBudget: (category_id: string, amount: number) => Promise<void>;
+  saveBudget: (category_id: string, amount: number, month?: number, year?: number) => Promise<void>;
 
   addCategory: (category: any) => Promise<void>;
   updateCategory: (id: string, category: any) => Promise<void>;

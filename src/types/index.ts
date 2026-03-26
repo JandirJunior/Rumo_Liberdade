@@ -93,7 +93,6 @@ export interface Transaction {
   source?: "manual" | "importação" | "investimento";
   ticker?: string;
   quantity?: number;
-  investment_category_id?: string;
   // Legacy fields
   category_name?: string;
   categoryName?: string;
