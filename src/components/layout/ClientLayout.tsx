@@ -23,11 +23,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user && pathname !== '/logon' && pathname !== '/genesis' && pathname !== '/kingdom-selector') {
+    if (!loading && user && pathname !== '/login' && pathname !== '/genesis' && pathname !== '/kingdom-selector') {
       if (kingdoms.length > 1 && !kingdomId) {
         router.push('/kingdom-selector');
       } else if (!user) {
-        router.push('/logon');
+        router.push('/login');
       }
     }
   }, [user, loading, pathname, router, kingdoms, kingdomId]);
@@ -47,7 +47,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, []);
   
-  const isAuthPage = pathname === '/logon' || pathname === '/genesis';
+  const isAuthPage = pathname === '/login' || pathname === '/genesis';
   const showNav = !isAuthPage && user && !loading;
 
   return (

@@ -32,8 +32,8 @@ function VillainsContent() {
   useEffect(() => {
     console.log('Villains check auth:', { authLoading, user });
     if (!authLoading && !user) {
-      console.log('Redirecting to logon');
-      router.push('/logon');
+      console.log('Redirecting to login');
+      router.push('/login');
     }
   }, [user, authLoading, router]);
 

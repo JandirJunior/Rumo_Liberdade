@@ -12,10 +12,10 @@ export default function LogoffPage() {
     const performLogoff = async () => {
       try {
         await signOut(auth);
-        window.location.href = '/logon';
+        window.location.href = '/login';
       } catch (error) {
         console.error('Error signing out:', error);
-        window.location.href = '/logon';
+        window.location.href = '/login';
       }
     };
 
