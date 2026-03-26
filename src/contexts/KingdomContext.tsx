@@ -52,8 +52,10 @@ import {
 import { logActivity } from '@/lib/auditLogger';
 
 interface KingdomContextType {
+  kingdoms: Kingdom[];
+  selectKingdom: (kingdomId: string) => void;
   kingdom: Kingdom | null;
-  kingdomId: string | null; // Added
+  kingdomId: string | null;
   role: KingdomRole | null;
   memberId: string | null;
   loading: boolean;
@@ -126,10 +128,24 @@ interface KingdomContextType {
 const KingdomContext = createContext<KingdomContextType | undefined>(undefined);
 
 export function KingdomProvider({ children }: { children: ReactNode }) {
+  const [kingdoms, setKingdoms] = useState<Kingdom[]>([]);
   const [kingdom, setKingdom] = useState<Kingdom | null>(null);
   const [role, setRole] = useState<KingdomRole | null>(null);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [kingdomId, setKingdomId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('selected_kingdom_id');
+    }
+    return null;
+  });
+
+  const selectKingdom = (id: string) => {
+    setKingdomId(id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selected_kingdom_id', id);
+    }
+  };
   const { gameMode } = useTheme();
 
   // Data states
@@ -207,8 +223,9 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
         setLoading(true);
         const kingdoms = await kingdomService.getUserKingdoms(user.uid);
         if (isCancelled) return;
+        setKingdoms(kingdoms);
 
-        let currentKingdom = kingdoms[0];
+        let currentKingdom = kingdoms.find(k => k.id === kingdomId) || kingdoms[0];
 
         if (!currentKingdom) {
           currentKingdom = await kingdomService.createKingdom(
@@ -910,19 +927,59 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
   };
 
   const contextValue = {
-    kingdom, kingdomId: kingdom?.id || null, role, memberId, loading,
-    transactions, assets, activityLogs, contributionPlanning, categories, budgets, payables, receivables, creditCards, creditCardInvoices,
+    kingdoms,
+    selectKingdom,
+    kingdom,
+    kingdomId: kingdom?.id || null,
+    role,
+    memberId,
+    loading,
+    transactions,
+    assets,
+    activityLogs,
+    contributionPlanning,
+    categories,
+    budgets,
+    payables,
+    receivables,
+    creditCards,
+    creditCardInvoices,
     getBudgetProgress,
-    kingdomLevel, kingdomXP, heroLevel, heroXP,
-    addTransaction, updateTransaction, deleteTransaction,
-    addInvestment, updateInvestment, deleteInvestment, addEarning,
-    saveBudget, addCategory, updateCategory, deleteCategory,
-    addPayable, updatePayable, payPayable, deletePayable,
-    addReceivable, updateReceivable, receiveReceivable, deleteReceivable,
-    addCreditCard, updateCreditCard, deleteCreditCard,
-    addCreditCardInvoice, updateCreditCardInvoice, payCreditCardInvoice, deleteCreditCardInvoice,
-    members, userInvites, kingdomInvites,
-    updateContributionPlanning, joinKingdomByCode
+    kingdomLevel,
+    kingdomXP,
+    heroLevel,
+    heroXP,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    addInvestment,
+    updateInvestment,
+    deleteInvestment,
+    addEarning,
+    saveBudget,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    addPayable,
+    updatePayable,
+    payPayable,
+    deletePayable,
+    addReceivable,
+    updateReceivable,
+    receiveReceivable,
+    deleteReceivable,
+    addCreditCard,
+    updateCreditCard,
+    deleteCreditCard,
+    addCreditCardInvoice,
+    updateCreditCardInvoice,
+    payCreditCardInvoice,
+    deleteCreditCardInvoice,
+    members,
+    userInvites,
+    kingdomInvites,
+    updateContributionPlanning,
+    joinKingdomByCode
   };
 
   return (

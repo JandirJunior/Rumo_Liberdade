@@ -11,13 +11,26 @@ import { AmbientBackground } from '@/components/game/AmbientBackground';
 import { NotificationManager } from '@/components/game/NotificationManager';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { BottomNav } from '@/components/layout/BottomNav';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useKingdom } from '@/hooks/useKingdom';
 import { cn } from '@/lib/utils';
 import { useEffect } from 'react';
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading } = useTheme();
+  const { kingdoms, kingdomId } = useKingdom();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user && pathname !== '/logon' && pathname !== '/genesis' && pathname !== '/kingdom-selector') {
+      if (kingdoms.length > 1 && !kingdomId) {
+        router.push('/kingdom-selector');
+      } else if (!user) {
+        router.push('/logon');
+      }
+    }
+  }, [user, loading, pathname, router, kingdoms, kingdomId]);
 
   useEffect(() => {
     if ('serviceWorker' in navigator && typeof window !== 'undefined') {
