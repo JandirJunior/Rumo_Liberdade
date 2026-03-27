@@ -17,11 +17,7 @@ import { IMAGES } from '@/assets/images';
 import { ClientOnly } from '@/components/ClientOnly';
 
 export default function Villains() {
-  return (
-    <ClientOnly>
-      <VillainsContent />
-    </ClientOnly>
-  );
+  return <VillainsContent />;
 }
 
 function VillainsContent() {

@@ -20,15 +20,24 @@ import { ImportModal } from '@/components/ui/ImportModal';
 import { financialEngine } from '@/lib/financialEngine';
 import { parseDate } from '@/services/firebaseUtils';
 import { useActionContext } from '@/context/ActionContext';
-import { useAllMarketData } from '@/hooks/useAllMarketData';
+import { useMarketData } from '@/hooks/useMarketData';
 
 export default function Investments() {
   const { theme, user, loading: authLoading } = useTheme();
   const colors = THEMES[theme] || THEMES.ORBITA;
   const { openAction } = useActionContext();
-  const { marketData } = useAllMarketData();
 
   const { assets, loading: kingdomLoading, transactions, addInvestment, deleteInvestment, contributionPlanning, updateContributionPlanning } = useKingdom();
+
+  const uniqueTickers = useMemo(() => {
+    const tickers = new Set<string>();
+    assets.forEach(asset => {
+      if (asset.ticker) tickers.add(asset.ticker.toUpperCase());
+    });
+    return Array.from(tickers);
+  }, [assets]);
+
+  const { marketData } = useMarketData(uniqueTickers);
 
   const { totalValue, aggregated, tickerDetails } = useMemo(() =>
     financialEngine.calculateInvestmentPower(assets, contributionPlanning?.percentages, marketData),

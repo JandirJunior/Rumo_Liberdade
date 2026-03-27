@@ -14,7 +14,7 @@ export const IMAGES = {
   MENTORS:            "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1920&q=80",
   TAVERN:             "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1920&q=80",
   NOTIFICATION_ICON:  "https://picsum.photos/seed/goblin/400/400",
-  TEXTURE_PARCHMENT:  "https://picsum.photos/seed/goblin/400/400",
+  TEXTURE_PARCHMENT:  "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1920&q=80",
   MANIFEST_ICON_192:  "https://picsum.photos/seed/goblin/400/400",
   MANIFEST_ICON_512:  "https://picsum.photos/seed/goblin/400/400",
   VILLAINS: {

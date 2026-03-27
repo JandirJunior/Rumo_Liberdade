@@ -14,6 +14,20 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
+  // Ignore non-GET requests
+  if (event.request.method !== 'GET') return;
+
+  // Ignore Next.js internal requests, API routes, and RSC requests
+  if (
+    url.pathname.startsWith('/_next/') || 
+    url.pathname.startsWith('/api/') ||
+    event.request.headers.get('RSC') === '1'
+  ) {
+    return; // Let the browser handle it natively
+  }
+
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);

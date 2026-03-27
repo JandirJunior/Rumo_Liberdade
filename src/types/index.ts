@@ -1,3 +1,5 @@
+import { Timestamp } from 'firebase/firestore';
+
 /**
  * Definições de Tipos: Centraliza todas as interfaces e tipos utilizados na aplicação.
  * Garante a consistência dos dados entre os componentes e a lógica de negócio.
@@ -234,7 +236,7 @@ export interface Character {
 export interface MarketData {
   ticker: string;
   price: number;
-  last_updated: any; // Firestore Timestamp
+  last_updated: Timestamp; // Firestore Timestamp
   shortName?: string;
   longName?: string;
   currency?: string;

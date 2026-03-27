@@ -1,43 +1,49 @@
 import { useState, useEffect } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '@/services/firebase';
 import { MarketData } from '@/types';
+import { marketDataService } from '@/services/marketDataService';
 
-export function useMarketData(ticker: string | undefined) {
-  const [marketData, setMarketData] = useState<MarketData | null>(null);
+export function useMarketData(tickers: string[]) {
+  const [marketData, setMarketData] = useState<Record<string, MarketData>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!ticker) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setMarketData(null);
-      setLoading(false);
-      return;
-    }
+    let isMounted = true;
 
-    setLoading(true);
-    const normalizedTicker = ticker.toUpperCase().trim();
-    const docRef = doc(db, 'market_data', normalizedTicker);
-
-    const unsubscribe = onSnapshot(docRef, 
-      (snapshot) => {
-        if (snapshot.exists()) {
-          setMarketData(snapshot.data() as MarketData);
-        } else {
-          setMarketData(null);
+    const fetchMarketData = async () => {
+      if (!tickers || tickers.length === 0) {
+        if (isMounted) {
+          setMarketData({});
+          setLoading(false);
         }
-        setLoading(false);
-      },
-      (err) => {
-        console.error(`Error fetching market data for ${normalizedTicker}:`, err);
-        setError(err);
-        setLoading(false);
+        return;
       }
-    );
 
-    return () => unsubscribe();
-  }, [ticker]);
+      try {
+        setLoading(true);
+        const data = await marketDataService.getMarketDataForTickers(tickers);
+        if (isMounted) {
+          setMarketData(data);
+          setError(null);
+        }
+      } catch (err) {
+        console.error('Error fetching market data:', err);
+        if (isMounted) {
+          setError(err instanceof Error ? err : new Error('Unknown error'));
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchMarketData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [JSON.stringify(tickers)]); // Re-fetch when the list of tickers changes
 
   return { marketData, loading, error };
 }
