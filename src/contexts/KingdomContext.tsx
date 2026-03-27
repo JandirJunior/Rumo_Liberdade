@@ -123,6 +123,10 @@ interface KingdomContextType {
 
   updateContributionPlanning: (percentages: any) => Promise<void>;
   joinKingdomByCode: (code: string) => Promise<void>;
+  createKingdom: (name: string) => Promise<void>;
+  deleteKingdom: (kingdomId: string) => Promise<void>;
+  acceptInvite: (inviteId: string) => Promise<void>;
+  rejectInvite: (inviteId: string) => Promise<void>;
 }
 
 const KingdomContext = createContext<KingdomContextType | undefined>(undefined);
@@ -225,17 +229,19 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
         if (isCancelled) return;
         setKingdoms(kingdoms);
 
-        let currentKingdom = kingdoms.find(k => k.id === kingdomId) || kingdoms[0];
+        let currentKingdom = kingdoms.find(k => k.id === kingdomId);
 
+        // If no kingdom is selected, don't auto-select even if user has only one
         if (!currentKingdom) {
-          currentKingdom = await kingdomService.createKingdom(
-            `Reino de ${user.displayName || 'Herói'}`,
-            user.uid
-          );
+          setKingdom(null);
+          setLoading(false);
+          return;
         }
 
         if (isCancelled) return;
-        setKingdom(currentKingdom);
+        if (currentKingdom) {
+          setKingdom(currentKingdom);
+        }
 
         // Member listener
         const memberQuery = query(
@@ -703,30 +709,88 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
   const updatePayable = async (id: string, payable: any) => {
     if (!auth.currentUser || !kingdom) return;
     
-    // Garantir status válido se estiver sendo atualizado
-    const updateData = cleanObject({ ...payable });
-    if (updateData.status && !['pendente', 'pago', 'atrasado'].includes(updateData.status)) {
-      updateData.status = 'pendente';
-    }
+    try {
+      const updateData = cleanObject({ 
+        ...payable,
+        updated_at: new Date()
+      });
+      
+      if (updateData.status && !['pendente', 'pago', 'atrasado'].includes(updateData.status)) {
+        updateData.status = 'pendente';
+      }
 
-    await setDoc(doc(db, 'accounts_payable', id), updateData, { merge: true });
-    await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'payable' });
+      if (updateData.dueDate) updateData.due_date = updateData.dueDate;
+      if (updateData.due_date) updateData.dueDate = updateData.due_date;
+
+      await updateDoc(doc(db, 'accounts_payable', id), updateData);
+      await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'payable' });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `accounts_payable/${id}`);
+    }
   };
 
   const payPayable = async (id: string, paidAt: string) => {
     if (!auth.currentUser || !kingdom) return;
-    const payable = payables.find(p => p.id === id);
-    await updateDoc(doc(db, 'accounts_payable', id), { status: 'pago', paidAt });
-    if (payable) {
+    
+    try {
+      const payable = payables.find(p => p.id === id);
+      if (!payable) throw new Error('Conta a pagar não encontrada.');
+      if (payable.status === 'pago') throw new Error('Esta conta já foi paga.');
+
+      const batch = writeBatch(db);
+      
+      // 1. Atualizar status da conta
+      batch.update(doc(db, 'accounts_payable', id), { 
+        status: 'pago', 
+        paidAt,
+        updated_at: new Date()
+      });
+
+      // 2. Criar transação real
+      const transactionId = doc(collection(db, 'transactions')).id;
+      batch.set(doc(db, 'transactions', transactionId), cleanObject({
+        id: transactionId,
+        user_id: auth.currentUser.uid,
+        userName: auth.currentUser.displayName || 'Usuário',
+        amount: payable.amount,
+        type: 'expense',
+        description: payable.description || `Pagamento: ${payable.description}`,
+        category_id: payable.category_id,
+        categoryName: payable.categoryName,
+        date: new Date(paidAt),
+        created_at: new Date(),
+        kingdom_id: kingdom.id,
+        created_by: auth.currentUser.uid,
+        status: 'concluído',
+        source_id: id,
+        source_type: 'payable'
+      }));
+
+      await batch.commit();
+      
+      // 3. Adicionar XP
       await addXP(auth.currentUser.uid, calculateXPFromAction(Number(payable.amount || 0)));
+      
+      // 4. Logar atividade
+      await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { 
+        type: 'payable', 
+        status: 'paid',
+        amount: payable.amount 
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `accounts_payable/${id}`);
     }
-    await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'payable', status: 'paid' });
   };
 
   const deletePayable = async (id: string) => {
     if (!auth.currentUser || !kingdom) return;
-    await deleteDoc(doc(db, 'accounts_payable', id));
-    await logActivity(kingdom.id, auth.currentUser.uid, 'DELETE_TRANSACTION', id, { type: 'payable' });
+    
+    try {
+      await deleteDoc(doc(db, 'accounts_payable', id));
+      await logActivity(kingdom.id, auth.currentUser.uid, 'DELETE_TRANSACTION', id, { type: 'payable' });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `accounts_payable/${id}`);
+    }
   };
 
   const addReceivable = async (receivable: any) => {
@@ -780,52 +844,123 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
         count++;
       }
     } else {
-      const newId = doc(collection(db, 'accounts_receivable')).id;
-      const newReceivable = cleanObject({
-        ...receivable,
-        status: validStatus,
-        dueDate: rawDueDate,
-        due_date: rawDueDate,
-        id: newId,
-        userId: auth.currentUser.uid,
-        userName: auth.currentUser.displayName || 'Usuário',
-        categoryName,
-        createdAt: new Date().toISOString(),
-        kingdom_id: kingdom.id,
-        created_by: auth.currentUser.uid
-      });
-      await setDoc(doc(db, 'accounts_receivable', newId), newReceivable);
-      await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'receivable' });
+      const installments = receivable.installments && receivable.installments > 1 ? receivable.installments : 1;
+      const baseAmount = receivable.amount / installments;
+
+      for (let i = 0; i < installments; i++) {
+        const newId = doc(collection(db, 'accounts_receivable')).id;
+        let dueDate = new Date(rawDueDate);
+        dueDate.setMonth(dueDate.getMonth() + i);
+        const dueDateStr = dueDate.toISOString().split('T')[0];
+        
+        const newReceivable = cleanObject({
+          ...receivable,
+          isRecurring: installments > 1 ? false : receivable.isRecurring,
+          status: validStatus,
+          id: newId,
+          amount: baseAmount,
+          dueDate: dueDateStr,
+          due_date: dueDateStr,
+          installments: installments,
+          currentInstallment: i + 1,
+          userId: auth.currentUser.uid,
+          userName: auth.currentUser.displayName || 'Usuário',
+          categoryName,
+          createdAt: new Date().toISOString(),
+          kingdom_id: kingdom.id,
+          created_by: auth.currentUser.uid
+        });
+        await setDoc(doc(db, 'accounts_receivable', newId), newReceivable);
+        await logActivity(kingdom.id, auth.currentUser.uid, 'CREATE_TRANSACTION', newId, { type: 'receivable', amount: baseAmount });
+      }
     }
   };
 
   const updateReceivable = async (id: string, receivable: any) => {
     if (!auth.currentUser || !kingdom) return;
     
-    // Garantir status válido se estiver sendo atualizado
-    const updateData = cleanObject({ ...receivable });
-    if (updateData.status && !['pendente', 'recebido', 'atrasado', 'inadimplente'].includes(updateData.status)) {
-      updateData.status = 'pendente';
-    }
+    try {
+      const updateData = cleanObject({ 
+        ...receivable,
+        updated_at: new Date()
+      });
+      
+      if (updateData.status && !['pendente', 'recebido', 'atrasado', 'inadimplente'].includes(updateData.status)) {
+        updateData.status = 'pendente';
+      }
 
-    await setDoc(doc(db, 'accounts_receivable', id), updateData, { merge: true });
-    await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'receivable' });
+      if (updateData.dueDate) updateData.due_date = updateData.dueDate;
+      if (updateData.due_date) updateData.dueDate = updateData.due_date;
+
+      await updateDoc(doc(db, 'accounts_receivable', id), updateData);
+      await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'receivable' });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `accounts_receivable/${id}`);
+    }
   };
 
   const receiveReceivable = async (id: string, receivedAt: string) => {
     if (!auth.currentUser || !kingdom) return;
-    const receivable = receivables.find(r => r.id === id);
-    await updateDoc(doc(db, 'accounts_receivable', id), { status: 'recebido', receivedAt });
-    if (receivable) {
+    
+    try {
+      const receivable = receivables.find(r => r.id === id);
+      if (!receivable) throw new Error('Recebível não encontrado.');
+      if (receivable.status === 'recebido') throw new Error('Este recebível já foi marcado como recebido.');
+
+      const batch = writeBatch(db);
+      
+      // 1. Atualizar o status do recebível
+      batch.update(doc(db, 'accounts_receivable', id), { 
+        status: 'recebido', 
+        receivedAt,
+        updated_at: new Date()
+      });
+
+      // 2. Criar a transação real
+      const transactionId = doc(collection(db, 'transactions')).id;
+      batch.set(doc(db, 'transactions', transactionId), cleanObject({
+        id: transactionId,
+        user_id: auth.currentUser.uid,
+        userName: auth.currentUser.displayName || 'Usuário',
+        amount: receivable.amount,
+        type: 'income',
+        description: receivable.description || `Recebimento: ${receivable.description}`,
+        category_id: receivable.category_id,
+        categoryName: receivable.categoryName,
+        date: new Date(receivedAt),
+        created_at: new Date(),
+        kingdom_id: kingdom.id,
+        created_by: auth.currentUser.uid,
+        status: 'concluído',
+        source_id: id,
+        source_type: 'receivable'
+      }));
+
+      await batch.commit();
+      
+      // 3. Adicionar XP
       await addXP(auth.currentUser.uid, calculateXPFromAction(Number(receivable.amount || 0)));
+      
+      // 4. Logar atividade
+      await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { 
+        type: 'receivable', 
+        status: 'received',
+        amount: receivable.amount 
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `accounts_receivable/${id}`);
     }
-    await logActivity(kingdom.id, auth.currentUser.uid, 'UPDATE_TRANSACTION', id, { type: 'receivable', status: 'received' });
   };
 
   const deleteReceivable = async (id: string) => {
     if (!auth.currentUser || !kingdom) return;
-    await deleteDoc(doc(db, 'accounts_receivable', id));
-    await logActivity(kingdom.id, auth.currentUser.uid, 'DELETE_TRANSACTION', id, { type: 'receivable' });
+    
+    try {
+      await deleteDoc(doc(db, 'accounts_receivable', id));
+      await logActivity(kingdom.id, auth.currentUser.uid, 'DELETE_TRANSACTION', id, { type: 'receivable' });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `accounts_receivable/${id}`);
+    }
   };
 
   const addCreditCard = async (card: any) => {
@@ -918,6 +1053,36 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
     await kingdomService.addMember(kingdom.id, auth.currentUser.uid, 'member');
   };
 
+  const createKingdom = async (name: string) => {
+    if (!auth.currentUser) return;
+    const newKingdom = await kingdomService.createKingdom(name, auth.currentUser.uid);
+    selectKingdom(newKingdom.id);
+  };
+
+  const deleteKingdom = async (id: string) => {
+    if (!auth.currentUser) return;
+    await kingdomService.deleteKingdom(id);
+    // If deleted kingdom was selected, clear selection
+    if (kingdomId === id) {
+      selectKingdom('');
+    }
+    // Refresh kingdoms list
+    const updatedKingdoms = await kingdomService.getUserKingdoms(auth.currentUser.uid);
+    setKingdoms(updatedKingdoms);
+  };
+
+  const acceptInvite = async (inviteId: string) => {
+    if (!auth.currentUser) return;
+    await kingdomService.acceptInvite(inviteId, auth.currentUser.uid);
+    // Refresh kingdoms list
+    const updatedKingdoms = await kingdomService.getUserKingdoms(auth.currentUser.uid);
+    setKingdoms(updatedKingdoms);
+  };
+
+  const rejectInvite = async (inviteId: string) => {
+    await kingdomService.rejectInvite(inviteId);
+  };
+
   const getBudgetProgress = (month: number, year: number) => {
     const profileType = gameMode === 'reino' ? 'MultiUsuario' : 'MonoUsuario';
     const filteredCategories = categories.filter(c => !c.allowed_profiles || c.allowed_profiles.includes(profileType));
@@ -979,7 +1144,11 @@ export function KingdomProvider({ children }: { children: ReactNode }) {
     userInvites,
     kingdomInvites,
     updateContributionPlanning,
-    joinKingdomByCode
+    joinKingdomByCode,
+    createKingdom,
+    deleteKingdom,
+    acceptInvite,
+    rejectInvite
   };
 
   return (

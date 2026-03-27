@@ -9,11 +9,12 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { Avatar } from '@/components/game/Avatar';
-import { Sparkles, Shield, Swords, Compass, Wand2, ChevronRight, Trophy, Target } from 'lucide-react';
+import { Sparkles, Shield, Swords, Compass, Wand2, ChevronRight, Trophy, Target, Castle } from 'lucide-react';
 import { FaceroStats, Archetype } from '@/types';
 import { safeStringify } from '@/lib/utils';
 import { ARCHETYPE_IMAGES } from '@/lib/data';
 import { IMAGES } from '@/assets/images';
+import { auth } from '@/services/firebase';
 import { BudgetProgressPanel } from '@/components/ui/BudgetProgressPanel';
 import { useKingdom } from '@/hooks/useKingdom';
 import { useTheme } from '@/lib/ThemeContext';
@@ -70,9 +71,12 @@ export default function GenesisQuiz() {
   const [finished, setFinished] = useState(false);
   const [showBudget, setShowBudget] = useState(false);
   const [showInvestment, setShowInvestment] = useState(false);
+  const [showKingdomName, setShowKingdomName] = useState(false);
+  const [kingdomName, setKingdomName] = useState('');
+  const [isCreatingKingdom, setIsCreatingKingdom] = useState(false);
   const router = useRouter();
   const { theme } = useTheme();
-  const { kingdom, loading: kingdomLoading, contributionPlanning, updateContributionPlanning } = useKingdom();
+  const { kingdom, loading: kingdomLoading, contributionPlanning, updateContributionPlanning, createKingdom } = useKingdom();
   const [isPlanningModalOpen, setIsPlanningModalOpen] = useState(false);
 
   // Processa a resposta do usuário e avança para a próxima pergunta
@@ -90,7 +94,25 @@ export default function GenesisQuiz() {
     if (step < QUESTIONS.length - 1) {
       setStep(step + 1);
     } else {
+      if (auth.currentUser?.displayName && !kingdomName) {
+        setKingdomName(`Reino de ${auth.currentUser.displayName}`);
+      }
+      setShowKingdomName(true);
+    }
+  };
+
+  const handleCreateKingdom = async () => {
+    if (!auth.currentUser) return;
+    setIsCreatingKingdom(true);
+    try {
+      await createKingdom(kingdomName || `Reino de ${auth.currentUser?.displayName || 'Herói'}`);
+      setShowKingdomName(false);
       setShowBudget(true);
+    } catch (e) {
+      console.error('Error creating kingdom:', e);
+      alert('Erro ao criar reino. Tente novamente.');
+    } finally {
+      setIsCreatingKingdom(false);
     }
   };
 
@@ -111,7 +133,9 @@ export default function GenesisQuiz() {
   const archetype = getArchetype();
 
   // Finaliza a gênese, salva o estado inicial do jogo e redireciona para o dashboard
-  const finalize = () => {
+  const finalize = async () => {
+    if (!auth.currentUser) return;
+    
     const gameState = {
       level: 1,
       xp: 0,
@@ -121,11 +145,12 @@ export default function GenesisQuiz() {
     };
     try {
       localStorage.setItem('facero_game_state', safeStringify(gameState));
+      
+      router.push('/dashboard');
     } catch (e) {
-      console.error('Error stringifying gameState:', gameState);
-      throw e;
+      console.error('Error in finalize:', e);
+      alert('Erro ao finalizar. Tente novamente.');
     }
-    router.push('/dashboard');
   };
 
   return (
@@ -142,7 +167,7 @@ export default function GenesisQuiz() {
       </div>
 
       <AnimatePresence mode="wait">
-        {!showBudget && !finished ? (
+        {!showBudget && !showKingdomName && !finished ? (
           /* Interface das Perguntas */
           <motion.div
             key="quiz"
@@ -209,7 +234,8 @@ export default function GenesisQuiz() {
               <BudgetProgressPanel hideSelectors={true} isPlanningMode={true} />
               <button
                 onClick={() => setIsPlanningModalOpen(true)}
-                className="w-full mt-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-primary)] text-[var(--color-primary)] font-bold rounded-xl hover:bg-[var(--color-primary)] hover:text-[var(--color-bg-dark)] transition-all"
+                disabled={kingdomLoading}
+                className="w-full mt-4 py-3 bg-[var(--color-bg-dark)] border border-[var(--color-primary)] text-[var(--color-primary)] font-bold rounded-xl hover:bg-[var(--color-primary)] hover:text-[var(--color-bg-dark)] transition-all disabled:opacity-50"
               >
                 Planejar Aportes FACERO
               </button>
@@ -223,55 +249,48 @@ export default function GenesisQuiz() {
             />
 
             <button
-              onClick={() => { setShowBudget(false); setShowInvestment(true); }}
+              onClick={() => { setFinished(true); }}
               className="w-full py-5 bg-[var(--color-primary)] hover:brightness-110 text-[var(--color-bg-dark)] font-bold rounded-2xl shadow-xl transition-all active:scale-95 medieval-border medieval-glow flex items-center justify-center gap-2"
             >
-              Concluir Orçamento e Planejar Aportes
+              Concluir Orçamento e Ver Resultado
               <ChevronRight className="w-5 h-5" />
             </button>
           </motion.div>
-        ) : showInvestment && !finished ? (
-          /* Interface de Planejamento de Aporte (FACERO) */
+        ) : showKingdomName && !finished ? (
+          /* Interface de Nomeação do Reino */
           <motion.div
-            key="investment"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="w-full max-w-4xl space-y-8 z-10"
+            key="kingdom-name"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md text-center space-y-8 z-10"
           >
-            <div className="text-center space-y-2">
+            <div className="space-y-2">
               <div className="w-16 h-16 bg-[var(--color-bg-panel)] rounded-2xl flex items-center justify-center mx-auto mb-4 medieval-border medieval-glow">
-                <Compass className="w-8 h-8 text-[var(--color-primary)]" />
+                <Castle className="w-8 h-8 text-[var(--color-primary)]" />
               </div>
-              <h2 className="text-3xl medieval-title font-bold text-[var(--color-text-main)]">Planejamento de Aportes (FACERO)</h2>
-              <p className="text-[var(--color-text-muted)] max-w-md mx-auto">
-                <span className="text-[var(--color-primary)] font-bold uppercase tracking-tighter">[PASSO OBRIGATÓRIO]</span><br />
-                Defina como seus recursos serão distribuídos entre os ativos do sistema F.A.C.E.R.O.
+              <h2 className="text-3xl medieval-title font-bold text-[var(--color-text-main)]">Batize seu Reino</h2>
+              <p className="text-[var(--color-text-muted)]">
+                Todo grande império começa com um nome. Como se chamará sua terra?
               </p>
             </div>
 
-            <div className="bg-[var(--color-bg-panel)] p-6 rounded-3xl border border-[var(--color-border)] shadow-2xl medieval-border">
-              <button
-                onClick={() => setIsPlanningModalOpen(true)}
-                className="w-full py-4 bg-[var(--color-bg-dark)] border border-[var(--color-primary)] text-[var(--color-primary)] font-bold rounded-xl hover:bg-[var(--color-primary)] hover:text-[var(--color-bg-dark)] transition-all"
-              >
-                Configurar Aportes FACERO
-              </button>
+            <div className="relative">
+              <input
+                type="text"
+                value={kingdomName}
+                onChange={(e) => setKingdomName(e.target.value)}
+                placeholder="Ex: Reino de Camelot"
+                className="w-full bg-[var(--color-bg-panel)] border-2 border-[var(--color-border)] rounded-2xl py-5 px-6 text-xl text-center text-[var(--color-text-main)] focus:outline-none focus:border-[var(--color-primary)] transition-all medieval-border"
+                autoFocus
+              />
             </div>
 
-            <PlanningModal
-              isOpen={isPlanningModalOpen}
-              onClose={() => setIsPlanningModalOpen(false)}
-              onSave={updateContributionPlanning}
-              initialPlanning={contributionPlanning}
-            />
-
             <button
-              onClick={() => setFinished(true)}
-              className="w-full py-5 bg-[var(--color-primary)] hover:brightness-110 text-[var(--color-bg-dark)] font-bold rounded-2xl shadow-xl transition-all active:scale-95 medieval-border medieval-glow flex items-center justify-center gap-2"
+              onClick={handleCreateKingdom}
+              disabled={!kingdomName.trim() || isCreatingKingdom}
+              className="w-full py-5 bg-[var(--color-primary)] hover:brightness-110 text-[var(--color-bg-dark)] font-bold rounded-2xl shadow-xl transition-all active:scale-95 medieval-border medieval-glow disabled:opacity-50"
             >
-              Concluir Planejamento e Ver Resultado
-              <ChevronRight className="w-5 h-5" />
+              {isCreatingKingdom ? 'Forjando Reino...' : 'Confirmar Nome e Planejar Orçamento'}
             </button>
           </motion.div>
         ) : (

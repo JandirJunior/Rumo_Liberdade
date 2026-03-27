@@ -42,6 +42,10 @@ service cloud.firestore {
       return hasKingdomPermission(kingdomId, ['admin', 'member', 'viewer']);
     }
 
+    function isSuperAdmin() {
+      return isAuthenticated() && request.auth.token.email == 'jandirgabrieli@gmail.com';
+    }
+
     function canDelete(data) {
       return isAuthenticated() && (
         (data.created_by == request.auth.uid) ||
@@ -49,7 +53,8 @@ service cloud.firestore {
         (data.userId == request.auth.uid) ||
         (data.kingdom_id == null) ||
         (data.kingdom_id == "") ||
-        isMember(data.kingdom_id)
+        isMember(data.kingdom_id) ||
+        isSuperAdmin()
       );
     }
 
@@ -96,33 +101,36 @@ service cloud.firestore {
     match /kingdoms/{kingdomId} {
       allow read: if isAuthenticated(); // Permite buscar reinos por código de convite e ver detalhes ao ser convidado
       allow create: if isAuthenticated();
-      allow update: if isAdmin(kingdomId);
-      allow delete: if false;
+      allow update: if isAdmin(kingdomId) || isSuperAdmin();
+      allow delete: if (isAuthenticated() && resource.data.owner_id == request.auth.uid) || isSuperAdmin();
     }
 
     // Kingdom Members
     match /kingdom_members/{memberId} {
       allow read: if isAuthenticated() && (
         resource.data.user_id == request.auth.uid || 
-        isKingdomMember(resource.data.kingdom_id)
+        isKingdomMember(resource.data.kingdom_id) ||
+        isSuperAdmin()
       );
       allow create: if isAuthenticated(); // O próprio sistema cria ao criar reino ou aceitar convite
-      allow update: if isAdmin(resource.data.kingdom_id);
-      allow delete: if isAdmin(resource.data.kingdom_id) && resource.data.user_id != request.auth.uid;
+      allow update: if isAdmin(resource.data.kingdom_id) || isSuperAdmin();
+      allow delete: if isSuperAdmin() || (isAuthenticated() && get(/databases/$(database)/documents/kingdoms/$(resource.data.kingdom_id)).data.owner_id == request.auth.uid);
     }
 
     // Kingdom Invites
     match /kingdom_invites/{inviteId} {
       allow read: if isAuthenticated() && (
         request.auth.token.email == resource.data.email || 
-        isAdmin(resource.data.kingdom_id)
+        isAdmin(resource.data.kingdom_id) ||
+        isSuperAdmin()
       );
-      allow create: if isAdmin(request.resource.data.kingdom_id);
+      allow create: if isAdmin(request.resource.data.kingdom_id) || isSuperAdmin();
       allow update: if isAuthenticated() && (
         request.auth.token.email == resource.data.email || 
-        isAdmin(resource.data.kingdom_id)
+        isAdmin(resource.data.kingdom_id) ||
+        isSuperAdmin()
       );
-      allow delete: if isAdmin(resource.data.kingdom_id);
+      allow delete: if isSuperAdmin() || (isAuthenticated() && get(/databases/$(database)/documents/kingdoms/$(resource.data.kingdom_id)).data.owner_id == request.auth.uid);
     }
 
     // Transactions

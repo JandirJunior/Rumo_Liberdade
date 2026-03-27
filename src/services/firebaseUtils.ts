@@ -9,6 +9,7 @@
 
 import { collection, query, where } from 'firebase/firestore';
 import { db } from './firebase';
+import { safeStringify } from '../lib/utils';
 
 /**
  * 📌 ENUM DE OPERAÇÕES (LOG)
@@ -54,12 +55,7 @@ export function handleFirestoreError(
   operation: OperationType,
   entity: string
 ) {
-  console.error(`🔥 Firestore Error [${operation}] em ${entity}:`, error);
-
-  // Você pode evoluir isso depois:
-  // - Log remoto
-  // - Sentry
-  // - Notificação
+  console.error(`🔥 Firestore Error [${operation}] em ${entity}:`, safeStringify(error));
 
   throw new Error(`Erro ao ${operation} ${entity}`);
 }

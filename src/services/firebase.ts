@@ -7,7 +7,6 @@ import firebaseConfig from '../../firebase-applet-config.json';
 setLogLevel('error');
 
 const app = initializeApp(firebaseConfig);
-console.log('Firebase Config:', firebaseConfig);
 export const auth = getAuth(app);
 export const db = initializeFirestore(app, {
   experimentalAutoDetectLongPolling: true,

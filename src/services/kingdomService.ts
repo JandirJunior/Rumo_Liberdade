@@ -181,5 +181,71 @@ export const kingdomService = {
 
   async rejectInvite(inviteId: string): Promise<void> {
     await this.updateInviteStatus(inviteId, 'rejected');
+  },
+
+  async deleteKingdom(kingdomId: string): Promise<void> {
+    // 1. Delete all invites first (requires isAdmin, which requires member doc to exist)
+    const invitesRef = collection(db, 'kingdom_invites');
+    const qInvites = query(invitesRef, where('kingdom_id', '==', kingdomId));
+    const invitesSnap = await getDocs(qInvites);
+    for (const inviteDoc of invitesSnap.docs) {
+      await deleteDoc(doc(db, 'kingdom_invites', inviteDoc.id));
+    }
+
+    // 2. Delete all members
+    const membersRef = collection(db, 'kingdom_members');
+    const qMembers = query(membersRef, where('kingdom_id', '==', kingdomId));
+    const membersSnap = await getDocs(qMembers);
+    for (const memberDoc of membersSnap.docs) {
+      await deleteDoc(doc(db, 'kingdom_members', memberDoc.id));
+    }
+
+    // 3. Delete the kingdom itself
+    await deleteDoc(doc(db, 'kingdoms', kingdomId));
+  },
+
+  async getAllKingdoms(): Promise<(Kingdom & { owner_name?: string; owner_email?: string; last_activity_at?: string })[]> {
+    const kingdomsRef = collection(db, 'kingdoms');
+    const snapshot = await getDocs(kingdomsRef);
+    const kingdoms = snapshot.docs.map(doc => doc.data() as Kingdom & { owner_name?: string; owner_email?: string; last_activity_at?: string });
+    
+    for (const kingdom of kingdoms) {
+      // Fetch owner details
+      if (kingdom.owner_id) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', kingdom.owner_id));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            kingdom.owner_name = userData.name || userData.displayName || 'Desconhecido';
+            kingdom.owner_email = userData.email || 'Desconhecido';
+          }
+        } catch (e) {
+          console.error('Error fetching user for kingdom:', e);
+        }
+      }
+
+      // Fetch last activity
+      try {
+        const logsRef = collection(db, 'activity_logs');
+        const q = query(
+          logsRef, 
+          where('kingdom_id', '==', kingdom.id),
+          // We can't easily order by created_at without a composite index for every kingdom
+          // But we can just get the most recent one if we have an index on [kingdom_id, created_at]
+          // For now, let's just try to get any log and see if we can find the max created_at
+        );
+        const logsSnap = await getDocs(q);
+        if (!logsSnap.empty) {
+          const dates = logsSnap.docs.map(d => d.data().created_at).filter(Boolean);
+          if (dates.length > 0) {
+            kingdom.last_activity_at = dates.sort().reverse()[0];
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching last activity for kingdom:', e);
+      }
+    }
+    
+    return kingdoms;
   }
 };

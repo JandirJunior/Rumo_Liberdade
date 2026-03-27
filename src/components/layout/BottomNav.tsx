@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, HandCoins, ScrollText, MessageSquare, BarChart3, Skull } from 'lucide-react';
+import { Home, HandCoins, ScrollText, MessageSquare, BarChart3, Skull, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function BottomNav() {
@@ -14,7 +14,6 @@ export function BottomNav() {
     { icon: HandCoins, label: 'Inventário', href: '/investments' },
     { icon: ScrollText, label: 'Quests', href: '/transactions' },
     { icon: Skull, label: 'Masmorra', href: '/villains' },
-    { icon: MessageSquare, label: 'Mentor', href: '/chat' },
   ];
 
   return (

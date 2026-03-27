@@ -63,10 +63,10 @@ export function Header() {
           <div className="flex flex-col">
             <span className="font-bold text-[var(--color-text-main)] hidden sm:block medieval-title text-lg tracking-wider">Rumo à Liberdade</span>
             {kingdom && (
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] font-black text-[var(--color-primary)] uppercase tracking-[0.1em] truncate max-w-[100px]">{kingdom.name}</span>
-                <span className="text-[9px] font-bold text-[var(--color-text-muted)]">Nv. {kingdomLevel}</span>
-              </div>
+              <Link href="/kingdom-selector" className="flex items-center gap-1 hover:brightness-125 transition-all group">
+                <span className="text-[11px] font-black text-[var(--color-primary)] uppercase tracking-[0.15em] truncate max-w-[150px] group-hover:underline underline-offset-2">{kingdom.name}</span>
+                <span className="text-[10px] font-bold text-[var(--color-text-muted)]">Nv. {kingdomLevel}</span>
+              </Link>
             )}
           </div>
         </div>

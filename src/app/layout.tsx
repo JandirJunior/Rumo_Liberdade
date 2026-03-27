@@ -16,12 +16,15 @@ export const metadata = {
   title: 'Rumo à Liberdade - RPG Financeiro',
   description: 'Transforme sua vida financeira em uma jornada épica.',
   manifest: '/manifest.json',
-  themeColor: '#f27d26',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Rumo à Liberdade',
   },
+};
+
+export const viewport = {
+  themeColor: '#f27d26',
 };
 
 export default function RootLayout({

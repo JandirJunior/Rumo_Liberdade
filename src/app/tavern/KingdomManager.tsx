@@ -174,21 +174,24 @@ export function KingdomManager({ colors }: { colors: any }) {
         <div className="flex items-center justify-between mb-6">
           <div className="flex-1">
             {role === 'admin' ? (
-              <form onSubmit={handleUpdateKingdomName} className="flex items-center gap-2 group">
-                <input
-                  type="text"
-                  value={newKingdomName}
-                  onChange={(e) => setNewKingdomName(e.target.value)}
-                  className="text-xl font-display font-bold text-gray-900 bg-transparent border-b border-transparent focus:border-indigo-500 outline-none transition-all"
-                />
-                <button type="submit" disabled={isUpdatingName} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-indigo-500">
-                  <Edit3 className="w-4 h-4" />
-                </button>
-              </form>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Nome do Reino</label>
+                <form onSubmit={handleUpdateKingdomName} className="flex items-center gap-2 group">
+                  <input
+                    type="text"
+                    value={newKingdomName}
+                    onChange={(e) => setNewKingdomName(e.target.value)}
+                    className="text-2xl font-display font-bold text-gray-900 bg-gray-50/50 border-b-2 border-transparent focus:border-indigo-500 outline-none transition-all px-2 py-1 rounded-t-lg w-full max-w-md"
+                  />
+                  <button type="submit" disabled={isUpdatingName} className="p-2 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 transition-all shadow-sm active:scale-95">
+                    <Check className="w-5 h-5" />
+                  </button>
+                </form>
+              </div>
             ) : (
-              <h3 className="text-xl font-display font-bold text-gray-900">{kingdom?.name || 'Seu Reino'}</h3>
+              <h3 className="text-2xl font-display font-bold text-gray-900">{kingdom?.name || 'Seu Reino'}</h3>
             )}
-            <p className="text-sm text-gray-500">Gerencie os heróis que compartilham este reino.</p>
+            <p className="text-sm text-gray-500 mt-1">Gerencie os heróis que compartilham este reino.</p>
           </div>
           <div className={cn("px-4 py-2 rounded-xl text-sm font-bold text-white shrink-0", colors.primary)}>
             Seu Cargo: {role === 'admin' ? 'Administrador' : role === 'member' ? 'Membro' : 'Observador'}
