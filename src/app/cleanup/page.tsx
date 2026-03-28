@@ -1,20 +1,35 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/services/firebase';
-import { collection, getDocs, deleteDoc, doc, query, where, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, doc, query, where, writeBatch } from 'firebase/firestore';
 import { useKingdomData } from '@/contexts/KingdomContext';
+import { AdminGuard } from '@/components/admin/AdminGuard';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  Trash2, 
+  Database, 
+  Calendar, 
+  AlertTriangle, 
+  CheckCircle2, 
+  Search,
+  ChevronRight,
+  Filter,
+  RefreshCw,
+  ShieldAlert
+} from 'lucide-react';
 
 export default function CleanupPage() {
   const { kingdomId, loading: contextLoading } = useKingdomData();
   const [selectedTable, setSelectedTable] = useState('accounts_payable');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [items, setItems] = useState<Record<string, unknown>[]>([]);
-  const [message, setMessage] = useState('');
+  const [items, setItems] = useState<Record<string, any>[]>([]);
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' | null }>({ text: '', type: null });
   const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, count: 0 });
 
-  const parseItemDate = (data: Record<string, unknown>): Date | null => {
-    // Handle explicit month/year first to avoid treating month number as milliseconds
+  const parseItemDate = (data: Record<string, any>): Date | null => {
     if (data.month !== undefined && data.year !== undefined) {
       const m = Number(data.month);
       const y = Number(data.year);
@@ -36,17 +51,17 @@ export default function CleanupPage() {
       if (!isNaN(d.getTime())) return d;
     }
 
-    // Handle budgets which have year and month fields
     if (data.year && data.month) {
       return new Date(Number(data.year), Number(data.month) - 1, 1);
     }
 
-    // Return a very old date for items without a date, so they can be cleaned up
     return new Date(0);
   };
 
-  const loadAllItems = useCallback(async () => {
+  const loadAllItems = useCallback(async (showFeedback = false) => {
     if (!kingdomId) return;
+    if (showFeedback) setIsRefreshing(true);
+    
     const collections = [
       'accounts_payable', 
       'accounts_receivable', 
@@ -59,6 +74,7 @@ export default function CleanupPage() {
       'categories',
       'activity_logs'
     ];
+    
     const allItems: any[] = [];
     for (const colName of collections) {
       try {
@@ -70,16 +86,22 @@ export default function CleanupPage() {
       }
     }
     setItems(allItems);
+    if (showFeedback) setIsRefreshing(false);
   }, [kingdomId]);
 
   useEffect(() => {
     loadAllItems();
   }, [loadAllItems]);
 
-  const performCleanup = async () => {
+  const handleCleanupClick = () => {
     if (!kingdomId) return;
+    setConfirmModal({ isOpen: true, count: items.filter(i => i.col === selectedTable).length });
+  };
+
+  const performCleanup = async () => {
+    setConfirmModal({ isOpen: false, count: 0 });
     setLoading(true);
-    setMessage('Processando...');
+    setMessage({ text: 'Processando limpeza...', type: 'info' });
 
     try {
       const colRef = collection(db, selectedTable);
@@ -93,115 +115,277 @@ export default function CleanupPage() {
         start = new Date(startDate);
         end = new Date(endDate);
         end.setHours(23, 59, 59, 999);
-      } else {
-        setMessage('Aviso: Como as datas não foram selecionadas, apenas os registros "Sem data" serão excluídos.');
       }
 
       const docsToDelete = snapshot.docs.filter(d => {
         const itemDate = parseItemDate(d.data());
-        // If itemDate is the epoch date (0), it means it had no valid date, include it in cleanup
         if (itemDate && itemDate.getTime() === 0) return true;
-        
-        // If dates are provided, filter by date range
         if (start && end) {
           return itemDate && itemDate >= start && itemDate <= end;
         }
-        
-        // If no dates provided, only delete items without date
         return false;
       });
 
       if (docsToDelete.length === 0) {
-        setMessage('Nenhum registro encontrado para este intervalo.');
+        setMessage({ text: 'Nenhum registro encontrado para este intervalo.', type: 'info' });
         setLoading(false);
         return;
       }
 
       let count = 0;
-      // Chunk deletions in batches of 500 (Firestore limit)
       for (let i = 0; i < docsToDelete.length; i += 500) {
         const batch = writeBatch(db);
         const chunk = docsToDelete.slice(i, i + 500);
-        
         chunk.forEach(d => {
           batch.delete(doc(db, selectedTable, d.id));
           count++;
         });
-        
         await batch.commit();
       }
 
-      setMessage(`Sucesso! ${count} registros removidos da tabela ${selectedTable}.`);
+      setMessage({ text: `Sucesso! ${count} registros removidos da tabela ${selectedTable}.`, type: 'success' });
       loadAllItems();
     } catch (e) {
       console.error('Erro no cleanup:', e);
-      setMessage('Erro: ' + (e instanceof Error ? e.message : String(e)));
+      setMessage({ text: 'Erro: ' + (e instanceof Error ? e.message : String(e)), type: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
-  if (contextLoading) return <div className="p-10">Carregando dados do reino...</div>;
-  if (!kingdomId) return <div className="p-10">Nenhum reino selecionado ou erro ao carregar.</div>;
+  const tableLabels: Record<string, string> = {
+    accounts_payable: 'Contas a Pagar',
+    accounts_receivable: 'Contas a Receber',
+    transactions: 'Transações',
+    investments: 'Investimentos',
+    budgets: 'Orçamentos',
+    credit_cards: 'Cartões de Crédito',
+    credit_card_invoices: 'Faturas de Cartão',
+    contribution_planning: 'Planejamento de Aportes',
+    categories: 'Categorias',
+    activity_logs: 'Logs de Atividade'
+  };
 
   return (
-    <div className="p-10 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Database Cleanup Avançado</h1>
-      
-      <div className="space-y-4 p-4 bg-gray-50 rounded">
-        <div>
-          <label className="block font-semibold">Tabela para Eliminação:</label>
-          <select value={selectedTable} onChange={(e) => setSelectedTable(e.target.value)} className="w-full p-2 border rounded">
-            <option value="accounts_payable">Contas a Pagar</option>
-            <option value="accounts_receivable">Contas a Receber</option>
-            <option value="transactions">Transações</option>
-            <option value="investments">Investimentos</option>
-            <option value="budgets">Orçamentos (Budgets)</option>
-            <option value="credit_cards">Cartões de Crédito</option>
-            <option value="credit_card_invoices">Faturas de Cartão</option>
-            <option value="contribution_planning">Planejamento de Aportes</option>
-            <option value="categories">Categorias</option>
-            <option value="activity_logs">Logs de Atividade</option>
-          </select>
+    <AdminGuard title="Database Cleanup" description="Gerenciamento e limpeza avançada de dados do reino">
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+              <Database className="text-red-600" size={32} />
+              Database Cleanup
+            </h1>
+            <p className="text-slate-600 font-bold mt-1 uppercase text-[10px] tracking-widest">
+              Gerenciamento e limpeza avançada de dados do reino
+            </p>
+          </div>
+          <button 
+            onClick={() => loadAllItems(true)}
+            disabled={isRefreshing}
+            className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-800 font-black hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50 border-b-4 active:border-b-0 active:translate-y-1"
+          >
+            <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
+            Atualizar Dados
+          </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block font-semibold">Data Inicial:</label>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full p-2 border rounded" />
-          </div>
-          <div>
-            <label className="block font-semibold">Data Final:</label>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full p-2 border rounded" />
-          </div>
-        </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Cleanup Controls */}
+            <div className="lg:col-span-1 space-y-6">
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+                <div className="flex items-center gap-2 text-slate-900 font-bold">
+                  <Filter size={20} className="text-red-600" />
+                  Configurações de Limpeza
+                </div>
 
-        <button 
-          onClick={performCleanup} 
-          disabled={loading}
-          className="w-full bg-red-600 text-white p-3 rounded font-bold hover:bg-red-700 disabled:bg-gray-400"
-        >
-          {loading ? 'Processando...' : 'Eliminar Registros no Período'}
-        </button>
-      </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-600 uppercase tracking-wider ml-1">Tabela Alvo</label>
+                    <select 
+                      value={selectedTable} 
+                      onChange={(e) => setSelectedTable(e.target.value)} 
+                      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-black focus:ring-2 focus:ring-red-500/20 outline-none transition-all appearance-none cursor-pointer"
+                    >
+                      {Object.entries(tableLabels).map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
 
-      {message && <p className="mt-6 p-4 bg-gray-100 rounded">{message}</p>}
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-600 uppercase tracking-wider ml-1">Data Inicial</label>
+                      <div className="relative">
+                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                        <input 
+                          type="date" 
+                          value={startDate} 
+                          onChange={(e) => setStartDate(e.target.value)} 
+                          className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-black focus:ring-2 focus:ring-red-500/20 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-600 uppercase tracking-wider ml-1">Data Final</label>
+                      <div className="relative">
+                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                        <input 
+                          type="date" 
+                          value={endDate} 
+                          onChange={(e) => setEndDate(e.target.value)} 
+                          className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-black focus:ring-2 focus:ring-red-500/20 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-      <h2 className="text-xl font-bold mt-10 mb-4">Todos os Registros ({items.length})</h2>
-      <div className="border rounded max-h-96 overflow-y-auto">
-        {items.map(item => {
-          const itemDate = parseItemDate(item);
-          let dateStr = (itemDate && itemDate.getTime() !== 0) ? itemDate.toLocaleDateString() : 'Sem data';
+                <div className="p-4 bg-red-50 border border-red-100 rounded-2xl">
+                  <div className="flex gap-3">
+                    <AlertTriangle className="text-red-600 shrink-0" size={20} />
+                    <p className="text-xs text-red-800 font-medium leading-relaxed">
+                      Esta ação é irreversível. Se nenhuma data for selecionada, apenas registros sem data válida serão removidos.
+                    </p>
+                  </div>
+                </div>
 
-          return (
-            <div key={item.id} className="flex justify-between p-2 border-b text-sm hover:bg-gray-50">
-              <span className="font-mono text-xs text-gray-500 w-32 truncate">{item.col}</span>
-              <span className="flex-1 px-2 truncate">{item.description || item.name || item.ticker || item.category_id || 'Sem descrição'}</span>
-              <span className="w-24 text-right">{dateStr}</span>
+                <button 
+                  onClick={handleCleanupClick} 
+                  disabled={loading || contextLoading}
+                  className="w-full bg-red-600 text-white p-4 rounded-2xl font-black hover:bg-red-700 disabled:bg-slate-200 disabled:text-slate-400 transition-all shadow-lg shadow-red-600/20 flex items-center justify-center gap-2"
+                >
+                  <Trash2 size={20} />
+                  {loading ? 'Processando...' : 'Executar Limpeza'}
+                </button>
+              </div>
+
+              {message.text && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`p-4 rounded-2xl border flex items-start gap-3 ${
+                    message.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-800' :
+                    message.type === 'error' ? 'bg-red-50 border-red-100 text-red-800' :
+                    'bg-blue-50 border-blue-100 text-blue-800'
+                  }`}
+                >
+                  {message.type === 'success' ? <CheckCircle2 size={20} className="shrink-0" /> : <AlertTriangle size={20} className="shrink-0" />}
+                  <p className="text-sm font-bold">{message.text}</p>
+                </motion.div>
+              )}
             </div>
-          );
-        })}
-      </div>
-    </div>
+
+            {/* Data Preview */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden flex flex-col h-[600px]">
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center">
+                      <Search size={20} className="text-slate-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-slate-900">Registros Atuais</h2>
+                      <p className="text-xs text-slate-600 font-black uppercase tracking-wider">{items.length} itens encontrados</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-2">
+                  <div className="space-y-1">
+                    {items.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                        <Database size={48} strokeWidth={1} className="mb-4 opacity-20" />
+                        <p className="font-bold">Nenhum registro encontrado</p>
+                      </div>
+                    ) : (
+                      items.map((item, idx) => {
+                        const itemDate = parseItemDate(item);
+                        const dateStr = (itemDate && itemDate.getTime() !== 0) ? itemDate.toLocaleDateString('pt-BR') : 'Sem data';
+                        
+                        return (
+                          <motion.div 
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: Math.min(idx * 0.02, 0.5) }}
+                            key={item.id} 
+                            className="group flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100"
+                          >
+                            <div className="flex items-center gap-4 min-w-0">
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 group-hover:bg-white transition-colors">
+                                <ChevronRight size={14} className="text-slate-400" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-black text-slate-900 truncate">
+                                  {item.description || item.name || item.ticker || item.category_id || 'Sem descrição'}
+                                </p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300">
+                                    {tableLabels[item.col] || item.col}
+                                  </span>
+                                  <span className="text-[10px] font-mono text-slate-500 font-bold">ID: {item.id.slice(0, 8)}...</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className={`text-xs font-black ${dateStr === 'Sem data' ? 'text-red-600' : 'text-slate-700'}`}>
+                                {dateStr}
+                              </p>
+                            </div>
+                          </motion.div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Confirmation Modal */}
+        <AnimatePresence>
+          {confirmModal.isOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                onClick={() => setConfirmModal({ isOpen: false, count: 0 })}
+              />
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white border border-slate-200 rounded-3xl p-8 shadow-2xl relative z-10 max-w-sm w-full"
+              >
+                <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                  <ShieldAlert className="text-red-600" size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Confirmar Limpeza</h3>
+                <p className="text-slate-500 text-sm mb-8 leading-relaxed">
+                  Você está prestes a remover registros da tabela <span className="font-bold text-slate-900">{tableLabels[selectedTable]}</span>. 
+                  Esta ação não pode ser desfeita.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setConfirmModal({ isOpen: false, count: 0 })}
+                    className="flex-1 py-3 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-colors text-sm"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={performCleanup}
+                    className="flex-1 py-3 rounded-2xl font-bold bg-red-600 text-white hover:bg-red-700 transition-colors text-sm shadow-lg shadow-red-600/20"
+                  >
+                    Confirmar
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+    </AdminGuard>
   );
 }

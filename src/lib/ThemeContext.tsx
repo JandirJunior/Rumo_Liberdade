@@ -43,23 +43,26 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 // =========================
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [gameState, setGameState] = useState<UserGameState>(MOCK_GAME_STATE);
-  const [theme, setThemeState] = useState<ThemeType>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('app_theme') as ThemeType) || 'ORBITA';
-    }
-    return 'ORBITA';
-  });
+  const [theme, setThemeState] = useState<ThemeType>('ORBITA');
 
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [gameMode, setGameMode] = useState<'heroi' | 'reino'>(() => {
+  const [gameMode, setGameMode] = useState<'heroi' | 'reino'>('heroi');
+
+  // =========================
+  // CARREGAMENTO DE PREFERÊNCIAS LOCAIS
+  // =========================
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('app_game_mode') as 'heroi' | 'reino') || 'heroi';
+      const savedTheme = localStorage.getItem('app_theme') as ThemeType;
+      if (savedTheme) setThemeState(savedTheme);
+
+      const savedMode = localStorage.getItem('app_game_mode') as 'heroi' | 'reino';
+      if (savedMode) setGameMode(savedMode);
     }
-    return 'heroi';
-  });
+  }, []);
 
   // =========================
   // PERSISTÊNCIA DE PREFERÊNCIAS LOCAIS
@@ -80,58 +83,68 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setUser(currentUser);
 
       if (currentUser) {
-        try {
-          const userRef = doc(db, 'users', currentUser.uid);
+        const userRef = doc(db, 'users', currentUser.uid);
+        let isFirstSnapshot = true;
 
-          // Primeiro, verifica se o usuário existe para criá-lo se necessário
-          const userSnap = await getDoc(userRef);
-          if (!userSnap.exists()) {
-            const newState = { ...MOCK_GAME_STATE };
-            const newTheme = ARCHETYPE_THEME_MAP[newState.archetype] || 'ORBITA';
+        // Configura o listener em tempo real SEM bloquear a thread com getDoc
+        unsubscribeSnapshot = onSnapshot(
+          userRef,
+          async (docSnap) => {
+            if (!docSnap.exists()) {
+              if (isFirstSnapshot) {
+                // Usuário não existe, cria no Firestore
+                try {
+                  const newState = { ...MOCK_GAME_STATE };
+                  const newTheme = ARCHETYPE_THEME_MAP[newState.archetype] || 'ORBITA';
 
-            await setDoc(userRef, {
-              uid: currentUser.uid,
-              email: currentUser.email,
-              name: currentUser.displayName || 'Herói',
-              archetype: newState.archetype,
-              xp: newState.xp,
-              stats: newState.stats,
-              theme: newTheme,
-              createdAt: new Date().toISOString(),
-            });
-          }
-
-          // Configura o listener em tempo real
-          unsubscribeSnapshot = onSnapshot(
-            userRef,
-            (docSnap) => {
-              if (!docSnap.exists()) return;
-
-              const data = docSnap.data();
-              setUserData(data);
-              const newState = calculatePlayerLevel(data.xp || 0);
-
-              setGameState({
-                ...newState,
-                archetype: data.archetype,
-                stats: data.stats,
-                completedQuests: data.completedQuests || [],
-              });
-
-              const resolvedTheme =
-                data.theme ||
-                ARCHETYPE_THEME_MAP[data.archetype] ||
-                'ORBITA';
-
-              setThemeState(resolvedTheme);
-            },
-            (error) => {
-              console.error('Erro no onSnapshot do usuário:', error);
+                  await setDoc(userRef, {
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    name: currentUser.displayName || 'Herói',
+                    archetype: newState.archetype,
+                    xp: newState.xp,
+                    stats: newState.stats,
+                    theme: newTheme,
+                    createdAt: new Date().toISOString(),
+                  });
+                } catch (error) {
+                  console.error('Erro ao criar usuário:', error);
+                }
+              }
+              // Libera o loading mesmo se o usuário estiver sendo criado
+              setLoading(false);
+              return;
             }
-          );
-        } catch (error) {
-          console.error('Erro ao buscar dados do usuário:', error);
-        }
+
+            const data = docSnap.data();
+            setUserData(data);
+            const newState = calculatePlayerLevel(data.xp || 0);
+
+            setGameState({
+              ...newState,
+              archetype: data.archetype,
+              stats: data.stats,
+              completedQuests: data.completedQuests || [],
+            });
+
+            const resolvedTheme =
+              data.theme ||
+              ARCHETYPE_THEME_MAP[data.archetype] ||
+              'ORBITA';
+
+            setThemeState(resolvedTheme);
+            
+            // Libera a tela de loading no primeiro retorno bem-sucedido
+            if (isFirstSnapshot) {
+              isFirstSnapshot = false;
+              setLoading(false);
+            }
+          },
+          (error) => {
+            console.error('Erro no onSnapshot do usuário:', error);
+            setLoading(false); // Garante que não fique travado em caso de erro de permissão
+          }
+        );
       } else {
         setGameState(EMPTY_GAME_STATE);
         setThemeState('ORBITA');
@@ -141,9 +154,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           unsubscribeSnapshot();
           unsubscribeSnapshot = undefined;
         }
+        setLoading(false); // Libera o loading se não houver usuário logado
       }
-
-      setLoading(false);
     });
 
     return () => {

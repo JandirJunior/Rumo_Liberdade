@@ -1,27 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
-import { useTheme } from '@/lib/ThemeContext';
-import { THEMES } from '@/lib/themes';
-import { Header } from '@/components/layout/Header';
 import { useAllMarketData } from '@/hooks/useAllMarketData';
 import { formatCurrency } from '@/lib/utils';
 import { parseDate } from '@/services/firebaseUtils';
-import { RefreshCw, Search, Database, ShieldAlert, Settings } from 'lucide-react';
+import { RefreshCw, Search, Database, ShieldAlert, Settings, TrendingUp, TrendingDown, Globe, BarChart3, ChevronRight } from 'lucide-react';
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 import { MarketConfig } from '@/types';
+import { AdminGuard } from '@/components/admin/AdminGuard';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function MarketAdmin() {
-  const { theme, user, loading: authLoading } = useTheme();
-  const colors = THEMES[theme] || THEMES.ORBITA;
   const { marketData, loading: marketLoading } = useAllMarketData();
   const [searchTerm, setSearchTerm] = useState('');
-  const [brapiToken, setBrapiToken] = useState('xWvYy544yZfE8Cj1z3FkQx'); // Hardcoded for now, as requested to have a field
+  const [brapiToken, setBrapiToken] = useState('xWvYy544yZfE8Cj1z3FkQx');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false });
 
-  // Convert object to array and sort by ticker
   const marketDataArray = Object.values(marketData).sort((a, b) => a.ticker.localeCompare(b.ticker));
   
   const filteredData = marketDataArray.filter(item => 
@@ -30,17 +27,14 @@ export default function MarketAdmin() {
   );
 
   const handleManualUpdate = async () => {
+    setConfirmModal({ isOpen: false });
     setIsUpdating(true);
     try {
-      console.log('Starting manual update...');
-      // 1. Get Market Config
       const configRef = doc(db, 'market_config', 'global');
-      console.log('Fetching market_config...');
       const configSnap = await getDoc(configRef);
       
       let config = configSnap.data() as MarketConfig;
       if (!configSnap.exists()) {
-        console.log('Creating default market_config...');
         config = {
           enabled: true,
           max_requests_per_day: 500,
@@ -49,7 +43,6 @@ export default function MarketAdmin() {
         };
         await setDoc(configRef, config);
       } else {
-        // Check if we need to reset the daily counter
         const lastReset = config.last_reset ? config.last_reset.toDate() : new Date(0);
         const now = new Date();
         if (lastReset.getDate() !== now.getDate() || lastReset.getMonth() !== now.getMonth() || lastReset.getFullYear() !== now.getFullYear()) {
@@ -68,8 +61,6 @@ export default function MarketAdmin() {
         return;
       }
 
-      // 2. Get Unique Tickers
-      console.log('Fetching investments...');
       const investmentsSnap = await getDocs(collection(db, 'investments'));
       const tickers = new Set<string>();
       investmentsSnap.forEach((doc) => {
@@ -79,19 +70,15 @@ export default function MarketAdmin() {
         }
       });
       const uniqueTickers = Array.from(tickers);
-      console.log('Tickers found:', uniqueTickers);
 
       let updatedCount = 0;
       let requestsMade = 0;
 
-      // 3. Fetch and Update
       for (const ticker of uniqueTickers) {
         if (config.requests_today + requestsMade >= config.max_requests_per_day) {
-          console.warn('Daily request limit reached');
           break;
         }
 
-        // Check if needs update
         const marketDocRef = doc(db, 'market_data', ticker);
         const marketDocSnap = await getDoc(marketDocRef);
         let needsUpdate = true;
@@ -109,8 +96,6 @@ export default function MarketAdmin() {
         }
 
         if (needsUpdate) {
-          console.log(`Fetching price for ${ticker}...`);
-          // Fetch from our API route to hide the token
           const res = await fetch(`/api/market/fetch?ticker=${ticker}`);
           if (res.ok) {
             const tickerData = await res.json();
@@ -132,16 +117,12 @@ export default function MarketAdmin() {
       }
 
       if (requestsMade > 0) {
-        // Update config requests_today
-        console.log('Updating config...');
         await updateDoc(configRef, {
           requests_today: increment(requestsMade),
         });
 
-        // Log usage
         const todayString = new Date().toISOString().split('T')[0];
         const logRef = doc(db, 'market_usage_logs', todayString);
-        console.log('Logging usage...');
         await setDoc(logRef, {
           date: todayString,
           total_requests: increment(requestsMade),
@@ -159,172 +140,236 @@ export default function MarketAdmin() {
     }
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-dark)]">
-        <div className="w-12 h-12 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
-
   return (
-    <div className="min-h-screen transition-colors duration-500 bg-[var(--color-bg-dark)]">
-      <Header />
-
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 pb-32 space-y-8">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <AdminGuard title="Market Data Engine" description="Gerenciamento global de cotações e integração com BRAPI">
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-3xl medieval-title font-bold text-[var(--color-text-main)] flex items-center gap-3">
-              <Database className="w-8 h-8 text-[var(--color-primary)]" />
-              Market Data Engine (Admin)
-            </h2>
-            <p className="text-sm text-[var(--color-text-muted)] mt-1">
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+              <Globe className="text-blue-600" size={32} />
+              Market Data Engine
+            </h1>
+            <p className="text-slate-600 font-bold mt-1 uppercase text-[10px] tracking-widest">
               Gerenciamento global de cotações e integração com BRAPI
             </p>
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={handleManualUpdate}
+              onClick={() => setConfirmModal({ isOpen: true })}
               disabled={isUpdating}
-              className="px-4 h-10 rounded-xl flex items-center gap-2 bg-[var(--color-primary)] text-white shadow-sm font-bold text-sm transition-transform active:scale-95 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 h-12 rounded-2xl flex items-center gap-2 bg-blue-600 text-white shadow-lg shadow-blue-600/20 font-black text-sm transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50 border-b-4 border-blue-800 active:border-b-0 active:translate-y-1"
             >
-              <RefreshCw className={`w-4 h-4 ${isUpdating ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-5 h-5 ${isUpdating ? 'animate-spin' : ''}`} />
               <span>Forçar Atualização</span>
             </button>
           </div>
-        </header>
+        </div>
 
-        {/* Configurações */}
-        <section className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm medieval-border">
-          <div className="flex items-center gap-2 mb-6">
-            <Settings className="w-5 h-5 text-[var(--color-text-muted)]" />
-            <h3 className="text-lg font-bold text-[var(--color-text-main)]">Configurações do Motor</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
-                Token BRAPI
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={brapiToken}
-                  onChange={(e) => setBrapiToken(e.target.value)}
-                  className="w-full h-12 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl px-4 text-[var(--color-text-main)] font-mono text-sm focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                  placeholder="Insira o token da BRAPI"
-                />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2" title="Token hardcoded no backend atualmente">
-                  <ShieldAlert className="w-4 h-4 text-amber-500" />
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Stats & Config */}
+            <div className="lg:col-span-1 space-y-6">
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+                <div className="flex items-center gap-2 text-slate-900 font-bold">
+                  <Settings size={20} className="text-blue-600" />
+                  Configurações
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-600 uppercase tracking-wider ml-1">Token BRAPI</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={brapiToken}
+                        onChange={(e) => setBrapiToken(e.target.value)}
+                        className="w-full h-12 bg-slate-50 border border-slate-200 rounded-2xl px-4 text-slate-900 font-mono text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                        placeholder="Token BRAPI"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <ShieldAlert className="w-4 h-4 text-amber-500" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-slate-100 border border-slate-200 rounded-2xl space-y-3">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Status do Cache</p>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2.5 h-2.5 rounded-full ${marketLoading ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'}`}></div>
+                        <span className="text-sm font-black text-slate-900">
+                          {marketLoading ? 'Sincronizando...' : `${marketDataArray.length} Tickers`}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Última Varredura</p>
+                      <p className="text-sm font-black text-slate-900">
+                        {marketDataArray.length > 0 && marketDataArray[0].last_updated 
+                          ? parseDate(marketDataArray[0].last_updated).toLocaleDateString('pt-BR') 
+                          : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <p className="text-xs text-[var(--color-text-muted)] mt-2">
-                Este token é utilizado pelo backend para buscar as cotações. (Atualmente configurado via variável de ambiente/código no backend).
-              </p>
-            </div>
-            
-            <div className="flex flex-col justify-center">
-              <div className="bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-xl p-4">
-                <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-bold mb-1">Status do Banco de Dados</p>
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${marketLoading ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`}></div>
-                  <span className="text-sm font-bold text-[var(--color-text-main)]">
-                    {marketLoading ? 'Sincronizando...' : `${marketDataArray.length} Tickers em Cache`}
-                  </span>
-                </div>
+
+              <div className="bg-blue-600 rounded-3xl p-6 text-white shadow-lg shadow-blue-600/20">
+                <BarChart3 className="mb-4 opacity-50" size={32} />
+                <h3 className="text-lg font-bold mb-1">Monitoramento</h3>
+                <p className="text-blue-100 text-sm leading-relaxed">
+                  O motor de mercado atualiza automaticamente os preços a cada 30 minutos quando requisitado pelos usuários.
+                </p>
               </div>
             </div>
-          </div>
-        </section>
 
-        {/* Tabela de Dados */}
-        <section className="bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-2xl overflow-hidden medieval-border shadow-sm">
-          <div className="p-4 border-b border-[var(--color-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--color-bg-dark)]">
-            <h3 className="text-lg font-bold text-[var(--color-text-main)]">Dados Importados</h3>
-            
-            <div className="relative w-full sm:w-64">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
-              <input
-                type="text"
-                placeholder="Buscar ticker..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full h-10 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-xl pl-9 pr-4 text-sm text-[var(--color-text-main)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-              />
-            </div>
-          </div>
+            {/* Market Data Table */}
+            <div className="lg:col-span-3 space-y-4">
+              <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden flex flex-col h-[700px]">
+                <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900">Base de Cotações</h2>
+                    <p className="text-xs text-slate-600 font-black uppercase tracking-wider">Dados em tempo real via BRAPI</p>
+                  </div>
+                  <div className="relative w-full md:w-72">
+                    <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por ticker ou nome..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full h-11 bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 text-sm text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                    />
+                  </div>
+                </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse whitespace-nowrap">
-              <thead>
-                <tr className="bg-[var(--color-bg-panel)] border-b border-[var(--color-border)]">
-                  <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Ticker</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Nome (Short)</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Preço Atual</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Variação Dia</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Abertura</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Mín/Máx Dia</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-right">Volume</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-center">Última Atualização</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--color-border)]">
-                {filteredData.length > 0 ? (
-                  filteredData.map((item) => (
-                    <tr key={item.ticker} className="hover:bg-[var(--color-bg-dark)]/50 transition-colors">
-                      <td className="px-4 py-3 font-bold text-[var(--color-text-main)]">
-                        <div className="flex items-center gap-2">
-                          {item.logourl && (
-                            <div className="relative w-6 h-6 rounded-full bg-white overflow-hidden p-0.5">
-                              <Image src={item.logourl} alt={item.ticker} fill className="object-contain" referrerPolicy="no-referrer" />
+                <div className="flex-1 overflow-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="sticky top-0 bg-white z-10">
+                      <tr className="border-b border-slate-100">
+                        <th className="px-6 py-4 text-[10px] font-black text-slate-700 uppercase tracking-widest">Ativo</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-slate-700 uppercase tracking-widest text-right">Preço</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-slate-700 uppercase tracking-widest text-right">Variação</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-slate-700 uppercase tracking-widest text-right">Mín/Máx</th>
+                        <th className="px-6 py-4 text-[10px] font-black text-slate-700 uppercase tracking-widest text-center">Atualização</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {filteredData.length > 0 ? (
+                        filteredData.map((item, idx) => (
+                          <motion.tr 
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: Math.min(idx * 0.01, 0.3) }}
+                            key={item.ticker} 
+                            className="group hover:bg-slate-50 transition-colors"
+                          >
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                {item.logourl ? (
+                                  <div className="relative w-8 h-8 rounded-xl bg-white border border-slate-100 overflow-hidden p-1 shadow-sm">
+                                    <Image src={item.logourl} alt={item.ticker} fill className="object-contain" referrerPolicy="no-referrer" />
+                                  </div>
+                                ) : (
+                                  <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400">
+                                    {item.ticker.slice(0, 2)}
+                                  </div>
+                                )}
+                                <div className="min-w-0">
+                                  <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{item.ticker}</p>
+                                  <p className="text-[10px] font-black text-slate-600 truncate max-w-[120px]">{item.shortName || '-'}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <p className="text-sm font-black text-slate-900">{formatCurrency(item.price)}</p>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              {item.regularMarketChangePercent !== undefined ? (
+                                <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black ${
+                                  item.regularMarketChangePercent >= 0 
+                                    ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' 
+                                    : 'bg-red-100 text-red-700 border border-red-200'
+                                }`}>
+                                  {item.regularMarketChangePercent >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                                  {Math.abs(item.regularMarketChangePercent).toFixed(2)}%
+                                </div>
+                              ) : '-'}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <p className="text-[10px] font-black text-slate-700">
+                                {item.regularMarketDayLow && item.regularMarketDayHigh 
+                                  ? `${formatCurrency(item.regularMarketDayLow)} - ${formatCurrency(item.regularMarketDayHigh)}`
+                                  : '-'}
+                              </p>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <p className="text-[10px] font-black text-slate-700">
+                                {item.last_updated ? parseDate(item.last_updated).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                              </p>
+                            </td>
+                          </motion.tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-20 text-center">
+                            <div className="flex flex-col items-center justify-center text-slate-400">
+                              <Database size={48} strokeWidth={1} className="mb-4 opacity-20" />
+                              <p className="font-bold">{marketLoading ? 'Carregando dados...' : 'Nenhum ticker encontrado'}</p>
                             </div>
-                          )}
-                          {item.ticker}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-[var(--color-text-muted)] truncate max-w-[150px]" title={item.longName || item.shortName}>
-                        {item.shortName || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-[var(--color-text-main)]">
-                        {formatCurrency(item.price)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-xs font-bold">
-                        {item.regularMarketChangePercent !== undefined ? (
-                          <span className={item.regularMarketChangePercent >= 0 ? 'text-emerald-500' : 'text-red-500'}>
-                            {item.regularMarketChangePercent > 0 ? '+' : ''}{item.regularMarketChangePercent.toFixed(2)}%
-                          </span>
-                        ) : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-right text-xs text-[var(--color-text-muted)]">
-                        {item.regularMarketOpen ? formatCurrency(item.regularMarketOpen) : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-right text-xs text-[var(--color-text-muted)]">
-                        {item.regularMarketDayLow && item.regularMarketDayHigh 
-                          ? `${formatCurrency(item.regularMarketDayLow)} - ${formatCurrency(item.regularMarketDayHigh)}`
-                          : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-right text-xs text-[var(--color-text-muted)]">
-                        {item.regularMarketVolume ? item.regularMarketVolume.toLocaleString('pt-BR') : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-center text-xs text-[var(--color-text-muted)]">
-                        {item.last_updated ? parseDate(item.last_updated).toLocaleString('pt-BR') : '-'}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-[var(--color-text-muted)]">
-                      {marketLoading ? 'Carregando dados...' : 'Nenhum ticker encontrado no Market Data Engine.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
-        </section>
-      </main>
-    </div>
+        </div>
+
+        {/* Confirmation Modal */}
+        <AnimatePresence>
+          {confirmModal.isOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                onClick={() => setConfirmModal({ isOpen: false })}
+              />
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white border border-slate-200 rounded-3xl p-8 shadow-2xl relative z-10 max-w-sm w-full"
+              >
+                <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+                  <RefreshCw className="text-blue-600" size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Forçar Atualização</h3>
+                <p className="text-slate-500 text-sm mb-8 leading-relaxed">
+                  Isso irá consumir créditos da API BRAPI para todos os tickers ativos no sistema. Deseja continuar?
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setConfirmModal({ isOpen: false })}
+                    className="flex-1 py-3 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-colors text-sm"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleManualUpdate}
+                    className="flex-1 py-3 rounded-2xl font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm shadow-lg shadow-blue-600/20"
+                  >
+                    Confirmar
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+    </AdminGuard>
   );
 }

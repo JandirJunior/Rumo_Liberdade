@@ -93,14 +93,14 @@ service cloud.firestore {
 
     // Users
     match /users/{userId} {
-      allow read: if isAuthenticated(); // Permite buscar usuários para convites
-      allow create, update: if isOwner(userId);
-      allow delete: if false;
+      allow read: if isAuthenticated() || isSuperAdmin();
+      allow create, update: if isOwner(userId) || isSuperAdmin();
+      allow delete: if isSuperAdmin();
     }
 
     // Kingdoms
     match /kingdoms/{kingdomId} {
-      allow read: if isAuthenticated(); // Permite buscar reinos por código de convite e ver detalhes ao ser convidado
+      allow read: if isAuthenticated() || isSuperAdmin();
       allow create: if isAuthenticated();
       allow update: if isAdmin(kingdomId) || isSuperAdmin();
       allow delete: if (isAuthenticated() && resource.data.owner_id == request.auth.uid) || isSuperAdmin();
@@ -113,7 +113,7 @@ service cloud.firestore {
         isKingdomMember(resource.data.kingdom_id) ||
         isSuperAdmin()
       );
-      allow create: if isAuthenticated(); // O próprio sistema cria ao criar reino ou aceitar convite
+      allow create: if isAuthenticated() || isSuperAdmin();
       allow update: if isAdmin(resource.data.kingdom_id) || isSuperAdmin();
       allow delete: if isSuperAdmin() || (isAuthenticated() && get(/databases/$(database)/documents/kingdoms/$(resource.data.kingdom_id)).data.owner_id == request.auth.uid);
     }
@@ -139,22 +139,13 @@ service cloud.firestore {
       function isValidTransaction() {
         return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'type', 'date']) &&
                request.resource.data.amount is number &&
-               isValidString('description', 1, 200) &&
+               isValidString('description', 1, 500) &&
                request.resource.data.type in ['income', 'expense', 'investment'];
       }
 
-      allow read: if isViewer(resource.data.kingdom_id);
-      allow create: if isMember(request.resource.data.kingdom_id) && 
-                      hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'type', 'date']) &&
-                      request.resource.data.amount is number &&
-                      isValidString('description', 1, 200) &&
-                      request.resource.data.type in ['income', 'expense', 'investment'];
-      allow update: if isMember(resource.data.kingdom_id) && 
-                      (request.resource.data.kingdom_id == null || isMember(request.resource.data.kingdom_id)) && 
-                      hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'type', 'date']) &&
-                      request.resource.data.amount is number &&
-                      isValidString('description', 1, 200) &&
-                      request.resource.data.type in ['income', 'expense', 'investment'];
+      allow read: if isViewer(resource.data.kingdom_id) || isSuperAdmin();
+      allow create: if isMember(request.resource.data.kingdom_id) && isValidTransaction();
+      allow update: if (isMember(resource.data.kingdom_id) || isSuperAdmin()) && isValidTransaction();
       allow delete: if canDelete(resource.data);
     }
 
@@ -164,12 +155,13 @@ service cloud.firestore {
         return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'status']) &&
                (hasRequiredFields(['dueDate']) || hasRequiredFields(['due_date'])) &&
                isValidNumber('amount', 0) &&
+               isValidString('description', 1, 500) &&
                request.resource.data.status in ['pendente', 'pago', 'atrasado', 'pending', 'paid', 'overdue'];
       }
 
-      allow read: if isViewer(resource.data.kingdom_id);
+      allow read: if isViewer(resource.data.kingdom_id) || isSuperAdmin();
       allow create: if isMember(request.resource.data.kingdom_id) && isValidPayable();
-      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id) && isValidPayable();
+      allow update: if (isMember(resource.data.kingdom_id) || isSuperAdmin()) && isValidPayable();
       allow delete: if canDelete(resource.data);
     }
 
@@ -179,70 +171,69 @@ service cloud.firestore {
         return hasRequiredFields(['amount', 'description', 'category_id', 'kingdom_id', 'status']) &&
                (hasRequiredFields(['dueDate']) || hasRequiredFields(['due_date'])) &&
                isValidNumber('amount', 0) &&
+               isValidString('description', 1, 500) &&
                request.resource.data.status in ['pendente', 'recebido', 'atrasado', 'inadimplente', 'pending', 'received', 'overdue', 'defaulted'];
       }
 
-      allow read: if isViewer(resource.data.kingdom_id);
+      allow read: if isViewer(resource.data.kingdom_id) || isSuperAdmin();
       allow create: if isMember(request.resource.data.kingdom_id) && isValidReceivable();
-      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id) && isValidReceivable();
+      allow update: if (isMember(resource.data.kingdom_id) || isSuperAdmin()) && isValidReceivable();
       allow delete: if canDelete(resource.data);
     }
 
     // Budgets
     match /budgets/{budgetId} {
-      allow read: if 'kingdom_id' in resource.data && isViewer(resource.data.kingdom_id);
+      allow read: if isSuperAdmin() || ('kingdom_id' in resource.data && isViewer(resource.data.kingdom_id));
       allow create: if 'kingdom_id' in request.resource.data && isMember(request.resource.data.kingdom_id);
-      allow update: if ('kingdom_id' in resource.data && isMember(resource.data.kingdom_id)) && ('kingdom_id' in request.resource.data && isMember(request.resource.data.kingdom_id));
-      allow delete: if ('kingdom_id' in resource.data && isMember(resource.data.kingdom_id)) || canDelete(resource.data);
+      allow update: if (isSuperAdmin() || ('kingdom_id' in resource.data && isMember(resource.data.kingdom_id))) && ('kingdom_id' in request.resource.data && isMember(request.resource.data.kingdom_id));
+      allow delete: if isSuperAdmin() || ('kingdom_id' in resource.data && isMember(resource.data.kingdom_id)) || canDelete(resource.data);
     }
 
     // Credit Cards
     match /credit_cards/{cardId} {
-      allow read: if isViewer(resource.data.kingdom_id);
+      allow read: if isViewer(resource.data.kingdom_id) || isSuperAdmin();
       allow create: if isMember(request.resource.data.kingdom_id);
-      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id);
+      allow update: if isMember(resource.data.kingdom_id) || isSuperAdmin();
       allow delete: if canDelete(resource.data);
     }
 
     // Credit Card Invoices
     match /credit_card_invoices/{invoiceId} {
-      allow read: if isViewer(resource.data.kingdom_id);
+      allow read: if isViewer(resource.data.kingdom_id) || isSuperAdmin();
       allow create: if isMember(request.resource.data.kingdom_id);
-      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id);
+      allow update: if isMember(resource.data.kingdom_id) || isSuperAdmin();
       allow delete: if canDelete(resource.data);
     }
 
     // Investments
     match /investments/{investmentId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() || isSuperAdmin();
       allow create: if isMember(request.resource.data.kingdom_id);
-      allow update: if isMember(resource.data.kingdom_id) && 
-                      (request.resource.data.kingdom_id == null || isMember(request.resource.data.kingdom_id));
+      allow update: if isMember(resource.data.kingdom_id) || isSuperAdmin();
       allow delete: if canDelete(resource.data);
     }
 
     // Activity Logs
     match /activity_logs/{logId} {
-      allow read: if 'kingdom_id' in resource.data && isViewer(resource.data.kingdom_id);
+      allow read: if isSuperAdmin() || ('kingdom_id' in resource.data && isViewer(resource.data.kingdom_id));
       allow create: if isAuthenticated() && 'kingdom_id' in request.resource.data && isKingdomMember(request.resource.data.kingdom_id);
       allow update: if false;
-      allow delete: if ('kingdom_id' in resource.data && isMember(resource.data.kingdom_id)) || canDelete(resource.data);
+      allow delete: if isSuperAdmin() || ('kingdom_id' in resource.data && isMember(resource.data.kingdom_id)) || canDelete(resource.data);
     }
 
     // Contribution Planning
     match /contribution_planning/{planningId} {
-      allow read: if isViewer(resource.data.kingdom_id);
+      allow read: if isViewer(resource.data.kingdom_id) || isSuperAdmin();
       allow create: if isMember(request.resource.data.kingdom_id);
-      allow update: if isMember(resource.data.kingdom_id) && 
-                      (request.resource.data.kingdom_id == null || isMember(request.resource.data.kingdom_id));
+      allow update: if isMember(resource.data.kingdom_id) || isSuperAdmin();
       allow delete: if canDelete(resource.data);
     }
 
     // Categories (Custom per Kingdom)
     match /categories/{categoryId} {
-      allow read: if isViewer(resource.data.kingdom_id);
+      allow read: if isViewer(resource.data.kingdom_id) || isSuperAdmin();
       allow create: if isMember(request.resource.data.kingdom_id);
-      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id);
+      allow update: if isMember(resource.data.kingdom_id) || isSuperAdmin();
       allow delete: if canDelete(resource.data);
     }
 
