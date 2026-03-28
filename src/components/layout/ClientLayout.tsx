@@ -33,16 +33,12 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   }, [user, loading, pathname, router, kingdoms, kingdomId]);
 
   useEffect(() => {
+    // Service worker disabled for debugging
     if ('serviceWorker' in navigator && typeof window !== 'undefined') {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(
-          (registration) => {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          },
-          (err) => {
-            console.log('ServiceWorker registration failed: ', err);
-          }
-        );
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+          registration.unregister();
+        }
       });
     }
   }, []);
@@ -75,8 +71,8 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       <KingdomProvider>
         <ActionProvider>
           <ErrorBoundary>
-            <AmbientEngine />
-            <AmbientBackground />
+            {/* <AmbientEngine />
+            <AmbientBackground /> */}
             <LayoutContent>
               {children}
             </LayoutContent>

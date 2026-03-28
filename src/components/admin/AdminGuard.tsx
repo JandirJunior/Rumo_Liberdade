@@ -13,19 +13,20 @@ interface AdminGuardProps {
 
 export function AdminGuard({ children, title, description }: AdminGuardProps) {
   const [password, setPassword] = useState('');
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('admin_authorized') === 'true';
+    }
+    return false;
+  });
   const [isMounted, setIsMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const ADMIN_PASSWORD = 'J@nd1rjun10r';
+  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'J@nd1rjun10r';
 
   useEffect(() => {
-    setIsMounted(true);
-    const authStatus = sessionStorage.getItem('admin_authorized');
-    if (authStatus === 'true') {
-      setIsAuthorized(true);
-    }
+    requestAnimationFrame(() => setIsMounted(true));
   }, []);
 
   const handleLogin = (e: React.FormEvent) => {

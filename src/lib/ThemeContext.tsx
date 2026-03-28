@@ -43,26 +43,23 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 // =========================
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [gameState, setGameState] = useState<UserGameState>(MOCK_GAME_STATE);
-  const [theme, setThemeState] = useState<ThemeType>('ORBITA');
+  const [theme, setThemeState] = useState<ThemeType>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('app_theme') as ThemeType) || 'ORBITA';
+    }
+    return 'ORBITA';
+  });
 
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  const [gameMode, setGameMode] = useState<'heroi' | 'reino'>('heroi');
-
-  // =========================
-  // CARREGAMENTO DE PREFERÊNCIAS LOCAIS
-  // =========================
-  useEffect(() => {
+  const [gameMode, setGameMode] = useState<'heroi' | 'reino'>(() => {
     if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('app_theme') as ThemeType;
-      if (savedTheme) setThemeState(savedTheme);
-
-      const savedMode = localStorage.getItem('app_game_mode') as 'heroi' | 'reino';
-      if (savedMode) setGameMode(savedMode);
+      return (localStorage.getItem('app_game_mode') as 'heroi' | 'reino') || 'heroi';
     }
-  }, []);
+    return 'heroi';
+  });
 
   // =========================
   // PERSISTÊNCIA DE PREFERÊNCIAS LOCAIS

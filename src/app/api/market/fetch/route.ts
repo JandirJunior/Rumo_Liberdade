@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const BRAPI_TOKEN = 'fLJbEd8uzbDUm1hoSAXrXk';
+const BRAPI_TOKEN = process.env.NEXT_PUBLIC_BRAPI_TOKEN;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

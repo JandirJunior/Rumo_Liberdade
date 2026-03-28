@@ -30,8 +30,7 @@ export const actionsRegistry: Record<string, ActionDefinition> = {
     label: 'Comprar Investimento',
     originRoute: '/investments',
     fields: [
-      { name: 'usarDataManual', label: 'Usar data manual?', type: 'checkbox', defaultValue: false },
-      { name: 'dataRegistro', label: 'Data do Registro', type: 'date', condition: (v) => v?.usarDataManual, defaultValue: new Date().toISOString().split('T')[0] },
+      { name: 'date', label: 'Data da Operação', type: 'date', required: true, defaultValue: new Date().toISOString().split('T')[0] },
       { name: 'categoriaFinanceira', label: 'Categoria', type: 'select', required: true, options: [
         { label: 'FII', value: 'fii' },
         { label: 'Ação', value: 'stock' },
@@ -50,8 +49,7 @@ export const actionsRegistry: Record<string, ActionDefinition> = {
     label: 'Vender Investimento',
     originRoute: '/investments',
     fields: [
-      { name: 'usarDataManual', label: 'Usar data manual?', type: 'checkbox', defaultValue: false },
-      { name: 'dataRegistro', label: 'Data do Registro', type: 'date', condition: (v) => v?.usarDataManual, defaultValue: new Date().toISOString().split('T')[0] },
+      { name: 'date', label: 'Data da Operação', type: 'date', required: true, defaultValue: new Date().toISOString().split('T')[0] },
       { name: 'categoriaFinanceira', label: 'Categoria', type: 'select', required: true, options: [
         { label: 'FII', value: 'fii' },
         { label: 'Ação', value: 'stock' },
@@ -70,8 +68,7 @@ export const actionsRegistry: Record<string, ActionDefinition> = {
     label: 'Proventos',
     originRoute: '/investments',
     fields: [
-      { name: 'usarDataManual', label: 'Usar data manual?', type: 'checkbox', defaultValue: false },
-      { name: 'dataRegistro', label: 'Data do Registro', type: 'date', condition: (v) => v?.usarDataManual, defaultValue: new Date().toISOString().split('T')[0] },
+      { name: 'date', label: 'Data da Operação', type: 'date', required: true, defaultValue: new Date().toISOString().split('T')[0] },
       { name: 'tipoProvento', label: 'Tipo de Provento', type: 'select', required: true, options: [
         { label: 'Dividendo', value: 'dividend' },
         { label: 'JCP', value: 'jcp' },
@@ -87,8 +84,7 @@ export const actionsRegistry: Record<string, ActionDefinition> = {
     label: 'Nova Receita',
     originRoute: '/transactions',
     fields: [
-      { name: 'usarDataManual', label: 'Usar data manual?', type: 'checkbox', defaultValue: false },
-      { name: 'dataRegistro', label: 'Data do Registro', type: 'date', condition: (v) => v?.usarDataManual, defaultValue: new Date().toISOString().split('T')[0] },
+      { name: 'date', label: 'Data da Operação', type: 'date', required: true, defaultValue: new Date().toISOString().split('T')[0] },
       { name: 'categoria', label: 'Categoria', type: 'select', required: true },
       { name: 'descricao', label: 'Descrição', type: 'text', required: true, transform: (v) => v?.toUpperCase(), placeholder: 'Ex: Salário, Venda' },
       { name: 'valorTotal', label: 'Valor Total (R$)', type: 'number', required: true, step: '0.01', placeholder: '0.00' },
@@ -108,8 +104,7 @@ export const actionsRegistry: Record<string, ActionDefinition> = {
     label: 'Nova Despesa',
     originRoute: '/transactions',
     fields: [
-      { name: 'usarDataManual', label: 'Usar data manual?', type: 'checkbox', defaultValue: false },
-      { name: 'dataRegistro', label: 'Data do Registro', type: 'date', condition: (v) => v?.usarDataManual, defaultValue: new Date().toISOString().split('T')[0] },
+      { name: 'date', label: 'Data da Operação', type: 'date', required: true, defaultValue: new Date().toISOString().split('T')[0] },
       { name: 'categoria', label: 'Categoria', type: 'select', required: true },
       { name: 'descricao', label: 'Descrição', type: 'text', required: true, transform: (v) => v?.toUpperCase(), placeholder: 'Ex: Supermercado, Lazer' },
       { name: 'valorTotal', label: 'Valor Total (R$)', type: 'number', required: true, step: '0.01', placeholder: '0.00' },

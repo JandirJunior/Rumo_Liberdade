@@ -15,6 +15,8 @@ import { Modal } from '@/components/ui/Modal';
 import { ImportModal } from '@/components/ui/ImportModal';
 import { formatCurrency, cn, getColorClass } from '@/lib/utils';
 import { Transaction, TransactionType } from '@/types';
+import { format } from 'date-fns';
+import { parseDate } from '@/services/firebaseUtils';
 
 import { useTheme } from '@/lib/ThemeContext';
 import { IMAGES } from '@/assets/images';
@@ -92,8 +94,7 @@ function TransactionsContent() {
         valorTotal: t.amount,
         quantidade: t.quantity,
         categoriaFinanceira: t.investment_category_id,
-        usarDataManual: true,
-        dataRegistro: t.date ? t.date.split('T')[0] : new Date().toISOString().split('T')[0]
+        date: t.date ? t.date.split('T')[0] : new Date().toISOString().split('T')[0]
       });
     } else {
       openAction(t.type === 'income' ? 'receita' : 'despesa', {
@@ -101,8 +102,7 @@ function TransactionsContent() {
         descricao: t.description,
         valorTotal: t.amount,
         categoria: t.category_id,
-        usarDataManual: true,
-        dataRegistro: t.date ? t.date.split('T')[0] : new Date().toISOString().split('T')[0]
+        date: t.date ? t.date.split('T')[0] : new Date().toISOString().split('T')[0]
       });
     }
   };
@@ -125,21 +125,36 @@ function TransactionsContent() {
       // expected headers: data, operacao, categoria, descricao, valor
       
       // Handle date format DD/MM/YYYY
-      const dateParts = item.data.split('/');
-      const formattedDate = dateParts.length === 3 ? `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}` : new Date().toISOString().split('T')[0];
+      const itemDate = (item.data || item.Data || '').trim();
+      let formattedDate = new Date().toISOString().split('T')[0];
+      
+      if (itemDate) {
+        const dateParts = itemDate.split('/');
+        if (dateParts.length === 3) {
+          const day = dateParts[0].trim().padStart(2, '0');
+          const month = dateParts[1].trim().padStart(2, '0');
+          const year = dateParts[2].trim();
+          
+          if (year.length === 4 && !isNaN(parseInt(year))) {
+            formattedDate = `${year}-${month}-${day}`;
+          }
+        } else if (itemDate.includes('-')) {
+          formattedDate = itemDate;
+        }
+      }
 
       await addTransaction({
-        type: (item.operacao.toLowerCase() === 'receita' ? 'income' : 'expense') as TransactionType,
-        amount: parseFloat(item.valor.replace(',', '.')),
-        description: item.descricao,
-        category_id: item.categoria,
+        type: ((item.operacao || item.Operacao || '').toLowerCase() === 'receita' ? 'income' : 'expense') as TransactionType,
+        amount: parseFloat((item.valor || item.Valor || '0').toString().replace(/\./g, '').replace(',', '.')),
+        description: item.descricao || item.Descricao || 'Importado',
+        category_id: item.categoria || item.Categoria || 'outros',
         date: formattedDate
       });
     }
   };
 
   const filteredTransactions = transactions.filter(t => {
-    const d = new Date(t.date);
+    const d = parseDate(t.date);
     const matchesMonth = d.getMonth() + 1 === month;
     const matchesYear = d.getFullYear() === year;
     const matchesFilter = filter === 'all' || t.type === filter;
@@ -351,7 +366,7 @@ function TransactionsContent() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-[var(--color-text-main)] truncate">{t.description}</p>
                       <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
-                        {categoryName} • {new Date(t.created_at || t.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        {categoryName} • <span className="text-[var(--color-primary)]">Op: {format(parseDate(t.date), 'dd/MM/yyyy')}</span> • Mov: {format(parseDate(t.created_at || t.date), 'dd/MM/yyyy HH:mm')}
                         {` • Por: ${userName}`}
                       </p>
                     </div>

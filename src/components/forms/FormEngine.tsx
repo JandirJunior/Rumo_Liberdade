@@ -111,7 +111,7 @@ export function FormEngine({ actionKey }: { actionKey: string }) {
           amount: parseFloat(formData.valorTotal),
           type: actionKey === 'receita' ? 'income' : 'expense' as any,
           category_id: formData.categoria,
-          date: formData.usarDataManual ? formData.dataRegistro : new Date().toISOString(),
+          date: formData.date || new Date().toISOString(),
         };
         if (isUpdate) {
           await updateTransaction(actionData.id, payload);
@@ -125,7 +125,7 @@ export function FormEngine({ actionKey }: { actionKey: string }) {
           ticker: formData.descricao,
           value: parseFloat(formData.valorTotal) * multiplier,
           quantity: parseFloat(formData.quantidade) * multiplier,
-          date: formData.usarDataManual ? formData.dataRegistro : new Date().toISOString()
+          date: formData.date || new Date().toISOString()
         };
         if (isUpdate) {
           await updateInvestment(actionData.id, payload);
@@ -138,7 +138,7 @@ export function FormEngine({ actionKey }: { actionKey: string }) {
           ticker: formData.descricao,
           amount: parseFloat(formData.valorTotal),
           type: formData.tipoProvento || 'dividend',
-          date: formData.usarDataManual ? formData.dataRegistro : new Date().toISOString()
+          date: formData.date || new Date().toISOString()
         });
       } else if (actionKey === 'conta_bancaria') {
         // TODO: Implement addBankAccount in KingdomContext if needed, or handle here

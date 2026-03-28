@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState, useEffect, useMemo, Fragment } from 'react';
 import { motion } from 'motion/react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { format } from 'date-fns';
 import { Header } from '@/components/layout/Header';
 import { formatCurrency, cn, getColorClass } from '@/lib/utils';
 import { Info, TrendingUp, AlertCircle, Sparkles, Zap, Shield, Swords, Compass, Wand2, Plus, Upload, Target, Package, DollarSign, TrendingDown, Edit2, Trash2 } from 'lucide-react';
@@ -46,8 +47,8 @@ export default function Investments() {
 
   const historyAssets = useMemo(() => {
     return [...assets].sort((a, b) => {
-      const dateA = new Date(a.date || a.operation_date || 0).getTime();
-      const dateB = new Date(b.date || b.operation_date || 0).getTime();
+      const dateA = parseDate(a.date || a.operation_date).getTime();
+      const dateB = parseDate(b.date || b.operation_date).getTime();
       return dateB - dateA;
     });
   }, [assets]);
@@ -122,27 +123,43 @@ export default function Investments() {
         'renda_fixa': 'fixed_income'
       };
 
-      const operacao = (item.operacao || '').toLowerCase();
+      const operacao = (item.operacao || item.Operacao || '').toLowerCase();
       const isSale = operacao === 'venda';
       
-      const rawValue = parseFloat((item.valor || '0').replace(/\./g, '').replace(',', '.'));
-      const rawQuantity = parseFloat((item.quantidade || '0').replace(/\./g, '').replace(',', '.'));
+      const rawValue = parseFloat((item.valor || item.Valor || '0').toString().replace(/\./g, '').replace(',', '.'));
+      const rawQuantity = parseFloat((item.quantidade || item.Quantidade || '0').toString().replace(/\./g, '').replace(',', '.'));
 
       const finalValue = isSale ? -Math.abs(rawValue) : Math.abs(rawValue);
       const finalQuantity = isSale ? -Math.abs(rawQuantity) : Math.abs(rawQuantity);
       
-      const categoryKey = (item.categoria || '').toLowerCase();
+      const categoryKey = (item.categoria || item.Categoria || '').toLowerCase();
       const investmentType = categoryMap[categoryKey] || 'other';
 
       // Handle date format DD/MM/YYYY
-      const dateParts = item.data.split('/');
-      const formattedDate = dateParts.length === 3 ? `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}` : new Date().toISOString().split('T')[0];
+      const itemDate = (item.data || item.Data || '').trim();
+      let formattedDate = new Date().toISOString().split('T')[0];
+      
+      if (itemDate) {
+        const dateParts = itemDate.split('/');
+        if (dateParts.length === 3) {
+          const day = dateParts[0].trim().padStart(2, '0');
+          const month = dateParts[1].trim().padStart(2, '0');
+          const year = dateParts[2].trim();
+          
+          if (year.length === 4 && !isNaN(parseInt(year))) {
+            formattedDate = `${year}-${month}-${day}`;
+          }
+        } else if (itemDate.includes('-')) {
+          formattedDate = itemDate;
+        }
+      }
 
       await addInvestment({
         type: investmentType,
-        ticker: item.ativo.toUpperCase(),
+        ticker: (item.ativo || item.Ativo || 'OUTROS').toUpperCase(),
         value: finalValue,
         quantity: finalQuantity,
+        date: formattedDate,
         operation_date: formattedDate
       });
     }
@@ -489,7 +506,7 @@ export default function Investments() {
               <table className="w-full text-left border-collapse whitespace-nowrap">
                 <thead>
                   <tr className="bg-[var(--color-bg-dark)] border-b border-[var(--color-border)]">
-                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-center">Data Mov.</th>
+                    <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-center">Mov. / Op.</th>
                     <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Ativo</th>
                     <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">Tipo de Investimento</th>
                     <th className="px-4 py-3 text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest text-center">Operação</th>
@@ -502,8 +519,15 @@ export default function Investments() {
                 <tbody className="divide-y divide-[var(--color-border)]">
                   {historyAssets.map((asset) => (
                     <tr key={asset.id} className="hover:bg-[var(--color-bg-dark)]/50 transition-colors">
-                      <td className="px-4 py-3 text-center text-xs text-[var(--color-text-muted)] font-medium">
-                        {parseDate(asset.date || asset.operation_date).toLocaleDateString('pt-BR')}
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs font-bold text-[var(--color-text-main)]">
+                            {format(parseDate(asset.date || asset.operation_date), 'dd/MM/yyyy')}
+                          </span>
+                          <span className="text-[10px] text-[var(--color-text-muted)]">
+                            Mov: {format(parseDate(asset.created_at || asset.date), 'dd/MM/yyyy')}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -558,8 +582,7 @@ export default function Investments() {
                                 descricao: asset.ticker,
                                 valorTotal: Math.abs(assetValue),
                                 quantidade: Math.abs(asset.quantity || 0),
-                                usarDataManual: true,
-                                dataRegistro: (asset.operation_date || asset.date || new Date().toISOString()).split('T')[0]
+                                date: (asset.operation_date || asset.date || new Date().toISOString()).split('T')[0]
                               });
                             }}
                             className="p-1.5 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 rounded transition-colors"
