@@ -120,7 +120,7 @@ function TransactionsContent() {
     }
   };
 
-  const handleImportTransactions = async (data: { operacao: string; valor: string; descricao: string; categoria: string; data: string }[]) => {
+  const handleImportTransactions = async (data: any[]) => {
     for (const item of data) {
       // expected headers: data, operacao, categoria, descricao, valor
       

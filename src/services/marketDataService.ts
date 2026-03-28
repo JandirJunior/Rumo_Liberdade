@@ -100,6 +100,34 @@ export const marketDataService = {
   },
 
   /**
+   * Busca dados de mercado para uma lista de tickers no Firestore.
+   */
+  async getMarketDataForTickers(tickers: string[]): Promise<Record<string, MarketData>> {
+    const results: Record<string, MarketData> = {};
+    if (!tickers || tickers.length === 0) return results;
+
+    try {
+      // O Firestore permite no máximo 30 elementos em um 'in' query.
+      // Vamos dividir em lotes de 30.
+      const batchSize = 30;
+      for (let i = 0; i < tickers.length; i += batchSize) {
+        const batch = tickers.slice(i, i + batchSize);
+        const q = query(collection(db, 'market_data'), where('ticker', 'in', batch));
+        const snapshot = await getDocs(q);
+        
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data() as MarketData;
+          results[data.ticker] = data;
+        });
+      }
+      return results;
+    } catch (error) {
+      console.error('Erro ao buscar dados de mercado para tickers:', error);
+      return results;
+    }
+  },
+
+  /**
    * Fluxo principal de atualização de dados de mercado.
    */
   async updateMarketData(): Promise<{ success: boolean; message: string; updatedCount: number }> {

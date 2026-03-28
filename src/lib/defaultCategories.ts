@@ -67,6 +67,7 @@ export async function seedKingdomCategories(kingdomId: string, userId: string) {
       name: item.subcategory,
       description: item.description,
       rpg_group: item.category,
+      group_id: rpgThemeName.toLowerCase().replace(/\s+/g, '_'), // Usando o tema como base para o group_id
       flow_type,
       group_type,
       icon,

@@ -108,7 +108,7 @@ export default function Investments() {
 
   if (!user) return null;
 
-  const handleImportInvestments = async (data: { operacao: string; categoria: string; ativo: string; valor: string; quantidade: string; data: string }[]) => {
+  const handleImportInvestments = async (data: any[]) => {
     for (const item of data) {
       // expected headers: data, operacao, categoria, ativo, quantidade, valor
       
@@ -353,7 +353,7 @@ export default function Investments() {
                     <Tooltip
                       cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                       contentStyle={{ borderRadius: '12px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-panel)', color: 'var(--color-text-main)' }}
-                      formatter={(value: number | string) => [`${Number(value).toFixed(2)}%`, '']}
+                      formatter={(value: any) => [`${Number(value).toFixed(2)}%`, '']}
                     />
                     <Bar dataKey="atual" fill="var(--color-primary)" radius={[4, 4, 0, 0]} name="Investido (%)" />
                     <Bar dataKey="alvo" fill="var(--color-text-muted)" radius={[4, 4, 0, 0]} opacity={0.3} name="Planejado (%)" />
