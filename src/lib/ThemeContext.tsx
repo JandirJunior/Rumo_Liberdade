@@ -52,7 +52,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<any | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [gameMode, setGameMode] = useState<'heroi' | 'reino'>(() => {
     if (typeof window !== 'undefined') {

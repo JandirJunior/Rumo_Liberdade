@@ -79,34 +79,10 @@ export function ActiveQuestsBoard() {
       const now = new Date().toISOString();
       if (quest.type === 'payable') {
         await payPayable(quest.originalData.id, now);
-        await addTransaction({
-          userId: quest.originalData.userId,
-          amount: quest.amount,
-          type: 'expense',
-          description: quest.title,
-          category_id: quest.originalData.category_id || '',
-          date: now
-        });
       } else if (quest.type === 'receivable') {
         await receiveReceivable(quest.originalData.id, now);
-        await addTransaction({
-          userId: quest.originalData.userId,
-          amount: quest.amount,
-          type: 'income',
-          description: quest.title,
-          category_id: quest.originalData.category_id || '',
-          date: now
-        });
       } else if (quest.type === 'invoice') {
         await payInvoice(quest.originalData.id, now);
-        await addTransaction({
-          userId: quest.originalData.userId,
-          amount: quest.amount,
-          type: 'expense',
-          description: quest.title,
-          category_id: 'credit_card',
-          date: now
-        });
       }
     } catch (error: any) {
       console.error("Error completing quest:", error);
