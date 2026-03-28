@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, HandCoins, ScrollText, MessageSquare, BarChart3, Skull, Sparkles } from 'lucide-react';
+import { Castle, HandCoins, ScrollText, MessageSquare, BarChart3, Skull, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function BottomNav() {
   const pathname = usePathname();
 
   const navItems = [
-    { icon: Home, label: 'Reino', href: '/dashboard' },
+    { icon: Castle, label: 'Reino', href: '/dashboard' },
     { icon: BarChart3, label: 'Atributos', href: '/attributes' },
     { icon: HandCoins, label: 'Inventário', href: '/investments' },
     { icon: ScrollText, label: 'Quests', href: '/transactions' },

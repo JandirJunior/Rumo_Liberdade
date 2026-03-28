@@ -2,6 +2,7 @@ import { db, auth } from '@/services/firebase';
 import { collection, doc, getDoc, getDocs, query, where, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { Kingdom, KingdomMember, KingdomInvite, KingdomRole } from '@/types';
 import { logActivity } from '@/lib/auditLogger';
+import { seedKingdomCategories } from '@/lib/defaultCategories';
 
 export const kingdomService = {
   async createKingdom(name: string, ownerId: string): Promise<Kingdom> {
@@ -20,6 +21,13 @@ export const kingdomService = {
 
     // Add owner as admin
     await this.addMember(newKingdom.id, ownerId, 'admin');
+
+    // Seed default categories
+    try {
+      await seedKingdomCategories(newKingdom.id, ownerId);
+    } catch (error) {
+      console.error('Error seeding categories:', error);
+    }
 
     return newKingdom;
   },

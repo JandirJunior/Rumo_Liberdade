@@ -120,14 +120,20 @@ function TransactionsContent() {
     }
   };
 
-  const handleImportTransactions = async (data: { type: string; amount: string; description: string; category_id: string; date?: string }[]) => {
+  const handleImportTransactions = async (data: { operacao: string; valor: string; descricao: string; categoria: string; data: string }[]) => {
     for (const item of data) {
+      // expected headers: data, operacao, categoria, descricao, valor
+      
+      // Handle date format DD/MM/YYYY
+      const dateParts = item.data.split('/');
+      const formattedDate = dateParts.length === 3 ? `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}` : new Date().toISOString().split('T')[0];
+
       await addTransaction({
-        type: item.type.toLowerCase() as TransactionType,
-        amount: parseFloat(item.amount),
-        description: item.description,
-        category_id: item.category_id,
-        date: item.date || new Date().toISOString().split('T')[0]
+        type: (item.operacao.toLowerCase() === 'receita' ? 'income' : 'expense') as TransactionType,
+        amount: parseFloat(item.valor.replace(',', '.')),
+        description: item.descricao,
+        category_id: item.categoria,
+        date: formattedDate
       });
     }
   };
@@ -255,17 +261,17 @@ function TransactionsContent() {
           </div>
 
           {/* Surplus Card */}
-          <section className={cn("p-8 rounded-2xl text-white shadow-xl relative overflow-hidden medieval-border medieval-glow", colors.primary)}>
-            <div className="absolute top-0 right-0 w-48 h-48 bg-black/30 rounded-full -mr-24 -mt-24 blur-3xl"></div>
+          <section className="p-8 rounded-2xl shadow-xl relative overflow-hidden medieval-border medieval-glow bg-[var(--color-primary)]">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-black/10 dark:bg-black/20 rounded-full -mr-24 -mt-24 blur-3xl"></div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 bg-black/30 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10">
-                <Wallet className="w-8 h-8" />
+              <div className="w-16 h-16 bg-[var(--color-bg-dark)]/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-[var(--color-bg-dark)]/20">
+                <Wallet className="w-8 h-8 text-[var(--color-text-main)]" />
               </div>
               <div>
-                <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1">Saldo para o Inventário</p>
-                <h3 className={cn("text-3xl font-display font-bold", getColorClass(surplus))}>{formatCurrency(surplus)}</h3>
+                <p className="text-[var(--color-text-main)]/80 text-xs font-bold uppercase tracking-widest mb-1">Saldo para o Inventário</p>
+                <h3 className={cn("text-3xl font-display font-bold text-[var(--color-text-main)]", getColorClass(surplus))}>{formatCurrency(surplus)}</h3>
               </div>
-              <p className="text-white/60 text-xs max-w-[200px]">
+              <p className="text-[var(--color-text-main)]/70 text-xs max-w-[200px]">
                 Este é o valor disponível para ser investido no Inventário este mês.
               </p>
             </div>
@@ -292,7 +298,7 @@ function TransactionsContent() {
                   className={cn(
                     "px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all border medieval-border",
                     filter === f
-                      ? cn(colors.primary, "text-white border-transparent shadow-lg", colors.shadow)
+                      ? "bg-[var(--color-primary)] text-[var(--color-text-main)] border-transparent shadow-lg"
                       : "bg-[var(--color-bg-panel)] text-[var(--color-text-muted)] border-[var(--color-border)] hover:border-[var(--color-primary)]"
                   )}
                 >
@@ -387,19 +393,10 @@ function TransactionsContent() {
           onClose={() => setIsImportModalOpen(false)}
           onImport={handleImportTransactions}
           title="Importar Transações"
-          template={['type', 'amount', 'description', 'category_id', 'date']}
+          template={['Data', 'Operacao', 'Categoria', 'Descricao', 'Valor']}
+          separator=";"
+          description="O arquivo deve ser um CSV (separado por ;) com os seguintes cabeçalhos: Data, Operacao, Categoria, Descricao, Valor."
         />
-
-        {isImportModalOpen && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none">
-            <div className="bg-[var(--color-bg-panel)] p-4 rounded-xl shadow-xl border border-[var(--color-border)] mt-[400px] pointer-events-auto max-w-md medieval-border">
-              <p className="text-xs font-bold text-[var(--color-text-main)] mb-2 uppercase tracking-wider">Instruções de Importação:</p>
-              <p className="text-[10px] text-[var(--color-text-muted)] leading-relaxed">
-                O arquivo deve ser um CSV com os seguintes cabeçalhos: <strong>type</strong> (income/expense), <strong>amount</strong> (valor), <strong>description</strong> (descrição), <strong>category_id</strong> (ID da categoria) e <strong>date</strong> (YYYY-MM-DD).
-              </p>
-            </div>
-          </div>
-        )}
 
         <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Excluir Transação">
           <div className="space-y-6">

@@ -9,11 +9,11 @@ export default function CleanupPage() {
   const [selectedTable, setSelectedTable] = useState('accounts_payable');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<Record<string, unknown>[]>([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const parseItemDate = (data: any): Date | null => {
+  const parseItemDate = (data: Record<string, unknown>): Date | null => {
     // Handle explicit month/year first to avoid treating month number as milliseconds
     if (data.month !== undefined && data.year !== undefined) {
       const m = Number(data.month);
@@ -25,18 +25,24 @@ export default function CleanupPage() {
 
     const dateValue = data.dueDate || data.due_date || data.date || data.created_at || data.createdAt || 
                      data.closingDate || data.closing_date || data.paidAt || data.paid_at || 
-                     data.received_at || data.receivedAt || data.mês;
+                     data.received_at || data.receivedAt || data.mês || data.timestamp;
     
     if (dateValue) {
       if (typeof dateValue === 'string' && /^\d{4}-\d{2}$/.test(dateValue)) {
         const [year, month] = dateValue.split('-').map(Number);
         return new Date(year, month - 1, 1);
       }
-      const d = new Date(dateValue instanceof Date ? dateValue : dateValue.toDate ? dateValue.toDate() : dateValue);
+      const d = new Date(dateValue instanceof Date ? dateValue : (dateValue as any).toDate ? (dateValue as any).toDate() : dateValue as string | number | Date);
       if (!isNaN(d.getTime())) return d;
     }
 
-    return null;
+    // Handle budgets which have year and month fields
+    if (data.year && data.month) {
+      return new Date(Number(data.year), Number(data.month) - 1, 1);
+    }
+
+    // Return a very old date for items without a date, so they can be cleaned up
+    return new Date(0);
   };
 
   const loadAllItems = useCallback(async () => {
@@ -71,7 +77,7 @@ export default function CleanupPage() {
   }, [loadAllItems]);
 
   const performCleanup = async () => {
-    if (!kingdomId || !startDate || !endDate) return;
+    if (!kingdomId) return;
     setLoading(true);
     setMessage('Processando...');
 
@@ -80,14 +86,29 @@ export default function CleanupPage() {
       const q = query(colRef, where('kingdom_id', '==', kingdomId));
       const snapshot = await getDocs(q);
       
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      // Ensure end date includes the whole day
-      end.setHours(23, 59, 59, 999);
+      let start: Date | null = null;
+      let end: Date | null = null;
+
+      if (startDate && endDate) {
+        start = new Date(startDate);
+        end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+      } else {
+        setMessage('Aviso: Como as datas não foram selecionadas, apenas os registros "Sem data" serão excluídos.');
+      }
 
       const docsToDelete = snapshot.docs.filter(d => {
         const itemDate = parseItemDate(d.data());
-        return itemDate && itemDate >= start && itemDate <= end;
+        // If itemDate is the epoch date (0), it means it had no valid date, include it in cleanup
+        if (itemDate && itemDate.getTime() === 0) return true;
+        
+        // If dates are provided, filter by date range
+        if (start && end) {
+          return itemDate && itemDate >= start && itemDate <= end;
+        }
+        
+        // If no dates provided, only delete items without date
+        return false;
       });
 
       if (docsToDelete.length === 0) {
@@ -170,7 +191,7 @@ export default function CleanupPage() {
       <div className="border rounded max-h-96 overflow-y-auto">
         {items.map(item => {
           const itemDate = parseItemDate(item);
-          let dateStr = itemDate ? itemDate.toLocaleDateString() : 'Sem data';
+          let dateStr = (itemDate && itemDate.getTime() !== 0) ? itemDate.toLocaleDateString() : 'Sem data';
 
           return (
             <div key={item.id} className="flex justify-between p-2 border-b text-sm hover:bg-gray-50">

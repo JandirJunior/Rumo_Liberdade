@@ -7,11 +7,14 @@ export function useMarketData(tickers: string[]) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  const tickersString = tickers.join(',');
+
   useEffect(() => {
     let isMounted = true;
 
     const fetchMarketData = async () => {
-      if (!tickers || tickers.length === 0) {
+      const currentTickers = tickersString ? tickersString.split(',') : [];
+      if (currentTickers.length === 0) {
         if (isMounted) {
           setMarketData({});
           setLoading(false);
@@ -21,7 +24,7 @@ export function useMarketData(tickers: string[]) {
 
       try {
         setLoading(true);
-        const data = await marketDataService.getMarketDataForTickers(tickers);
+        const data = await marketDataService.getMarketDataForTickers(currentTickers);
         if (isMounted) {
           setMarketData(data);
           setError(null);
@@ -43,7 +46,7 @@ export function useMarketData(tickers: string[]) {
     return () => {
       isMounted = false;
     };
-  }, [JSON.stringify(tickers)]); // Re-fetch when the list of tickers changes
+  }, [tickersString]); // Re-fetch when the list of tickers changes
 
   return { marketData, loading, error };
 }

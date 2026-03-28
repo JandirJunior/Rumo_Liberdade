@@ -172,6 +172,7 @@ export interface CategoryEntity {
   created_by: string;
   created_at: Date | any;
   updated_at?: Date | any;
+  description?: string;
 }
 
 export interface UserEntity {

@@ -53,7 +53,7 @@ export default function Investments() {
   }, [assets]);
 
   const groupedConsolidated = useMemo(() => {
-    const groups: Record<string, any[]> = {
+    const groups: Record<string, (typeof tickerDetails[0] & { profitValue: number; profitPercent: number })[]> = {
       'F': [], 'A': [], 'C': [], 'E': [], 'R': [], 'O': []
     };
     (tickerDetails || []).forEach(item => {
@@ -108,25 +108,42 @@ export default function Investments() {
 
   if (!user) return null;
 
-  const handleImportInvestments = async (data: { type?: string; ticker: string; value: string; quantity: string; operation_date?: string }[]) => {
+  const handleImportInvestments = async (data: { operacao: string; categoria: string; ativo: string; valor: string; quantidade: string; data: string }[]) => {
     for (const item of data) {
-      // expected headers: type, ticker, value, quantity, date
-      const typeMap: Record<string, string> = {
-        'fii': 'fii',
+      // expected headers: data, operacao, categoria, ativo, quantidade, valor
+      
+      const categoryMap: Record<string, string> = {
+        'ação': 'stock',
         'acao': 'stock',
-        'stock': 'stock',
-        'crypto': 'crypto',
+        'fii': 'fii',
+        'cripto': 'crypto',
         'etf': 'etf',
-        'rf': 'fixed_income',
-        'outro': 'other'
+        'renda fixa': 'fixed_income',
+        'renda_fixa': 'fixed_income'
       };
 
+      const operacao = (item.operacao || '').toLowerCase();
+      const isSale = operacao === 'venda';
+      
+      const rawValue = parseFloat((item.valor || '0').replace(/\./g, '').replace(',', '.'));
+      const rawQuantity = parseFloat((item.quantidade || '0').replace(/\./g, '').replace(',', '.'));
+
+      const finalValue = isSale ? -Math.abs(rawValue) : Math.abs(rawValue);
+      const finalQuantity = isSale ? -Math.abs(rawQuantity) : Math.abs(rawQuantity);
+      
+      const categoryKey = (item.categoria || '').toLowerCase();
+      const investmentType = categoryMap[categoryKey] || 'other';
+
+      // Handle date format DD/MM/YYYY
+      const dateParts = item.data.split('/');
+      const formattedDate = dateParts.length === 3 ? `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}` : new Date().toISOString().split('T')[0];
+
       await addInvestment({
-        type: typeMap[(item.type || '').toLowerCase()] || 'other',
-        ticker: item.ticker.toUpperCase(),
-        value: parseFloat(item.value),
-        quantity: parseFloat(item.quantity),
-        operation_date: item.operation_date || new Date().toISOString().split('T')[0]
+        type: investmentType,
+        ticker: item.ativo.toUpperCase(),
+        value: finalValue,
+        quantity: finalQuantity,
+        operation_date: formattedDate
       });
     }
   };
@@ -259,7 +276,9 @@ export default function Investments() {
           onClose={() => setIsImportModalOpen(false)}
           onImport={handleImportInvestments}
           title="Importar Investimentos"
-          template={['type', 'ticker', 'value', 'quantity', 'date']}
+          template={['Data', 'Operacao', 'Categoria', 'Ativo', 'Quantidade', 'Valor']}
+          separator=";"
+          description="O arquivo deve ser um CSV (separado por ;) com os seguintes cabeçalhos: Data, Operacao, Categoria, Ativo, Quantidade, Valor."
         />
 
         <PlanningModal
@@ -334,7 +353,7 @@ export default function Investments() {
                     <Tooltip
                       cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                       contentStyle={{ borderRadius: '12px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-panel)', color: 'var(--color-text-main)' }}
-                      formatter={(value: any) => [`${Number(value).toFixed(2)}%`, '']}
+                      formatter={(value: number | string) => [`${Number(value).toFixed(2)}%`, '']}
                     />
                     <Bar dataKey="atual" fill="var(--color-primary)" radius={[4, 4, 0, 0]} name="Investido (%)" />
                     <Bar dataKey="alvo" fill="var(--color-text-muted)" radius={[4, 4, 0, 0]} opacity={0.3} name="Planejado (%)" />

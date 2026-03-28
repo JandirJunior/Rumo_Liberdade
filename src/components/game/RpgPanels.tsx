@@ -29,7 +29,7 @@ export function KingdomLevelPanel({ stats }: { stats: KingdomStats }) {
       <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--color-primary)] rounded-full -mr-16 -mt-16 blur-2xl opacity-20"></div>
       
       <div className="flex items-center gap-4 mb-6 relative z-10">
-        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-[var(--color-bg-dark)] shadow-lg bg-[var(--color-primary)]")}>
+        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-[var(--color-text-main)] shadow-lg bg-[var(--color-primary)]")}>
           <Crown className="w-8 h-8" />
         </div>
         <div>

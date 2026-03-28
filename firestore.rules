@@ -48,12 +48,13 @@ service cloud.firestore {
 
     function canDelete(data) {
       return isAuthenticated() && (
-        (data.created_by == request.auth.uid) ||
-        (data.user_id == request.auth.uid) ||
-        (data.userId == request.auth.uid) ||
+        ('created_by' in data && data.created_by == request.auth.uid) ||
+        ('user_id' in data && data.user_id == request.auth.uid) ||
+        ('userId' in data && data.userId == request.auth.uid) ||
+        (!('kingdom_id' in data)) ||
         (data.kingdom_id == null) ||
         (data.kingdom_id == "") ||
-        isMember(data.kingdom_id) ||
+        ('kingdom_id' in data && isMember(data.kingdom_id)) ||
         isSuperAdmin()
       );
     }
@@ -189,10 +190,10 @@ service cloud.firestore {
 
     // Budgets
     match /budgets/{budgetId} {
-      allow read: if isViewer(resource.data.kingdom_id);
-      allow create: if isMember(request.resource.data.kingdom_id);
-      allow update: if isMember(resource.data.kingdom_id) && isMember(request.resource.data.kingdom_id);
-      allow delete: if canDelete(resource.data);
+      allow read: if 'kingdom_id' in resource.data && isViewer(resource.data.kingdom_id);
+      allow create: if 'kingdom_id' in request.resource.data && isMember(request.resource.data.kingdom_id);
+      allow update: if ('kingdom_id' in resource.data && isMember(resource.data.kingdom_id)) && ('kingdom_id' in request.resource.data && isMember(request.resource.data.kingdom_id));
+      allow delete: if ('kingdom_id' in resource.data && isMember(resource.data.kingdom_id)) || canDelete(resource.data);
     }
 
     // Credit Cards
@@ -222,9 +223,10 @@ service cloud.firestore {
 
     // Activity Logs
     match /activity_logs/{logId} {
-      allow read: if isViewer(resource.data.kingdom_id);
-      allow create: if isAuthenticated() && isKingdomMember(request.resource.data.kingdom_id);
-      allow update, delete: if false;
+      allow read: if 'kingdom_id' in resource.data && isViewer(resource.data.kingdom_id);
+      allow create: if isAuthenticated() && 'kingdom_id' in request.resource.data && isKingdomMember(request.resource.data.kingdom_id);
+      allow update: if false;
+      allow delete: if ('kingdom_id' in resource.data && isMember(resource.data.kingdom_id)) || canDelete(resource.data);
     }
 
     // Contribution Planning

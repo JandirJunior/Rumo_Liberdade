@@ -80,54 +80,58 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setUser(currentUser);
 
       if (currentUser) {
-        const userRef = doc(db, 'users', currentUser.uid);
+        try {
+          const userRef = doc(db, 'users', currentUser.uid);
 
-        // Primeiro, verifica se o usuário existe para criá-lo se necessário
-        const userSnap = await getDoc(userRef);
-        if (!userSnap.exists()) {
-          const newState = { ...MOCK_GAME_STATE };
-          const newTheme = ARCHETYPE_THEME_MAP[newState.archetype] || 'ORBITA';
+          // Primeiro, verifica se o usuário existe para criá-lo se necessário
+          const userSnap = await getDoc(userRef);
+          if (!userSnap.exists()) {
+            const newState = { ...MOCK_GAME_STATE };
+            const newTheme = ARCHETYPE_THEME_MAP[newState.archetype] || 'ORBITA';
 
-          await setDoc(userRef, {
-            uid: currentUser.uid,
-            email: currentUser.email,
-            name: currentUser.displayName || 'Herói',
-            archetype: newState.archetype,
-            xp: newState.xp,
-            stats: newState.stats,
-            theme: newTheme,
-            createdAt: new Date().toISOString(),
-          });
-        }
-
-        // Configura o listener em tempo real
-        unsubscribeSnapshot = onSnapshot(
-          userRef,
-          (docSnap) => {
-            if (!docSnap.exists()) return;
-
-            const data = docSnap.data();
-            setUserData(data);
-            const newState = calculatePlayerLevel(data.xp || 0);
-
-            setGameState({
-              ...newState,
-              archetype: data.archetype,
-              stats: data.stats,
-              completedQuests: data.completedQuests || [],
+            await setDoc(userRef, {
+              uid: currentUser.uid,
+              email: currentUser.email,
+              name: currentUser.displayName || 'Herói',
+              archetype: newState.archetype,
+              xp: newState.xp,
+              stats: newState.stats,
+              theme: newTheme,
+              createdAt: new Date().toISOString(),
             });
-
-            const resolvedTheme =
-              data.theme ||
-              ARCHETYPE_THEME_MAP[data.archetype] ||
-              'ORBITA';
-
-            setThemeState(resolvedTheme);
-          },
-          (error) => {
-            console.error('Erro no onSnapshot do usuário:', error);
           }
-        );
+
+          // Configura o listener em tempo real
+          unsubscribeSnapshot = onSnapshot(
+            userRef,
+            (docSnap) => {
+              if (!docSnap.exists()) return;
+
+              const data = docSnap.data();
+              setUserData(data);
+              const newState = calculatePlayerLevel(data.xp || 0);
+
+              setGameState({
+                ...newState,
+                archetype: data.archetype,
+                stats: data.stats,
+                completedQuests: data.completedQuests || [],
+              });
+
+              const resolvedTheme =
+                data.theme ||
+                ARCHETYPE_THEME_MAP[data.archetype] ||
+                'ORBITA';
+
+              setThemeState(resolvedTheme);
+            },
+            (error) => {
+              console.error('Erro no onSnapshot do usuário:', error);
+            }
+          );
+        } catch (error) {
+          console.error('Erro ao buscar dados do usuário:', error);
+        }
       } else {
         setGameState(EMPTY_GAME_STATE);
         setThemeState('ORBITA');

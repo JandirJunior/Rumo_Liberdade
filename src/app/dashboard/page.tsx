@@ -202,28 +202,6 @@ export default function Dashboard() {
             <h2 className="text-3xl medieval-title font-bold text-[var(--color-text-main)]">Reino</h2>
             <p className="text-sm text-[var(--color-text-muted)]">Seu centro de comando e progresso</p>
           </div>
-          <div className="flex items-center gap-2">
-            <select 
-              value={month} 
-              onChange={(e) => setMonth(parseInt(e.target.value))}
-              className="text-sm border-[var(--color-border)] rounded-xl bg-[var(--color-bg-panel)] text-[var(--color-text-main)] focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] p-2 shadow-sm medieval-border"
-            >
-              {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                <option key={m} value={m}>
-                  {new Date(2000, m - 1).toLocaleString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date(2000, m - 1).toLocaleString('pt-BR', { month: 'long' }).slice(1)}
-                </option>
-              ))}
-            </select>
-            <select 
-              value={year} 
-              onChange={(e) => setYear(parseInt(e.target.value))}
-              className="text-sm border-[var(--color-border)] rounded-xl bg-[var(--color-bg-panel)] text-[var(--color-text-main)] focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] p-2 shadow-sm medieval-border"
-            >
-              {[year - 1, year, year + 1].map(y => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          </div>
         </header>
 
         {/* [RESPONSIVIDADE] Container principal usando CSS Grid. */}
@@ -235,13 +213,13 @@ export default function Dashboard() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className={cn("rounded-2xl p-8 text-[var(--color-bg-dark)] shadow-2xl relative overflow-hidden medieval-border bg-[var(--color-primary)]")}
+              className={cn("rounded-2xl p-8 text-[var(--color-text-main)] shadow-2xl relative overflow-hidden medieval-border bg-[var(--color-primary)]")}
             >
-              <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 blur-3xl"></div>
+              <div className="absolute top-0 right-0 w-48 h-48 bg-black/10 rounded-full -mr-24 -mt-24 blur-3xl"></div>
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="w-4 h-4 text-[var(--color-bg-dark)]/60" />
-                  <p className="text-[var(--color-bg-dark)]/80 text-[10px] font-black uppercase tracking-[0.2em]">
+                  <Sparkles className="w-4 h-4 text-[var(--color-text-main)]/60" />
+                  <p className="text-[var(--color-text-main)]/80 text-[10px] font-black uppercase tracking-[0.2em]">
                     {gameMode === 'reino' ? 'Poder do Reino' : 'Poder de Investimento'}
                   </p>
                 </div>
@@ -251,8 +229,8 @@ export default function Dashboard() {
                 {gameMode === 'reino' && (
                   <div className="mb-8 p-4 bg-black/10 rounded-2xl border border-black/20 backdrop-blur-sm">
                     <div className="flex items-center gap-2 mb-2">
-                      <User className="w-4 h-4 text-[var(--color-bg-dark)]/60" />
-                      <p className="text-[var(--color-bg-dark)]/80 text-[10px] font-black uppercase tracking-[0.2em]">Seu Poder (Herói)</p>
+                      <User className="w-4 h-4 text-[var(--color-text-main)]/60" />
+                      <p className="text-[var(--color-text-main)]/80 text-[10px] font-black uppercase tracking-[0.2em]">Seu Poder (Herói)</p>
                     </div>
                     <h4 className={cn("text-2xl medieval-title font-bold mb-4", getColorClass(myInvested))}>R$ {myInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h4>
                   </div>

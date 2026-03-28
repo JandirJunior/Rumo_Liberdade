@@ -1,29 +1,35 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'motion/react';
-import { Plus, Edit2, Trash2, Save, X, Target, Castle, Compass, RefreshCw } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Plus, Edit2, Trash2, Save, X, Target, Castle, Compass, FileUp, Info } from 'lucide-react';
 import { RPG_GROUPS, getRpgGroupConfig } from '@/lib/rpgCategories';
 import { useCategories } from '@/hooks/useCategories';
 import { CategoryEntity } from '@/types';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/ThemeContext';
 import { THEMES } from '@/lib/themes';
+import { ImportModal } from './ImportModal';
+import { auth } from '@/services/firebase';
 
 export function CategoryManagerPanel() {
   const { categories, loading, addCategory, updateCategory, deleteCategory } = useCategories();
   const { theme, gameMode } = useTheme();
-  const colors = THEMES[theme] || THEMES.ORBITA;
-
+  
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Partial<CategoryEntity>>({
+  const [isImporting, setIsImporting] = useState(false);
+  
+  const initialFormState: Partial<CategoryEntity> = {
     name: '',
-    rpg_group: '💎 Cofre do Reino (Receitas Fixas)',
+    description: '',
+    rpg_group: '💎 Cofre do Reino - Receitas Fixas',
     flow_type: 'income',
     group_type: 'fixed',
     allowed_profiles: ['MonoUsuario', 'MultiUsuario']
-  });
+  };
+
+  const [formData, setFormData] = useState<Partial<CategoryEntity>>(initialFormState);
 
   const getRpgGroupDetails = (rpgGroup: string) => {
     const config = getRpgGroupConfig(rpgGroup);
@@ -35,40 +41,48 @@ export function CategoryManagerPanel() {
     };
   };
 
-  const [isCleaning, setIsCleaning] = useState(false);
-
-  const cleanupDuplicates = async () => {
-    setIsCleaning(true);
+  const handleImport = async (data: Record<string, string>[]) => {
     try {
-      const seen = new Set();
-      const toDelete: string[] = [];
-      
-      // Sort to keep the oldest one
-      const sorted = [...categories].sort((a, b) => {
-        const dateA = (a.created_at as any)?.seconds || 0;
-        const dateB = (b.created_at as any)?.seconds || 0;
-        return dateA - dateB;
-      });
+      for (const row of data) {
+        const category = row['Categoria'] || row['categoria'];
+        const subcategory = row['Subcategoria'] || row['subcategoria'];
+        const description = row['Descrição'] || row['descrição'] || row['Descricao'] || row['descricao'];
+        const usuarios = row['Usuarios'] || row['usuarios'];
 
-      for (const cat of sorted) {
-        const key = `${cat.name}-${cat.rpg_group}`;
-        if (seen.has(key)) {
-          toDelete.push(cat.id);
-        } else {
-          seen.add(key);
-        }
-      }
+        if (!category || !subcategory) continue;
 
-      if (toDelete.length > 0) {
-        for (const id of toDelete) {
-          await deleteCategory(id);
+        let flow_type: 'income' | 'expense' = 'expense';
+        let group_type: 'fixed' | 'variable' = 'variable';
+        let icon = 'Target';
+        let color = 'bg-[var(--color-primary)]';
+        let rpgThemeName = category;
+
+        if (category.includes('Cofre do Reino') && category.includes('Receitas Fixas')) {
+          flow_type = 'income'; group_type = 'fixed'; icon = 'Castle'; color = 'bg-emerald-500'; rpgThemeName = 'Cofre do Reino';
+        } else if (category.includes('Saque') && category.includes('Receitas Variáveis')) {
+          flow_type = 'income'; group_type = 'variable'; icon = 'Target'; color = 'bg-amber-500'; rpgThemeName = 'Saques de Missões';
+        } else if (category.includes('Tributo') && category.includes('Despesas Fixas')) {
+          flow_type = 'expense'; group_type = 'fixed'; icon = 'Castle'; color = 'bg-indigo-500'; rpgThemeName = 'Tributos do Reino';
+        } else if (category.includes('Aventura') && category.includes('Despesas Variáveis')) {
+          flow_type = 'expense'; group_type = 'variable'; icon = 'Compass'; color = 'bg-rose-500'; rpgThemeName = 'Aventuras do Herói';
         }
-        console.log(`Limpeza concluída: ${toDelete.length} duplicatas removidas.`);
+
+        await addCategory({
+          name: subcategory,
+          description: description || '',
+          rpg_group: category,
+          flow_type,
+          group_type,
+          icon,
+          color,
+          rpg_theme_name: rpgThemeName,
+          allowed_profiles: usuarios ? usuarios.split(',') : ['MonoUsuario', 'MultiUsuario'],
+          is_active: true
+        });
       }
+      setIsImporting(false);
     } catch (error) {
-      console.error('Erro na limpeza:', error);
-    } finally {
-      setIsCleaning(false);
+      console.error('Erro ao importar categorias:', error);
     }
   };
 
@@ -79,13 +93,14 @@ export function CategoryManagerPanel() {
     let color = 'bg-[var(--color-primary)]';
     let rpgThemeName = formData.rpg_group;
 
-    if (formData.rpg_group === '💎 Cofre do Reino (Receitas Fixas)') {
+    // Lógica de mapeamento de tema RPG
+    if (formData.rpg_group === '💎 Cofre do Reino - Receitas Fixas') {
       icon = 'Castle'; color = 'bg-emerald-500'; rpgThemeName = 'Cofre do Reino';
-    } else if (formData.rpg_group === '⚡ Saques de Missões (Receitas Variáveis)') {
+    } else if (formData.rpg_group === '⚡ Saques de Missões - Receitas Variáveis') {
       icon = 'Target'; color = 'bg-amber-500'; rpgThemeName = 'Saques de Missões';
-    } else if (formData.rpg_group === '🛡️ Tributos do Reino (Despesas Fixas)') {
+    } else if (formData.rpg_group === '🛡️ Tributos do Reino - Despesas Fixas') {
       icon = 'Castle'; color = 'bg-indigo-500'; rpgThemeName = 'Tributos do Reino';
-    } else if (formData.rpg_group === '⚔️ Aventuras do Herói (Despesas Variáveis)') {
+    } else if (formData.rpg_group === '⚔️ Aventuras do Herói - Despesas Variáveis') {
       icon = 'Compass'; color = 'bg-rose-500'; rpgThemeName = 'Aventuras do Herói';
     }
 
@@ -103,19 +118,20 @@ export function CategoryManagerPanel() {
       await addCategory(categoryDataToSave as Omit<CategoryEntity, 'id' | 'user_id' | 'created_at' | 'updated_at'>);
       setIsAdding(false);
     }
-    setFormData({
-      name: '',
-      rpg_group: '💎 Cofre do Reino (Receitas Fixas)',
-      flow_type: 'income',
-      group_type: 'fixed',
-      allowed_profiles: ['MonoUsuario', 'MultiUsuario']
-    });
+    setFormData(initialFormState);
   };
 
   const handleEdit = (cat: CategoryEntity) => {
+    let group = cat.rpg_group || 'Outros';
+    if (group.includes('Cofre do Reino') && group.includes('Receitas Fixas')) group = '💎 Cofre do Reino - Receitas Fixas';
+    else if (group.includes('Saque') && group.includes('Receitas Variáveis')) group = '⚡ Saque de Missões - Receitas Variáveis';
+    else if (group.includes('Tributo') && group.includes('Despesas Fixas')) group = '🛡️ Tributos do Reino - Despesas Fixas';
+    else if (group.includes('Aventura') && group.includes('Despesas Variáveis')) group = '⚔️ Aventuras do Herói - Despesas Variáveis';
+
     setFormData({
       name: cat.name,
-      rpg_group: cat.rpg_group,
+      description: cat.description || '',
+      rpg_group: group,
       flow_type: cat.flow_type,
       group_type: cat.group_type,
       allowed_profiles: cat.allowed_profiles
@@ -127,33 +143,35 @@ export function CategoryManagerPanel() {
   const handleCancel = () => {
     setIsAdding(false);
     setEditingId(null);
-    setFormData({
-      name: '',
-      rpg_group: '💎 Cofre do Reino (Receitas Fixas)',
-      flow_type: 'income',
-      group_type: 'fixed',
-      allowed_profiles: ['MonoUsuario', 'MultiUsuario']
-    });
+    setFormData(initialFormState);
   };
 
   if (loading) {
     return <div className="animate-pulse bg-[var(--color-bg-panel)] h-64 rounded-3xl medieval-border"></div>;
   }
 
-  // Agrupar categorias
   const profileType = gameMode === 'reino' ? 'MultiUsuario' : 'MonoUsuario';
   const filteredCategories = categories.filter(c => !c.allowed_profiles || c.allowed_profiles.includes(profileType));
   
   const groupedCategories = filteredCategories.reduce((acc, cat) => {
-    const group = cat.rpg_group || 'Outros';
-    if (!acc[group]) {
-      acc[group] = [];
+    let group = cat.rpg_group || 'Outros';
+    
+    // Normalize legacy or slightly different group names
+    if (group.includes('Cofre do Reino') && group.includes('Receitas Fixas')) {
+      group = '💎 Cofre do Reino - Receitas Fixas';
+    } else if (group.includes('Saque') && group.includes('Receitas Variáveis')) {
+      group = '⚡ Saque de Missões - Receitas Variáveis';
+    } else if (group.includes('Tributo') && group.includes('Despesas Fixas')) {
+      group = '🛡️ Tributos do Reino - Despesas Fixas';
+    } else if (group.includes('Aventura') && group.includes('Despesas Variáveis')) {
+      group = '⚔️ Aventuras do Herói - Despesas Variáveis';
     }
+
+    if (!acc[group]) acc[group] = [];
     acc[group].push(cat);
     return acc;
   }, {} as Record<string, CategoryEntity[]>);
 
-  // Obter todos os grupos únicos presentes nas categorias + os grupos padrão
   const allGroups = Array.from(new Set([
     ...RPG_GROUPS,
     ...Object.keys(groupedCategories)
@@ -169,25 +187,31 @@ export function CategoryManagerPanel() {
         {!isAdding && !editingId && (
           <div className="flex gap-2">
             <button
-              onClick={cleanupDuplicates}
-              disabled={isCleaning}
-              title="Limpar Duplicatas"
-              className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] bg-[var(--color-bg-dark)] border border-[var(--color-border)] shadow-sm transition-transform active:scale-95",
-                isCleaning && "animate-spin"
-              )}
+              onClick={() => setIsImporting(true)}
+              title="Importar CSV"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] bg-[var(--color-bg-dark)] border border-[var(--color-border)] shadow-sm transition-transform active:scale-95"
             >
-              <RefreshCw className="w-5 h-5" />
+              <FileUp className="w-5 h-5" />
             </button>
             <button
               onClick={() => setIsAdding(true)}
-              className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-[var(--color-bg-dark)] shadow-sm transition-transform active:scale-95 bg-[var(--color-primary)] medieval-glow")}
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-[var(--color-bg-dark)] shadow-sm transition-transform active:scale-95 bg-[var(--color-primary)] medieval-glow"
             >
               <Plus className="w-5 h-5" />
             </button>
           </div>
         )}
       </div>
+
+      <ImportModal
+        isOpen={isImporting}
+        onClose={() => setIsImporting(false)}
+        onImport={handleImport}
+        title="Importar Categorias"
+        template={['Categoria', 'Subcategoria', 'Descrição', 'Usuarios']}
+        separator=";"
+        description="Importe um arquivo CSV com as colunas: Categoria; Subcategoria; Descrição; Usuarios."
+      />
 
       {(isAdding || editingId) && (
         <motion.div
@@ -212,6 +236,16 @@ export function CategoryManagerPanel() {
             </div>
             
             <div>
+              <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-1 block">Descrição</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full p-3 bg-[var(--color-bg-panel)] border border-[var(--color-border)] text-[var(--color-text-main)] rounded-xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-sm min-h-[80px]"
+                placeholder="Descreva o propósito desta categoria"
+              />
+            </div>
+            
+            <div>
               <label className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-1 block">Agrupador RPG</label>
               <select
                 value={formData.rpg_group}
@@ -220,10 +254,10 @@ export function CategoryManagerPanel() {
                   let flow_type: 'income' | 'expense' = 'expense';
                   let group_type: 'fixed' | 'variable' = 'variable';
                   
-                  if (group === '💎 Cofre do Reino (Receitas Fixas)') { flow_type = 'income'; group_type = 'fixed'; }
-                  else if (group === '⚡ Saques de Missões (Receitas Variáveis)') { flow_type = 'income'; group_type = 'variable'; }
-                  else if (group === '🛡️ Tributos do Reino (Despesas Fixas)') { flow_type = 'expense'; group_type = 'fixed'; }
-                  else if (group === '⚔️ Aventuras do Herói (Despesas Variáveis)') { flow_type = 'expense'; group_type = 'variable'; }
+                  if (group === '💎 Cofre do Reino - Receitas Fixas') { flow_type = 'income'; group_type = 'fixed'; }
+                  else if (group === '⚡ Saques de Missões - Receitas Variáveis') { flow_type = 'income'; group_type = 'variable'; }
+                  else if (group === '🛡️ Tributos do Reino - Despesas Fixas') { flow_type = 'expense'; group_type = 'fixed'; }
+                  else if (group === '⚔️ Aventuras do Herói - Despesas Variáveis') { flow_type = 'expense'; group_type = 'variable'; }
 
                   setFormData({ ...formData, rpg_group: group, flow_type, group_type });
                 }}
@@ -237,7 +271,10 @@ export function CategoryManagerPanel() {
               <button
                 onClick={handleSave}
                 disabled={!formData.name}
-                className={cn("flex-1 py-3 rounded-xl text-[var(--color-bg-dark)] font-bold text-sm shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2", !formData.name ? "opacity-50 cursor-not-allowed" : "bg-[var(--color-primary)] medieval-glow")}
+                className={cn(
+                  "flex-1 py-3 rounded-xl text-[var(--color-bg-dark)] font-bold text-sm shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2",
+                  !formData.name ? "opacity-50 cursor-not-allowed" : "bg-[var(--color-primary)] medieval-glow"
+                )}
               >
                 <Save className="w-4 h-4" /> Salvar
               </button>
@@ -262,7 +299,7 @@ export function CategoryManagerPanel() {
           return (
             <div key={groupName} className="space-y-3">
               <div className="flex items-center gap-2">
-                <div className={cn("w-6 h-6 rounded-md flex items-center justify-center text-[var(--color-bg-dark)]", color)}>
+                <div className={cn("w-6 h-6 rounded-md flex items-center justify-center text-[var(--color-text-main)]", color)}>
                   {icon}
                 </div>
                 <h4 className={cn("text-sm font-bold uppercase tracking-wider", text)}>{groupName}</h4>
@@ -270,9 +307,23 @@ export function CategoryManagerPanel() {
               
               <div className="flex flex-col gap-3">
                 {groupCats.map(cat => (
-                  <div key={cat.id} className="bg-[var(--color-bg-panel)] p-4 rounded-2xl border border-[var(--color-border)] shadow-sm flex items-center justify-between group hover:border-[var(--color-primary)] transition-colors medieval-border">
-                    <div>
-                      <p className="text-sm font-bold text-[var(--color-text-main)]">{cat.name}</p>
+                  <div 
+                    key={cat.id} 
+                    title={cat.description}
+                    className="bg-[var(--color-bg-panel)] p-4 rounded-2xl border border-[var(--color-border)] shadow-sm flex items-center justify-between group hover:border-[var(--color-primary)] transition-colors medieval-border relative"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-[var(--color-text-main)]">{cat.name}</p>
+                        {cat.description && (
+                          <div className="group/info relative">
+                            <Info className="w-3 h-3 text-[var(--color-text-muted)] cursor-help" />
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-[var(--color-bg-dark)] border border-[var(--color-border)] rounded-lg text-[10px] text-[var(--color-text-main)] opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
+                              {cat.description}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                       <p className="text-[10px] text-[var(--color-text-muted)] font-medium uppercase tracking-wider">
                         {cat.flow_type === 'income' ? 'Receita' : 'Despesa'} • {cat.group_type === 'fixed' ? 'Fixa' : 'Variável'}
                       </p>

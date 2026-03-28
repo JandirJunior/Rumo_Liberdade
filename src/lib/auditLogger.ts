@@ -11,7 +11,7 @@ export async function logActivity(
   userId: string,
   action: string,
   entityId?: string,
-  details?: any
+  details?: Record<string, unknown>
 ) {
   const id = doc(collection(db, 'activity_logs')).id;
 

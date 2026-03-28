@@ -9,12 +9,24 @@ import { cn } from '@/lib/utils';
 interface ImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (data: any[]) => Promise<void>;
+  onImport: (data: Record<string, string>[]) => Promise<void>;
   title: string;
-  template: string[];
+  template?: string[];
+  description?: string;
+  separator?: string;
+  instructions?: React.ReactNode;
 }
 
-export function ImportModal({ isOpen, onClose, onImport, title, template }: ImportModalProps) {
+export function ImportModal({ 
+  isOpen, 
+  onClose, 
+  onImport, 
+  title, 
+  template = [], 
+  description,
+  separator = ',', 
+  instructions 
+}: ImportModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,9 +50,19 @@ export function ImportModal({ isOpen, onClose, onImport, title, template }: Impo
     setError(null);
 
     try {
-      const text = await file.text();
+      let text = await file.text();
+      // Remove BOM if present
+      if (text.charCodeAt(0) === 0xFEFF) {
+        text = text.slice(1);
+      }
+
       const lines = text.split('\n').filter(line => line.trim() !== '');
-      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      if (lines.length === 0) throw new Error('O arquivo está vazio.');
+
+      const firstLine = lines[0];
+      // Auto-detect separator if it's not the one provided
+      const actualSeparator = firstLine.includes(';') ? ';' : (firstLine.includes(',') ? ',' : separator);
+      const headers = firstLine.split(actualSeparator).map(h => h.trim().toLowerCase());
 
       // Validate headers
       const missingHeaders = template.filter(h => !headers.includes(h.toLowerCase()));
@@ -49,10 +71,10 @@ export function ImportModal({ isOpen, onClose, onImport, title, template }: Impo
       }
 
       const data = lines.slice(1).map(line => {
-        const values = line.split(',').map(v => v.trim());
-        const obj: any = {};
+        const values = line.split(actualSeparator).map(v => v.trim());
+        const obj: Record<string, string> = {};
         headers.forEach((header, i) => {
-          obj[header] = values[i];
+          obj[header] = values[i] || '';
         });
         return obj;
       });
@@ -64,8 +86,8 @@ export function ImportModal({ isOpen, onClose, onImport, title, template }: Impo
         setSuccess(false);
         setFile(null);
       }, 2000);
-    } catch (err: any) {
-      setError(err.message || 'Erro ao processar o arquivo.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao processar o arquivo.');
     } finally {
       setLoading(false);
     }
@@ -74,14 +96,24 @@ export function ImportModal({ isOpen, onClose, onImport, title, template }: Impo
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
       <div className="space-y-6">
-        <div className="bg-amber-900/20 border border-amber-900/50 rounded-2xl p-4 flex gap-3 medieval-border">
-          <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
-          <div className="text-xs text-amber-200/80 space-y-1">
-            <p className="font-bold text-amber-400">Instruções de Importação:</p>
-            <p>O arquivo deve ser um CSV com os seguintes cabeçalhos:</p>
-            <code className="bg-[var(--color-bg-dark)] px-1 rounded block mb-2 border border-[var(--color-border)]">{template.join(', ')}</code>
-            <p className="font-bold mt-2 text-amber-400">Exemplo de preenchimento:</p>
-            <code className="bg-[var(--color-bg-dark)] px-1 rounded block border border-[var(--color-border)]">expense, 150.50, Compra no mercado, alimentacao, 2023-10-25</code>
+        <div className="bg-red-500/10 dark:bg-red-900/20 border border-red-500/30 dark:border-red-900/50 rounded-2xl p-4 flex gap-3 medieval-border">
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+          <div className="text-xs text-red-900 dark:text-red-100 space-y-2 flex-1 min-w-0">
+            {instructions || (
+              <>
+                <p className="font-bold text-red-700 dark:text-red-400 text-sm">Instruções de Importação:</p>
+                {description && <p className="leading-relaxed font-medium">{description}</p>}
+                {!description && <p className="leading-relaxed opacity-90">O arquivo deve ser um CSV com os seguintes cabeçalhos:</p>}
+                {template.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold opacity-70 uppercase tracking-wider">Cabeçalhos esperados:</p>
+                    <code className="bg-white/50 dark:bg-black/30 px-2 py-1.5 rounded block text-[11px] break-words border border-red-500/20 dark:border-red-900/30 font-mono text-red-800 dark:text-red-300">
+                      {template.join('; ')}
+                    </code>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
 
@@ -118,7 +150,7 @@ export function ImportModal({ isOpen, onClose, onImport, title, template }: Impo
 
             {error && (
               <div className="flex items-center gap-2 text-red-400 bg-red-900/20 border border-red-900/50 p-3 rounded-xl text-xs font-bold medieval-border">
-                <AlertCircle className="w-4 h-4" />
+                <AlertCircle className="w-4 h-4 shrink-0" />
                 {error}
               </div>
             )}
@@ -127,8 +159,10 @@ export function ImportModal({ isOpen, onClose, onImport, title, template }: Impo
               onClick={processCSV}
               disabled={!file || loading}
               className={cn(
-                "w-full py-4 rounded-xl font-bold text-[var(--color-bg-dark)] shadow-lg transition-all flex items-center justify-center gap-2 medieval-glow",
-                !file || loading ? "bg-[var(--color-border)] text-[var(--color-text-muted)] cursor-not-allowed" : "bg-[var(--color-primary)] hover:brightness-110 active:scale-95"
+                "w-full py-4 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 medieval-glow",
+                !file || loading 
+                  ? "bg-[var(--color-border)] text-[var(--color-text-muted)] cursor-not-allowed" 
+                  : "bg-[var(--color-primary)] text-[var(--color-bg-dark)] hover:brightness-110 active:scale-95"
               )}
             >
               {loading ? (
